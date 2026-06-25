@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Nutrition.Application.Abstractions.UseCases;
+using Nutrition.Application.Abstractions.Services;
 using Nutrition.Shared.Dtos;
 
 namespace Nutrition.Web.Controllers;
@@ -9,51 +9,20 @@ namespace Nutrition.Web.Controllers;
 [Route("api/v1/kbju")]
 public sealed class KbjuController : ControllerBase
 {
-    [HttpGet("meals/{mealEntryId:guid}")]
-    [ProducesResponseType(typeof(GetMealKbjuResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<GetMealKbjuResponseDto>> GetMealKbjuAsync(
-        [FromRoute] Guid mealEntryId,
-        [FromQuery] Guid userId,
-        [FromServices] IGetMealKbjuUseCase useCase,
-        CancellationToken cancellationToken)
-    {
-        var response = await useCase.ExecuteAsync(
-            new GetMealKbjuRequestDto
-            {
-                UserId = userId,
-                MealEntryId = mealEntryId
-            },
-            cancellationToken);
-
-        if (response is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(response);
-    }
-
-    [HttpPut("meals/{mealEntryId:guid}")]
-    [ProducesResponseType(typeof(UpdateMealKbjuResponseDto), StatusCodes.Status200OK)]
+    [HttpGet("search")]
+    [ProducesResponseType(typeof(IReadOnlyCollection<ProductNutritionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<UpdateMealKbjuResponseDto>> UpdateMealKbjuAsync(
-        [FromRoute] Guid mealEntryId,
-        [FromBody] UpdateMealKbjuRequestDto request,
-        [FromServices] IUpdateMealKbjuUseCase useCase,
+    public async Task<ActionResult<IReadOnlyCollection<ProductNutritionDto>>> SearchNutritionFactsAsync(
+        [FromQuery] string query,
+        [FromServices] INutritionFactsLookupService lookupService,
         CancellationToken cancellationToken)
     {
-        if (mealEntryId != request.MealEntryId)
+        if (string.IsNullOrWhiteSpace(query))
         {
-            return BadRequest("Route mealEntryId must match request mealEntryId.");
+            return BadRequest("Query must not be empty.");
         }
 
-        var response = await useCase.ExecuteAsync(request, cancellationToken);
-        if (response is null)
-        {
-            return BadRequest("Invalid request payload.");
-        }
-
+        var response = await lookupService.SearchAsync(query, cancellationToken);
         return Ok(response);
     }
 }
