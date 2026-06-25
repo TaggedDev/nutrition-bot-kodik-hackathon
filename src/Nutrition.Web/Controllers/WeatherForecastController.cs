@@ -5,12 +5,15 @@ using Nutrition.Shared.Dtos;
 namespace Nutrition.Web.Controllers;
 
 [ApiController]
+[Produces("application/json")]
 [Route("api/v1/kbju")]
 public sealed class KbjuController : ControllerBase
 {
     [HttpGet("meals/{mealEntryId:guid}")]
+    [ProducesResponseType(typeof(GetMealKbjuResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<GetMealKbjuResponseDto>> GetMealKbjuAsync(
-        Guid mealEntryId,
+        [FromRoute] Guid mealEntryId,
         [FromQuery] Guid userId,
         [FromServices] IGetMealKbjuUseCase useCase,
         CancellationToken cancellationToken)
@@ -32,8 +35,10 @@ public sealed class KbjuController : ControllerBase
     }
 
     [HttpPut("meals/{mealEntryId:guid}")]
+    [ProducesResponseType(typeof(UpdateMealKbjuResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<UpdateMealKbjuResponseDto>> UpdateMealKbjuAsync(
-        Guid mealEntryId,
+        [FromRoute] Guid mealEntryId,
         [FromBody] UpdateMealKbjuRequestDto request,
         [FromServices] IUpdateMealKbjuUseCase useCase,
         CancellationToken cancellationToken)
