@@ -5,9 +5,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-builder.Services.AddNutritionApplication();
-builder.Services.AddCors(options =>
-{
+builder.Services.AddNutritionApplication(builder.Configuration);
+builder.Services.AddCors(options =>{
     options.AddPolicy("FrontendDev", policy =>
     {
         policy
@@ -50,7 +49,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("FrontendDev");
 
 app.UseAuthorization();

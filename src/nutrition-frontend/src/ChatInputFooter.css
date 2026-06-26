@@ -1,0 +1,112 @@
+.chat-footer {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid #e5e7eb;
+  padding: 0.5rem 0.75rem 0.75rem;
+  z-index: 10;
+}
+
+.chat-footer-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.chat-footer-row.recording-row {
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.chat-footer-input-area {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- Textarea ---------- */
+
+.chat-textarea {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 1.25rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  background: #ffffff;
+  color: #1f2937;
+  transition: border-color 0.2s;
+  max-height: 120px;
+}
+
+.chat-textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.chat-textarea:disabled {
+  opacity: 0.6;
+  background: #f9fafb;
+}
+
+/* ---------- Кнопка скрепки ---------- */
+
+.file-picker-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: #e5e7eb;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.file-picker-btn:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+.file-picker-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---------- Кнопка отправки ---------- */
+
+.chat-send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+}
+
+.chat-send-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: scale(1.05);
+}
+
+.chat-send-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

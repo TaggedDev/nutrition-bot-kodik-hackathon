@@ -1,145 +1,108 @@
-import { useMemo, useState } from 'react'
-import type { FormEvent } from 'react'
+import { useReducer, useCallback } from 'react'
+import type { AppState, ChatMessage, Attachment } from './types'
+import { chatReducer } from './chatReducer'
+import { ChatView } from './ChatView'
+import { ChatInputFooter } from './ChatInputFooter'
 import './App.css'
 
-type NutritionFacts = {
-  calories: number
-  protein: number
-  fat: number
-  carbs: number
+const initialState: AppState = {
+  messages: [],
+  inputText: '',
+  attachments: [],
+  recordingState: 'idle',
+  loading: false,
+  error: null,
 }
-
-type ProductNutrition = {
-  productId: string
-  productName: string
-  brand: string | null
-  nutritionFacts: NutritionFacts
-  sourceType: string
-  sourceReference: string
-  confidenceScore: number
-}
-
 
 function App() {
-  const [query, setQuery] = useState('')
-  const [items, setItems] = useState<ProductNutrition[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const hasResults = items.length > 0
+  const [state, dispatch] = useReducer(chatReducer, initialState)
 
-  const title = useMemo(() => {
-    if (loading) {
-      return 'Идет поиск...'
-    }
-
-    if (error) {
-      return error
-    }
-
-    if (hasResults) {
-      return `Найдено товаров: ${items.length}`
-    }
-
-    return 'Введите продукт и нажмите "Искать"'
-  }, [error, hasResults, items.length, loading])
-
-  const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
-    const trimmedQuery = query.trim()
-    if (!trimmedQuery) {
-      setError('Введите поисковый запрос.')
-      setItems([])
-      return
-    }
-
-    try {
-      setLoading(true)
-      setError(null)
-
-      const response = await fetch(
-        `/api/v1/kbju/search?query=${encodeURIComponent(trimmedQuery)}`,
-      )
-
-      if (!response.ok) {
-        throw new Error(`Ошибка API: ${response.status}`)
+  const handleSendText = useCallback(
+    async (text: string, attachments: Attachment[]) => {
+      const userMsg: ChatMessage = {
+        kind: 'user-text',
+        id: crypto.randomUUID(),
+        text,
+        attachments: [...attachments],
       }
+      dispatch({ type: 'ADD_MESSAGE', message: userMsg })
+      dispatch({ type: 'CLEAR_ATTACHMENTS' })
+      dispatch({ type: 'SET_INPUT_TEXT', text: '' })
+      dispatch({ type: 'SET_LOADING', loading: true })
+      dispatch({ type: 'SET_ERROR', error: null })
 
-      const payload = (await response.json()) as unknown
-      if (!Array.isArray(payload)) {
-        throw new Error('Некорректный формат ответа API.')
-      }
+      try {
+        const response = await fetch(
+          `/api/v1/kbju/search?query=${encodeURIComponent(text.trim())}`,
+        )
 
-      const typedPayload = payload as ProductNutrition[]
-      setItems(typedPayload)
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`)
+        }
 
-      if (typedPayload.length === 0) {
-        setError('Ничего не найдено. Попробуйте другой запрос.')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const items = (await response.json()) as any[]
+
+        const assistantMsg: ChatMessage = {
+          kind: 'assistant-result',
+          id: crypto.randomUUID(),
+          query: text.trim(),
+          items,
+          error: !Array.isArray(items) || items.length === 0 ? 'Ничего не найдено. Попробуйте другой запрос.' : undefined,
+        }
+        dispatch({ type: 'ADD_MESSAGE', message: assistantMsg })
+      } catch (err) {
+        const assistantMsg: ChatMessage = {
+          kind: 'assistant-result',
+          id: crypto.randomUUID(),
+          query: text.trim(),
+          items: [],
+          error:
+            err instanceof Error
+              ? `Не удалось выполнить поиск: ${err.message}`
+              : 'Не удалось выполнить поиск. Проверьте, что backend запущен.',
+        }
+        dispatch({ type: 'ADD_MESSAGE', message: assistantMsg })
+      } finally {
+        dispatch({ type: 'SET_LOADING', loading: false })
       }
-    } catch (error) {
-      setItems([])
-      if (error instanceof Error) {
-        setError(`Не удалось выполнить поиск: ${error.message}`)
-      } else {
-        setError('Не удалось выполнить поиск. Проверьте, что backend запущен.')
+    },
+    [],
+  )
+
+  const handleSendVoice = useCallback(
+    (audioBlob: Blob, duration: number) => {
+      const voiceMsg: ChatMessage = {
+        kind: 'user-voice',
+        id: crypto.randomUUID(),
+        audio: {
+          blob: audioBlob,
+          url: URL.createObjectURL(audioBlob),
+          duration,
+        },
       }
-    } finally {
-      setLoading(false)
-    }
-  }
+      dispatch({ type: 'ADD_MESSAGE', message: voiceMsg })
+    },
+    [],
+  )
 
   return (
-    <main className="page">
-      <h1>Поиск КБЖУ товаров</h1>
-
-      <form className="search-form" onSubmit={handleSearch}>
-        <input
-          type="text"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Например: макароны, milk, chocolate"
-          aria-label="Поисковый запрос"
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? 'Ищем...' : 'Искать'}
-        </button>
-      </form>
-
-      <p className="status">{title}</p>
-
-      {hasResults && (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Название</th>
-                <th>Бренд</th>
-                <th>Ккал</th>
-                <th>Белки</th>
-                <th>Жиры</th>
-                <th>Углеводы</th>
-                <th>Источник</th>
-                <th>Confidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={`${item.productId}-${item.sourceReference}`}>
-                  <td>{item.productName}</td>
-                  <td>{item.brand ?? '-'}</td>
-                  <td>{item.nutritionFacts.calories}</td>
-                  <td>{item.nutritionFacts.protein}</td>
-                  <td>{item.nutritionFacts.fat}</td>
-                  <td>{item.nutritionFacts.carbs}</td>
-                  <td>{item.sourceType}</td>
-                  <td>{item.confidenceScore.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </main>
+    <div className="app-shell">
+      <ChatView messages={state.messages} loading={state.loading} />
+      <ChatInputFooter
+        inputText={state.inputText}
+        attachments={state.attachments}
+        recordingState={state.recordingState}
+        loading={state.loading}
+        onInputTextChange={(text) => dispatch({ type: 'SET_INPUT_TEXT', text })}
+        onAddAttachments={(atts) => dispatch({ type: 'ADD_ATTACHMENTS', attachments: atts })}
+        onRemoveAttachment={(id) => dispatch({ type: 'REMOVE_ATTACHMENT', id })}
+        onClearAttachments={() => dispatch({ type: 'CLEAR_ATTACHMENTS' })}
+        onRecordingStateChange={(s) => dispatch({ type: 'SET_RECORDING_STATE', state: s })}
+        onSendText={handleSendText}
+        onSendVoice={handleSendVoice}
+      />
+    </div>
   )
 }
 

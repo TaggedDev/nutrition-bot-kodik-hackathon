@@ -1,0 +1,198 @@
+.mic-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mic-wrapper.active {
+  flex: 1;
+}
+
+.mic-error {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* ---------- Кнопка ---------- */
+
+.mic-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    background 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.mic-btn.idle {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.mic-btn.idle:hover {
+  background: #d1d5db;
+}
+
+.mic-btn.recording {
+  background: #ef4444;
+  color: #ffffff;
+  animation: mic-pulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+}
+
+.mic-btn.locked {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+}
+
+/* ---------- Индикатор записи ---------- */
+
+.mic-recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: #ef4444;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.mic-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: mic-dot-blink 1s step-end infinite;
+}
+
+/* ---------- Подсказка свайпа ---------- */
+
+.mic-swipe-hint {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  animation: fade-in 0.3s ease-out;
+}
+
+/* ---------- Кнопка отправки в lock-режиме ---------- */
+
+.mic-send-locked {
+  padding: 0.375rem 0.75rem;
+  border-radius: 1rem;
+  border: 0;
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  animation: fade-in 0.3s ease-out;
+}
+
+/* ---------- Волна (waveform) ---------- */
+
+.mic-waveform {
+  position: absolute;
+  top: -48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 40px;
+  pointer-events: none;
+}
+
+.mic-waveform::before,
+.mic-waveform::after {
+  content: '';
+}
+
+.mic-waveform[data-state='recording'] {
+  --wave-color: #ef4444;
+}
+
+.mic-waveform[data-state='locked'] {
+  --wave-color: #3b82f6;
+}
+
+/* Генерируем полоски через box-shadow на псевдоэлементе */
+.mic-waveform::before {
+  display: block;
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--wave-color, #ef4444);
+  animation: wave-bar 0.6s ease-in-out infinite alternate;
+  animation-delay: 0s;
+  box-shadow:
+    8px 0 0 var(--wave-color, #ef4444),
+    16px 0 0 var(--wave-color, #ef4444),
+    24px 0 0 var(--wave-color, #ef4444),
+    32px 0 0 var(--wave-color, #ef4444),
+    40px 0 0 var(--wave-color, #ef4444),
+    48px 0 0 var(--wave-color, #ef4444),
+    56px 0 0 var(--wave-color, #ef4444);
+}
+
+/* ---------- Анимации ---------- */
+
+@keyframes mic-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes mic-dot-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes wave-bar {
+  0% {
+    height: 8px;
+  }
+  100% {
+    height: 36px;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
