@@ -19,9 +19,9 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddSingleton<IOpenFoodFactsRateLimiter, InMemoryOpenFoodFactsRateLimiter>();
 
-        services.AddSingleton<IMealKbjuRepository, MockMealKbjuRepository>();
-        services.AddScoped<IGetMealKbjuUseCase, GetMealKbjuUseCase>();
-        services.AddScoped<IUpdateMealKbjuUseCase, UpdateMealKbjuUseCase>();
+        services.AddSingleton<IMealNutritionRepository, MockMealNutritionRepository>();
+        services.AddScoped<IGetMealNutritionUseCase, GetMealNutritionUseCase>();
+        services.AddScoped<IUpdateMealNutritionUseCase, UpdateMealNutritionUseCase>();
 
         services.AddHttpClient<INutritionFactsLookupService, OpenFoodFactsNutritionFactsLookupService>((serviceProvider, client) =>
         {

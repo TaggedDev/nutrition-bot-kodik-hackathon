@@ -1,10 +1,10 @@
 namespace Nutrition.Shared.Dtos;
 
-public sealed class UpdateMealKbjuResponseDto
+public sealed class UpdateMealNutritionResponseDto
 {
     public Guid MealEntryId { get; init; }
 
-    public KbjuDto TotalKbju { get; init; } = new();
+    public NutritionDto TotalNutrition { get; init; } = new();
 
     public DateTimeOffset UpdatedAtUtc { get; init; }
 }

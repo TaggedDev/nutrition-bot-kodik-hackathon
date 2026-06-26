@@ -4,17 +4,17 @@ using Nutrition.Shared.Dtos;
 
 namespace Nutrition.Application.UseCases;
 
-public sealed class UpdateMealKbjuUseCase : IUpdateMealKbjuUseCase
+public sealed class UpdateMealNutritionUseCase : IUpdateMealNutritionUseCase
 {
-    private readonly IMealKbjuRepository _repository;
+    private readonly IMealNutritionRepository _repository;
 
-    public UpdateMealKbjuUseCase(IMealKbjuRepository repository)
+    public UpdateMealNutritionUseCase(IMealNutritionRepository repository)
     {
         _repository = repository;
     }
 
-    public async Task<UpdateMealKbjuResponseDto?> ExecuteAsync(
-        UpdateMealKbjuRequestDto request,
+    public async Task<UpdateMealNutritionResponseDto?> ExecuteAsync(
+        UpdateMealNutritionRequestDto request,
         CancellationToken cancellationToken)
     {
         if (request.UserId == Guid.Empty || request.MealEntryId == Guid.Empty)
@@ -22,10 +22,10 @@ public sealed class UpdateMealKbjuUseCase : IUpdateMealKbjuUseCase
             return null;
         }
 
-        if (request.TotalKbju.Calories < 0
-            || request.TotalKbju.Protein < 0
-            || request.TotalKbju.Fat < 0
-            || request.TotalKbju.Carbs < 0)
+        if (request.TotalNutrition.Calories < 0
+            || request.TotalNutrition.Protein < 0
+            || request.TotalNutrition.Fat < 0
+            || request.TotalNutrition.Carbs < 0)
         {
             return null;
         }
@@ -33,13 +33,13 @@ public sealed class UpdateMealKbjuUseCase : IUpdateMealKbjuUseCase
         var updatedMeal = await _repository.UpdateTotalKbjuAsync(
             request.UserId,
             request.MealEntryId,
-            request.TotalKbju,
+            request.TotalNutrition,
             cancellationToken);
 
-        return new UpdateMealKbjuResponseDto
+        return new UpdateMealNutritionResponseDto
         {
             MealEntryId = updatedMeal.MealEntryId,
-            TotalKbju = updatedMeal.TotalKbju,
+            TotalNutrition = updatedMeal.TotalNutrition,
             UpdatedAtUtc = DateTimeOffset.UtcNow
         };
     }

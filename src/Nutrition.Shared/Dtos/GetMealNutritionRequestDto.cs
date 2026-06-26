@@ -1,6 +1,6 @@
 namespace Nutrition.Shared.Dtos;
 
-public sealed class GetMealKbjuRequestDto
+public sealed class GetMealNutritionRequestDto
 {
     public Guid UserId { get; init; }
 

@@ -10,7 +10,7 @@ public sealed class MealItemDto
 
     public string PortionUnit { get; init; } = string.Empty;
 
-    public KbjuDto Kbju { get; init; } = new();
+    public NutritionDto Nutrition { get; init; } = new();
 
     public decimal ConfidenceScore { get; init; }
 
