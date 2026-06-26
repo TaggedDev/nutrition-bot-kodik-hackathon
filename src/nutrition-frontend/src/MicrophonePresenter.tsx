@@ -1,219 +1,323 @@
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RecordingState } from './types'
+import { LockIcon, MicIcon, SendIcon, XIcon } from './ComposerIcons'
 import './MicrophonePresenter.css'
 
-const MAX_DURATION_SEC = 300 // 5 minutes
+const MAX_DURATION_SEC = 300
+const LOCK_THRESHOLD_PX = 68
+const WAVE_BARS = Array.from({ length: 24 }, (_, index) => index)
 
-function getSupportedMimeType(): string {
-  const candidates = ['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/wav']
-  for (const mime of candidates) {
-    if (MediaRecorder.isTypeSupported(mime)) return mime
-  }
-  return 'audio/webm' // fallback
-}
+type StopMode = 'send' | 'cancel'
 
 type Props = {
   recordingState: RecordingState
   onRecordingStateChange: (state: RecordingState) => void
   onVoiceReady: (blob: Blob, duration: number) => void
+  disabled?: boolean
+}
+
+function getSupportedMimeType(): string | null {
+  if (!('MediaRecorder' in window)) return null
+
+  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']
+  for (const mime of candidates) {
+    if (MediaRecorder.isTypeSupported(mime)) return mime
+  }
+
+  return ''
 }
 
 export function MicrophonePresenter({
   recordingState,
   onRecordingStateChange,
   onVoiceReady,
+  disabled = false,
 }: Props) {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
-  const startTimeRef = useRef<number>(0)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const startTimeRef = useRef(0)
+  const timerRef = useRef<number | null>(null)
+  const stopModeRef = useRef<StopMode>('send')
+  const pointerStartYRef = useRef(0)
+  const pointerHeldRef = useRef(false)
+  const lockedRef = useRef(false)
   const [elapsed, setElapsed] = useState(0)
-  const [permissionError, setPermissionError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  // Lock mode: was the button swiped up?
-  const lockRef = useRef(false)
-  const pointerStartY = useRef(0)
-  const SWIPE_THRESHOLD = 60
-
-  const cleanup = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop()
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop())
-      streamRef.current = null
-    }
-    mediaRecorderRef.current = null
-    chunksRef.current = []
-    setElapsed(0)
-    lockRef.current = false
+  const stopTracks = useCallback(() => {
+    streamRef.current?.getTracks().forEach((track) => track.stop())
+    streamRef.current = null
   }, [])
 
+  const clearTimer = useCallback(() => {
+    if (timerRef.current !== null) {
+      window.clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
+
+  const resetRecording = useCallback(() => {
+    clearTimer()
+    stopTracks()
+    mediaRecorderRef.current = null
+    chunksRef.current = []
+    lockedRef.current = false
+    setElapsed(0)
+    onRecordingStateChange('idle')
+  }, [clearTimer, onRecordingStateChange, stopTracks])
+
+  const finishRecording = useCallback(
+    (mode: StopMode) => {
+      stopModeRef.current = mode
+      const recorder = mediaRecorderRef.current
+
+      if (!recorder || recorder.state === 'inactive') {
+        resetRecording()
+        return
+      }
+
+      recorder.stop()
+    },
+    [resetRecording],
+  )
+
   const startRecording = useCallback(async () => {
-    setPermissionError(null)
+    if (disabled || recordingState !== 'idle') return
+    setError(null)
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('Браузер не поддерживает запись с микрофона.')
+      return
+    }
+
+    const mimeType = getSupportedMimeType()
+    if (mimeType === null) {
+      setError('Браузер не поддерживает MediaRecorder.')
+      return
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      streamRef.current = stream
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream)
 
-      const mimeType = getSupportedMimeType()
-      const recorder = new MediaRecorder(stream, { mimeType })
+      streamRef.current = stream
       mediaRecorderRef.current = recorder
       chunksRef.current = []
+      startTimeRef.current = Date.now()
+      stopModeRef.current = 'send'
+      lockedRef.current = false
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data)
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data)
+        }
       }
 
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType })
         const duration = (Date.now() - startTimeRef.current) / 1000
-        cleanup()
-        if (blob.size > 0 && duration > 0.3) {
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || mimeType || 'audio/webm' })
+        const shouldSend = stopModeRef.current === 'send' && blob.size > 0 && duration >= 0.3
+
+        resetRecording()
+
+        if (shouldSend) {
           onVoiceReady(blob, duration)
+        } else if (stopModeRef.current === 'send') {
+          setError('Запись слишком короткая.')
         }
-        onRecordingStateChange('idle')
+      }
+
+      recorder.onerror = () => {
+        setError('Не удалось записать аудио.')
+        finishRecording('cancel')
       }
 
       recorder.start()
-      startTimeRef.current = Date.now()
-      lockRef.current = false
       onRecordingStateChange('recording')
+      if (!pointerHeldRef.current) {
+        finishRecording('cancel')
+        return
+      }
 
-      timerRef.current = setInterval(() => {
-        const sec = (Date.now() - startTimeRef.current) / 1000
-        setElapsed(sec)
-        if (sec >= MAX_DURATION_SEC) {
-          stopRecording()
+      timerRef.current = window.setInterval(() => {
+        const seconds = (Date.now() - startTimeRef.current) / 1000
+        setElapsed(seconds)
+        if (seconds >= MAX_DURATION_SEC) {
+          finishRecording('send')
         }
       }, 100)
     } catch (err) {
+      stopTracks()
       if (err instanceof DOMException && err.name === 'NotAllowedError') {
-        setPermissionError('Доступ к микрофону запрещён. Разрешите в настройках браузера.')
+        setError('Доступ к микрофону запрещен. Разрешите его в настройках браузера.')
       } else {
-        setPermissionError('Не удалось получить доступ к микрофону.')
+        setError('Не удалось получить доступ к микрофону.')
       }
     }
-  }, [cleanup, onRecordingStateChange, onVoiceReady])
+  }, [disabled, finishRecording, onRecordingStateChange, recordingState, resetRecording, stopTracks, onVoiceReady])
 
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop()
-    }
-  }, [])
-
-  // Pointer handlers
   const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      e.preventDefault()
-      buttonRef.current?.setPointerCapture(e.pointerId)
-      pointerStartY.current = e.clientY
-
-      if (recordingState === 'idle') {
-        startRecording()
-      } else if (recordingState === 'locked') {
-        // In locked mode, clicking stops and sends
-        stopRecording()
-      }
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      if (disabled) return
+      event.preventDefault()
+      pointerStartYRef.current = event.clientY
+      pointerHeldRef.current = true
+      buttonRef.current?.setPointerCapture(event.pointerId)
+      startRecording()
     },
-    [recordingState, startRecording, stopRecording],
+    [disabled, startRecording],
   )
 
   const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (recordingState !== 'recording' || lockRef.current) return
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      if (recordingState !== 'recording' || lockedRef.current) return
+      if (pointerStartYRef.current - event.clientY < LOCK_THRESHOLD_PX) return
 
-      const deltaY = pointerStartY.current - e.clientY
-      if (deltaY > SWIPE_THRESHOLD) {
-        lockRef.current = true
-        onRecordingStateChange('locked')
-      }
+      lockedRef.current = true
+      onRecordingStateChange('locked')
     },
-    [recordingState, onRecordingStateChange],
+    [onRecordingStateChange, recordingState],
   )
 
   const handlePointerUp = useCallback(
-    (e: React.PointerEvent) => {
-      if (recordingState === 'recording') {
-        if (!lockRef.current) {
-          stopRecording()
-        }
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      pointerHeldRef.current = false
+      if (buttonRef.current?.hasPointerCapture(event.pointerId)) {
+        buttonRef.current.releasePointerCapture(event.pointerId)
       }
-      buttonRef.current?.releasePointerCapture(e.pointerId)
+      if (recordingState === 'recording' && !lockedRef.current) {
+        finishRecording('send')
+      }
     },
-    [recordingState, stopRecording],
+    [finishRecording, recordingState],
   )
 
-  // Cleanup on unmount
+  const handlePointerCancel = useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      pointerHeldRef.current = false
+      if (buttonRef.current?.hasPointerCapture(event.pointerId)) {
+        buttonRef.current.releasePointerCapture(event.pointerId)
+      }
+      if (recordingState === 'recording') {
+        finishRecording('cancel')
+      }
+    },
+    [finishRecording, recordingState],
+  )
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (event.key === 'Escape' && recordingState !== 'idle') {
+        finishRecording('cancel')
+      }
+    },
+    [finishRecording, recordingState],
+  )
+
   useEffect(() => {
     return () => {
-      cleanup()
+      const recorder = mediaRecorderRef.current
+      if (recorder && recorder.state !== 'inactive') {
+        stopModeRef.current = 'cancel'
+        recorder.stop()
+      }
+      clearTimer()
+      stopTracks()
     }
-  }, [cleanup])
+  }, [clearTimer, stopTracks])
 
   const isActive = recordingState !== 'idle'
 
   return (
-    <div className={`mic-wrapper ${isActive ? 'active' : ''}`}>
-      {permissionError && <div className="mic-error">{permissionError}</div>}
-
-      {isActive && (
-        <>
-          <div className="mic-recording-indicator">
-            <span className="mic-dot" />
-            <span>{formatElapsed(elapsed)}</span>
-          </div>
-
-          {recordingState === 'locked' && (
-            <button
-              type="button"
-              className="mic-send-locked"
-              onClick={stopRecording}
-              aria-label="Отправить запись"
-            >
-              ⬆ Отправить
-            </button>
-          )}
-
-          {recordingState === 'recording' && (
-            <div className="mic-swipe-hint">
-              ⬆ Уведите вверх для блокировки
-            </div>
-          )}
-        </>
+    <div className={`mic-composer ${isActive ? 'active' : ''}`}>
+      {error && !isActive && (
+        <div className="mic-error" role="status">
+          {error}
+        </div>
       )}
 
-      <button
-        ref={buttonRef}
-        type="button"
-        className={`mic-btn ${recordingState}`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onContextMenu={(e) => e.preventDefault()}
-        aria-label={
-          recordingState === 'idle'
-            ? 'Записать голосовое сообщение'
-            : recordingState === 'recording'
-              ? 'Запись... отпустите для отправки'
-              : 'Запись заблокирована, нажмите для отправки'
-        }
-      >
-        {recordingState === 'idle' ? '🎤' : recordingState === 'recording' ? '🔴' : '🔒'}
-      </button>
+      {recordingState !== 'locked' && (
+        <button
+          ref={buttonRef}
+          type="button"
+          className={`composer-action-btn neutral mic-idle-btn ${recordingState}`}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          onKeyDown={handleKeyDown}
+          onContextMenu={(event) => event.preventDefault()}
+          disabled={disabled}
+          aria-label="Start voice recording"
+        >
+          <MicIcon />
+        </button>
+      )}
 
-      {isActive && <div className="mic-waveform" data-state={recordingState} />}
+      {isActive && (
+        <div className={`mic-panel ${recordingState}`}>
+          <div className="mic-recording-status" aria-live="polite">
+            <span className="mic-dot" />
+            <span className="mic-time">{formatElapsed(elapsed)}</span>
+            <span className="mic-status-text">
+              {recordingState === 'locked'
+                ? 'Запись идет'
+                : 'Отпустите, чтобы отправить'}
+            </span>
+          </div>
+
+          <div className="mic-timeline" aria-hidden="true">
+            <div className="mic-wave">
+              {WAVE_BARS.map((bar) => (
+                <span key={bar} style={{ '--bar-index': bar } as React.CSSProperties} />
+              ))}
+            </div>
+            <span className="mic-timeline-sweep" />
+          </div>
+
+          {recordingState === 'recording' && (
+            <div className="mic-lock-hint">
+              <LockIcon />
+              <span>Потяните вверх, чтобы закрепить</span>
+            </div>
+          )}
+
+          {recordingState === 'locked' && (
+            <div className="mic-locked-actions">
+              <span className="mic-locked-label">
+                <LockIcon />
+                Закреплено
+              </span>
+              <button
+                type="button"
+                className="composer-action-btn neutral"
+                onClick={() => finishRecording('cancel')}
+                aria-label="Cancel recording"
+              >
+                <XIcon />
+              </button>
+              <button
+                type="button"
+                className="composer-action-btn send"
+                onClick={() => finishRecording('send')}
+                aria-label="Send message"
+              >
+                <SendIcon />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
-function formatElapsed(sec: number): string {
-  const m = Math.floor(sec / 60)
-  const s = Math.floor(sec % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
+function formatElapsed(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }

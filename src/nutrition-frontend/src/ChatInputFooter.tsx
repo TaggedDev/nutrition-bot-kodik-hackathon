@@ -1,8 +1,9 @@
-import { useRef, useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Attachment, RecordingState } from './types'
 import { AttachmentsPreview } from './AttachmentsPreview'
 import { FilePicker } from './FilePicker'
 import { MicrophonePresenter } from './MicrophonePresenter'
+import { SendIcon, SpinnerIcon } from './ComposerIcons'
 import './ChatInputFooter.css'
 
 const MAX_ATTACHMENTS = 10
@@ -35,25 +36,52 @@ export function ChatInputFooter({
   onSendVoice,
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const resizeFrameRef = useRef<number | null>(null)
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
 
   const autoResize = useCallback(() => {
     const el = textareaRef.current
     if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 120)}px`
+
+    if (resizeFrameRef.current !== null) {
+      window.cancelAnimationFrame(resizeFrameRef.current)
+    }
+
+    resizeFrameRef.current = window.requestAnimationFrame(() => {
+      const target = textareaRef.current
+      if (!target) return
+      const computed = window.getComputedStyle(target)
+      const lineHeight = Number.parseFloat(computed.lineHeight) || 22
+      const padding =
+        Number.parseFloat(computed.paddingTop) + Number.parseFloat(computed.paddingBottom)
+      const maxHeight = lineHeight * 5 + padding
+
+      target.style.height = 'auto'
+      target.style.height = `${Math.min(target.scrollHeight, maxHeight)}px`
+      target.style.overflowY = target.scrollHeight > maxHeight ? 'auto' : 'hidden'
+    })
   }, [])
 
   useEffect(() => {
     autoResize()
   }, [inputText, autoResize])
 
+  useEffect(() => {
+    return () => {
+      if (resizeFrameRef.current !== null) {
+        window.cancelAnimationFrame(resizeFrameRef.current)
+      }
+    }
+  }, [])
+
   const handleSend = useCallback(() => {
     const trimmed = inputText.trim()
-    if (!trimmed || loading) return
+    if (loading || (!trimmed && attachments.length === 0)) return
+
+    setStatusMessage('Отправляется...')
     onSendText(trimmed, attachments)
-    // Clear attachments after sending (double cleanup in case reducer doesn't do it)
     onClearAttachments()
-  }, [inputText, attachments, loading, onSendText, onClearAttachments])
+  }, [attachments, inputText, loading, onClearAttachments, onSendText])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -68,27 +96,35 @@ export function ChatInputFooter({
   const handleVoiceReady = useCallback(
     (blob: Blob, duration: number) => {
       onSendVoice(blob, duration)
+      setStatusMessage('Голосовое сообщение отправлено')
     },
     [onSendVoice],
   )
 
   const isRecording = recordingState !== 'idle'
-  const showMicButton = inputText.trim().length === 0 && attachments.length === 0 && !isRecording
+  const canSend = inputText.trim().length > 0 || attachments.length > 0
+
+  useEffect(() => {
+    if (!loading && statusMessage === 'Отправляется...') {
+      const timeout = window.setTimeout(() => setStatusMessage('Сообщение отправлено'), 0)
+      return () => window.clearTimeout(timeout)
+    }
+  }, [loading, statusMessage])
+
+  useEffect(() => {
+    if (!statusMessage || loading || isRecording) return
+    const timeout = window.setTimeout(() => setStatusMessage(null), 2400)
+    return () => window.clearTimeout(timeout)
+  }, [isRecording, loading, statusMessage])
 
   return (
-    <footer className="chat-footer">
-      <AttachmentsPreview attachments={attachments} onRemove={onRemoveAttachment} />
+    <footer className={`chat-footer ${isRecording ? 'is-recording' : ''}`}>
+      {!isRecording && (
+        <AttachmentsPreview attachments={attachments} onRemove={onRemoveAttachment} />
+      )}
 
-      {isRecording ? (
-        <div className="chat-footer-row recording-row">
-          <MicrophonePresenter
-            recordingState={recordingState}
-            onRecordingStateChange={onRecordingStateChange}
-            onVoiceReady={handleVoiceReady}
-          />
-        </div>
-      ) : (
-        <div className="chat-footer-row">
+      <div className={`chat-footer-row ${isRecording ? 'recording-row' : ''}`}>
+        <div className="composer-input-group" aria-hidden={isRecording}>
           <FilePicker
             currentCount={attachments.length}
             maxCount={MAX_ATTACHMENTS}
@@ -104,28 +140,37 @@ export function ChatInputFooter({
               onKeyDown={handleKeyDown}
               placeholder="Введите продукт..."
               rows={1}
-              disabled={loading}
-              aria-label="Текст сообщения"
+              disabled={loading || isRecording}
+              aria-label="Message text"
             />
           </div>
 
-          {showMicButton ? (
-            <MicrophonePresenter
-              recordingState={recordingState}
-              onRecordingStateChange={onRecordingStateChange}
-              onVoiceReady={handleVoiceReady}
-            />
-          ) : (
+          {canSend && (
             <button
               type="button"
-              className="chat-send-btn"
+              className="composer-action-btn send"
               onClick={handleSend}
-              disabled={!inputText.trim() || loading}
-              aria-label="Отправить"
+              disabled={loading}
+              aria-label="Send message"
             >
-              {loading ? '⏳' : '➤'}
+              {loading ? <SpinnerIcon className="spinner-icon" /> : <SendIcon />}
             </button>
           )}
+        </div>
+
+        <div className={`composer-mic-slot ${canSend && !isRecording ? 'is-hidden' : ''}`}>
+          <MicrophonePresenter
+            recordingState={recordingState}
+            onRecordingStateChange={onRecordingStateChange}
+            onVoiceReady={handleVoiceReady}
+            disabled={loading}
+          />
+        </div>
+      </div>
+
+      {(statusMessage || loading) && !isRecording && (
+        <div className="composer-status" aria-live="polite">
+          {loading ? 'Отправляется...' : statusMessage}
         </div>
       )}
     </footer>

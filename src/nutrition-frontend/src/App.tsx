@@ -1,5 +1,5 @@
-import { useReducer, useCallback } from 'react'
-import type { AppState, ChatMessage, Attachment } from './types'
+import { useCallback, useReducer } from 'react'
+import type { AppState, Attachment, ChatMessage } from './types'
 import { chatReducer } from './chatReducer'
 import { ChatView } from './ChatView'
 import { ChatInputFooter } from './ChatInputFooter'
@@ -17,74 +17,86 @@ const initialState: AppState = {
 function App() {
   const [state, dispatch] = useReducer(chatReducer, initialState)
 
-  const handleSendText = useCallback(
-    async (text: string, attachments: Attachment[]) => {
-      const userMsg: ChatMessage = {
-        kind: 'user-text',
-        id: crypto.randomUUID(),
-        text,
-        attachments: [...attachments],
-      }
-      dispatch({ type: 'ADD_MESSAGE', message: userMsg })
-      dispatch({ type: 'CLEAR_ATTACHMENTS' })
-      dispatch({ type: 'SET_INPUT_TEXT', text: '' })
-      dispatch({ type: 'SET_LOADING', loading: true })
-      dispatch({ type: 'SET_ERROR', error: null })
+  const handleSendText = useCallback(async (text: string, attachments: Attachment[]) => {
+    const trimmed = text.trim()
+    const userMsg: ChatMessage = {
+      kind: 'user-text',
+      id: crypto.randomUUID(),
+      text: trimmed,
+      attachments: [...attachments],
+    }
 
-      try {
-        const response = await fetch(
-          `/api/v1/kbju/search?query=${encodeURIComponent(text.trim())}`,
-        )
+    dispatch({ type: 'ADD_MESSAGE', message: userMsg })
+    dispatch({ type: 'CLEAR_ATTACHMENTS' })
+    dispatch({ type: 'SET_INPUT_TEXT', text: '' })
+    dispatch({ type: 'SET_LOADING', loading: true })
+    dispatch({ type: 'SET_ERROR', error: null })
 
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`)
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const items = (await response.json()) as any[]
-
+    try {
+      // TODO: connect real file/audio upload endpoints when backend contracts are added.
+      if (!trimmed && attachments.length > 0) {
         const assistantMsg: ChatMessage = {
           kind: 'assistant-result',
           id: crypto.randomUUID(),
-          query: text.trim(),
-          items,
-          error: !Array.isArray(items) || items.length === 0 ? 'Ничего не найдено. Попробуйте другой запрос.' : undefined,
-        }
-        dispatch({ type: 'ADD_MESSAGE', message: assistantMsg })
-      } catch (err) {
-        const assistantMsg: ChatMessage = {
-          kind: 'assistant-result',
-          id: crypto.randomUUID(),
-          query: text.trim(),
+          query: 'Вложение',
           items: [],
-          error:
-            err instanceof Error
-              ? `Не удалось выполнить поиск: ${err.message}`
-              : 'Не удалось выполнить поиск. Проверьте, что backend запущен.',
+          error: 'Файл выбран, но backend для отправки вложений пока не подключен.',
         }
         dispatch({ type: 'ADD_MESSAGE', message: assistantMsg })
-      } finally {
-        dispatch({ type: 'SET_LOADING', loading: false })
+        return
       }
-    },
-    [],
-  )
 
-  const handleSendVoice = useCallback(
-    (audioBlob: Blob, duration: number) => {
-      const voiceMsg: ChatMessage = {
-        kind: 'user-voice',
-        id: crypto.randomUUID(),
-        audio: {
-          blob: audioBlob,
-          url: URL.createObjectURL(audioBlob),
-          duration,
-        },
+      const response = await fetch(
+        `/api/v1/kbju/search?query=${encodeURIComponent(trimmed)}`,
+      )
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
       }
-      dispatch({ type: 'ADD_MESSAGE', message: voiceMsg })
-    },
-    [],
-  )
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const items = (await response.json()) as any[]
+
+      const assistantMsg: ChatMessage = {
+        kind: 'assistant-result',
+        id: crypto.randomUUID(),
+        query: trimmed,
+        items,
+        error:
+          !Array.isArray(items) || items.length === 0
+            ? 'Ничего не найдено. Попробуйте другой запрос.'
+            : undefined,
+      }
+      dispatch({ type: 'ADD_MESSAGE', message: assistantMsg })
+    } catch (err) {
+      const assistantMsg: ChatMessage = {
+        kind: 'assistant-result',
+        id: crypto.randomUUID(),
+        query: trimmed,
+        items: [],
+        error:
+          err instanceof Error
+            ? `Не удалось выполнить поиск: ${err.message}`
+            : 'Не удалось выполнить поиск. Проверьте, что backend запущен.',
+      }
+      dispatch({ type: 'ADD_MESSAGE', message: assistantMsg })
+    } finally {
+      dispatch({ type: 'SET_LOADING', loading: false })
+    }
+  }, [])
+
+  const handleSendVoice = useCallback((audioBlob: Blob, duration: number) => {
+    const voiceMsg: ChatMessage = {
+      kind: 'user-voice',
+      id: crypto.randomUUID(),
+      audio: {
+        blob: audioBlob,
+        url: URL.createObjectURL(audioBlob),
+        duration,
+      },
+    }
+    dispatch({ type: 'ADD_MESSAGE', message: voiceMsg })
+  }, [])
 
   return (
     <div className="app-shell">

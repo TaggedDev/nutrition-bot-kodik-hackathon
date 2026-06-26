@@ -1,4 +1,5 @@
 import type { Attachment } from './types'
+import { XIcon } from './ComposerIcons'
 import './AttachmentsPreview.css'
 
 type Props = {
@@ -14,13 +15,16 @@ export function AttachmentsPreview({ attachments, onRemove }: Props) {
       {attachments.map((att) => (
         <div key={att.id} className="attachments-preview-item">
           <img src={att.previewUrl} alt={att.file.name} />
+          <span className="attachments-preview-name" title={att.file.name}>
+            {att.file.name}
+          </span>
           <button
             type="button"
             className="attachments-preview-remove"
             onClick={() => onRemove(att.id)}
-            aria-label={`Удалить ${att.file.name}`}
+            aria-label={`Remove ${att.file.name}`}
           >
-            ✕
+            <XIcon />
           </button>
         </div>
       ))}

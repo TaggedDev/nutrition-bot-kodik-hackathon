@@ -1,8 +1,9 @@
 import { useRef } from 'react'
 import type { Attachment } from './types'
+import { AttachmentIcon } from './ComposerIcons'
 
 const ACCEPT = 'image/jpeg,image/png,image/bmp'
-const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
+const MAX_SIZE = 10 * 1024 * 1024
 
 type Props = {
   currentCount: number
@@ -53,8 +54,9 @@ export function FilePicker({ currentCount, maxCount, onPick }: Props) {
         accept={ACCEPT}
         multiple
         onChange={handleChange}
-        style={{ display: 'none' }}
+        className="file-picker-input"
         aria-hidden="true"
+        tabIndex={-1}
       />
       <button
         type="button"
@@ -62,9 +64,9 @@ export function FilePicker({ currentCount, maxCount, onPick }: Props) {
         onClick={() => inputRef.current?.click()}
         disabled={isDisabled}
         title={isDisabled ? `Максимум ${maxCount} изображений` : 'Прикрепить изображение'}
-        aria-label="Прикрепить изображение"
+        aria-label="Attach file"
       >
-        📎
+        <AttachmentIcon />
       </button>
     </>
   )

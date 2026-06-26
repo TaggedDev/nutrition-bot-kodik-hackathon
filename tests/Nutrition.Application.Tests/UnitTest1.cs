@@ -58,6 +58,7 @@ public sealed class OpenFoodFactsNutritionFactsLookupServiceTests
 
         Assert.Single(first);
         Assert.Single(second);
+        Assert.Equal("Brand", first.Single().Brand);
         Assert.Equal(1, handler.CallsCount);
     }
 

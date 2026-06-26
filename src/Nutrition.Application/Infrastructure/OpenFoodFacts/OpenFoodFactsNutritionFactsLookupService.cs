@@ -450,9 +450,68 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
         public string? ProductNameEn { get; init; }
 
         [JsonPropertyName("brands")]
+        [JsonConverter(typeof(StringOrStringArrayJsonConverter))]
         public string? Brands { get; init; }
 
         [JsonPropertyName("nutriments")]
         public JsonElement Nutriments { get; init; }
+    }
+
+    private sealed class StringOrStringArrayJsonConverter : JsonConverter<string?>
+    {
+        public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            return reader.TokenType switch
+            {
+                JsonTokenType.String => reader.GetString(),
+                JsonTokenType.Null => null,
+                JsonTokenType.StartArray => ReadStringArray(ref reader),
+                _ => SkipUnexpectedValue(ref reader)
+            };
+        }
+
+        public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
+        {
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+            writer.WriteStringValue(value);
+        }
+
+        private static string? ReadStringArray(ref Utf8JsonReader reader)
+        {
+            var values = new List<string>();
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndArray)
+                {
+                    return values.Count == 0 ? null : string.Join(", ", values);
+                }
+
+                if (reader.TokenType == JsonTokenType.String)
+                {
+                    var value = reader.GetString();
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        values.Add(value.Trim());
+                    }
+                    continue;
+                }
+
+                reader.Skip();
+            }
+
+            throw new JsonException("Unexpected end of brands array.");
+        }
+
+        private static string? SkipUnexpectedValue(ref Utf8JsonReader reader)
+        {
+            reader.Skip();
+            return null;
+        }
     }
 }
