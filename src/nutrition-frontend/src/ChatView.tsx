@@ -18,8 +18,8 @@ export function ChatView({ messages, loading }: Props) {
     <div className="chat-view">
       {messages.length === 0 && (
         <div className="chat-empty">
-          <div className="chat-empty-icon">🍎</div>
-          <h2>Поиск КБЖУ продуктов</h2>
+          <div className="chat-empty-icon">N</div>
+          <h2>Поиск Nutrition продуктов</h2>
           <p>
             Введите название продукта, прикрепите фото этикетки или запишите голосовое сообщение
           </p>
@@ -69,7 +69,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
     case 'user-voice':
       return (
         <div className="chat-bubble user voice">
-          <span className="voice-icon">🎤</span>
+          <span className="voice-icon">Voice</span>
           <span className="voice-duration">
             {formatDuration(message.audio.duration)}
           </span>

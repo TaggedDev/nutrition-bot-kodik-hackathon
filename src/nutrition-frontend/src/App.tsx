@@ -47,7 +47,7 @@ function App() {
       }
 
       const response = await fetch(
-        `/api/v1/kbju/search?query=${encodeURIComponent(trimmed)}`,
+        `/api/v1/nutrition/search?query=${encodeURIComponent(trimmed)}`,
       )
 
       if (!response.ok) {

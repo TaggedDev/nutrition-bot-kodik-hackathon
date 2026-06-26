@@ -6,7 +6,7 @@ namespace Nutrition.Web.Controllers;
 
 [ApiController]
 [Produces("application/json")]
-[Route("api/v1/kbju")]
+[Route("api/v1/nutrition")]
 public sealed class NutritionController : ControllerBase
 {
     [HttpGet("search")]
