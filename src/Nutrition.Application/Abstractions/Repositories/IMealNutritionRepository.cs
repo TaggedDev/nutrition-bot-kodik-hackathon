@@ -6,7 +6,7 @@ public interface IMealNutritionRepository
 {
     Task<MealEntryDto?> GetByIdAsync(Guid userId, Guid mealEntryId, CancellationToken cancellationToken);
 
-    Task<MealEntryDto> UpdateTotalKbjuAsync(
+    Task<MealEntryDto> UpdateTotalNutritionAsync(
         Guid userId,
         Guid mealEntryId,
         NutritionDto totalNutrition,

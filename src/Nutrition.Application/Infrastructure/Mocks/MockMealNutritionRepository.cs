@@ -68,7 +68,7 @@ public sealed class MockMealNutritionRepository : IMealNutritionRepository
         return Task.FromResult<MealEntryDto?>(meal);
     }
 
-    public Task<MealEntryDto> UpdateTotalKbjuAsync(
+    public Task<MealEntryDto> UpdateTotalNutritionAsync(
         Guid userId,
         Guid mealEntryId,
         NutritionDto totalNutrition,

@@ -33,7 +33,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "Nutrition Web API",
         Version = "v1",
-        Description = "Mock API for KBJU get/update scenarios"
+        Description = "Mock API for Nutrition get/update scenarios"
     });
 });
 

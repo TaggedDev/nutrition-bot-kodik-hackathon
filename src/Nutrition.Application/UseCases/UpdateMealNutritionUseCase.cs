@@ -30,7 +30,7 @@ public sealed class UpdateMealNutritionUseCase : IUpdateMealNutritionUseCase
             return null;
         }
 
-        var updatedMeal = await _repository.UpdateTotalKbjuAsync(
+        var updatedMeal = await _repository.UpdateTotalNutritionAsync(
             request.UserId,
             request.MealEntryId,
             request.TotalNutrition,
