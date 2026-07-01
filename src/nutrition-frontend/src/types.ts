@@ -49,6 +49,13 @@ export type ChatMessage =
 
 export type RecordingState = 'idle' | 'recording' | 'locked'
 
+export type CurrentUser = {
+  userId: string
+  email: string
+  firstName: string
+  secondName: string
+}
+
 export type AppAction =
   | { type: 'SET_INPUT_TEXT'; text: string }
   | { type: 'ADD_ATTACHMENTS'; attachments: Attachment[] }

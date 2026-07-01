@@ -1,6 +1,7 @@
-import { useCallback, useReducer } from 'react'
-import type { AppState, Attachment, ChatMessage } from './types'
+import { useCallback, useEffect, useReducer, useState } from 'react'
+import type { AppState, Attachment, ChatMessage, CurrentUser } from './types'
 import { chatReducer } from './chatReducer'
+import { AuthView } from './AuthView'
 import { ChatView } from './ChatView'
 import { ChatInputFooter } from './ChatInputFooter'
 import './App.css'
@@ -16,6 +17,50 @@ const initialState: AppState = {
 
 function App() {
   const [state, dispatch] = useReducer(chatReducer, initialState)
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
+
+  useEffect(() => {
+    let active = true
+
+    async function loadCurrentUser() {
+      try {
+        const response = await fetch('/api/v1/auth/me', {
+          credentials: 'include',
+        })
+
+        if (!active) return
+
+        if (response.ok) {
+          setCurrentUser((await response.json()) as CurrentUser)
+        } else {
+          setCurrentUser(null)
+        }
+      } catch {
+        if (active) {
+          setCurrentUser(null)
+        }
+      } finally {
+        if (active) {
+          setAuthChecked(true)
+        }
+      }
+    }
+
+    loadCurrentUser()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const handleLogout = useCallback(async () => {
+    await fetch('/api/v1/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    })
+    setCurrentUser(null)
+  }, [])
 
   const handleSendText = useCallback(async (text: string, attachments: Attachment[]) => {
     const trimmed = text.trim()
@@ -48,6 +93,9 @@ function App() {
 
       const response = await fetch(
         `/api/v1/nutrition/search?query=${encodeURIComponent(trimmed)}`,
+        {
+          credentials: 'include',
+        },
       )
 
       if (!response.ok) {
@@ -98,8 +146,29 @@ function App() {
     dispatch({ type: 'ADD_MESSAGE', message: voiceMsg })
   }, [])
 
+  if (!authChecked) {
+    return (
+      <main className="app-loading">
+        <div>Loading...</div>
+      </main>
+    )
+  }
+
+  if (!currentUser) {
+    return <AuthView onAuthenticated={setCurrentUser} />
+  }
+
   return (
     <div className="app-shell">
+      <header className="app-header">
+        <div>
+          <strong>{currentUser.firstName} {currentUser.secondName}</strong>
+          <span>{currentUser.email}</span>
+        </div>
+        <button type="button" onClick={handleLogout}>
+          Logout
+        </button>
+      </header>
       <ChatView messages={state.messages} loading={state.loading} />
       <ChatInputFooter
         inputText={state.inputText}
