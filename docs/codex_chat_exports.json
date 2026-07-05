@@ -1,0 +1,130 @@
+{
+  "extracted_at": "2026-07-05T17:43:46.602580+00:00",
+  "total_entries_found": 15,
+  "unique_sessions": 8,
+  "sessions": {
+    "019cb785-d61c-7b00-ac97-e7920d964052": {
+      "session_name": "?",
+      "session_updated": "?",
+      "messages": [
+        {
+          "timestamp_unix": 1772606188,
+          "timestamp_iso": "2026-03-04T06:36:28+00:00",
+          "text": "I am working on a telegram bot on c# with the integration of AI Agent written in Semantic Kernel. I will use deepseek API. The pipeline is the following: use writes text, it's being parsed and food items are extracted: \"картошка с жаренной рыбой\" -> картофель, жаренная рыба. For now, let's move straight to the web search and find the calories split by proteins, fats and carbohydrates for each product. Then, write an answer message containing lines for each single product, for example: картофель "
+        }
+      ]
+    },
+    "019cb7ec-74da-7cd1-b51c-9848e275eb7b": {
+      "session_name": "?",
+      "session_updated": "?",
+      "messages": [
+        {
+          "timestamp_unix": 1772618987,
+          "timestamp_iso": "2026-03-04T10:09:47+00:00",
+          "text": "Okey. Now I want you to write code that changes the existing functionality. Here is what I expect to work: user sends input message, the router should validate - is it a valid message or spam. Then, input message is processed by decomposer - it must be split into single food entities. For example: \"Данон йогурт с шоколадными шариками и яичница\" must be decomposed into [\"йогурт danone шоколадные шарики\", \"яичница\"]. The next step - use an API for openfoodfacts or simple google search to find the "
+        }
+      ]
+    },
+    "019cbeff-371f-7962-beab-6977c568ef1e": {
+      "session_name": "?",
+      "session_updated": "?",
+      "messages": [
+        {
+          "timestamp_unix": 1772731582,
+          "timestamp_iso": "2026-03-05T17:26:22+00:00",
+          "text": "I want you to change the existing pipeline. The main thing is to change the bot ask the clarifying questions: if user inputs \"бутерброд с сыром\", the bot must clarify the bread type with the popular options, for example, \"пшеничный хлеб\" or \"черный хлеб\". Basically, I need another node to understand whether the user request is enough precise for the nutrition to be specified. With the telegram view side, it must be a new message with the body: \"Какой вид %food% вы имели в виду\" and inline button"
+        },
+        {
+          "timestamp_unix": 1772740391,
+          "timestamp_iso": "2026-03-05T19:53:11+00:00",
+          "text": "Nice! Now please add the \"обрабатываю запрос\" also to the llm response time between food name suggestions and final calories show processing"
+        },
+        {
+          "timestamp_unix": 1772740669,
+          "timestamp_iso": "2026-03-05T19:57:49+00:00",
+          "text": "Good job! Now I want you to fix the bug I found. When I finish the agent flow with the bot answer as a list of nutrition outputs per 100g, I understand that when I try the second cycle, it will edit the previous message, instead of creating a new one. Basically, the current pipeline: -input: бутер с сыром хохланд, -output: ..., -input: /start -output: changes the last output instead of creating a new message - that's wrong and unexpected behaviour, locate the error and fix it"
+        }
+      ]
+    },
+    "019cc1e3-8eb4-7913-90f6-e47a88fb261d": {
+      "session_name": "?",
+      "session_updated": "?",
+      "messages": [
+        {
+          "timestamp_unix": 1772785040,
+          "timestamp_iso": "2026-03-06T08:17:20+00:00",
+          "text": "Split the Bot\\Forms\\NutritionDialogueForm.cs into separate files: a pipeline for registration and a pipeline for food input"
+        }
+      ]
+    },
+    "019d2027-54c7-7230-b85c-6f4a7f9a790d": {
+      "session_name": "?",
+      "session_updated": "?",
+      "messages": [
+        {
+          "timestamp_unix": 1774362993,
+          "timestamp_iso": "2026-03-24T14:36:33+00:00",
+          "text": "Please review the docker logs from readme.md local (dev) docker compose file. And try to figure out what was the source of the problem with the parsing. You can look into the debug logs and prints displayed inside the locally hosted container"
+        }
+      ]
+    },
+    "019ddd3a-f261-79e2-beeb-d06a5fbfe868": {
+      "session_name": "?",
+      "session_updated": "?",
+      "messages": [
+        {
+          "timestamp_unix": 1777533248,
+          "timestamp_iso": "2026-04-30T07:14:08+00:00",
+          "text": "Мой последний запрос в langgraph который сейчас в открытом docker (запущен через docker compose up @compose.dev.yml). Мой input: iphone 17 - мне ответили с уточняющими вопросами. Почему так? Я вижу, что conversation_entry перевело в end. Какая логика не вызывала у этого запроса tools объявленные в agents\\smartbuyer\\langgraph\\nodes\\conversation_entry.py"
+        }
+      ]
+    },
+    "019f1d08-d492-7061-bc13-e53e408933d7": {
+      "session_name": "?",
+      "session_updated": "?",
+      "messages": [
+        {
+          "timestamp_unix": 1782898844,
+          "timestamp_iso": "2026-07-01T09:40:44+00:00",
+          "text": "(base) PS D:\\Code\\CSharp\\Nutrition> dotnet user-secrets init --project src/Nutrition.Web\nSet UserSecretsId to '2582641b-3e7a-4cde-a39f-6d84ec9cbeeb' for MSBuild project 'D:\\Code\\CSharp\\Nutrition\\src/Nutrition.Web\\Nutrition.Web.csproj'.\n(base) PS D:\\Code\\CSharp\\Nutrition> dotnet user-secrets set \"ConnectionStrings:IdentityDb\" \"Host=localhost;Port=5432;Database=nutrition_identity;Username=nutrition_user;Password=Nu7r1710n\" --project src/    \nCould not find a MSBuild project file in 'D:\\Code\\CSharp"
+        },
+        {
+          "timestamp_unix": 1782898904,
+          "timestamp_iso": "2026-07-01T09:41:44+00:00",
+          "text": "я убрал src\\Nutrition.Web\\appsettings.Development.json и сделал user secret. И как мне теперь загружать его из user secrets?"
+        },
+        {
+          "timestamp_unix": 1782899015,
+          "timestamp_iso": "2026-07-01T09:43:35+00:00",
+          "text": "Проверь мои .env и прочие файлы, строки подключений и определи, в чем проблема: может потому что docker не активен щас? ConnectionStrings:IdentityDb = Host=localhost;Port=5432;Database=nutrition_identity;Username=nutrition_user;Password=Nu7r1710n\n(base) PS D:\\Code\\CSharp\\Nutrition>   dotnet run --project src/Nutrition.Web                                                                                                          \n                                    \nСборка…\nUnhandled exception. Npgs"
+        },
+        {
+          "timestamp_unix": 1782899126,
+          "timestamp_iso": "2026-07-01T09:45:26+00:00",
+          "text": "Проверь мои .env и прочие файлы, строки подключений и определи, в чем проблема: может потому что docker не активен щас? ConnectionStrings:IdentityDb = Host=localhost;Port=5432;Database=nutrition_identity;Username=nutrition_user;Password=Nu7r1710n\n(base) PS D:\\Code\\CSharp\\Nutrition>   dotnet run --project src/Nutrition.Web                                                                                                          \n                                    \nСборка…\nUnhandled exception. Npgs"
+        },
+        {
+          "timestamp_unix": 1782899631,
+          "timestamp_iso": "2026-07-01T09:53:51+00:00",
+          "text": "Пишет uable to connect to server connection failed connected to server  at 172 19 0 2 port 5432 failed fatal password failed for user nutrition_user. Я ввел Nu7r1710n как в .env -  почему могла быть ошибка? Может ли это из-за того, что старый контейнер или образ и в этом проблема?"
+        }
+      ]
+    },
+    "019f1caf-afbf-79e3-a4d2-4ec477337e12": {
+      "session_name": "?",
+      "session_updated": "?",
+      "messages": [
+        {
+          "timestamp_unix": 1782899940,
+          "timestamp_iso": "2026-07-01T09:59:00+00:00",
+          "text": "У меня работает и открыта docker compose compose.dev.yml и я запустил frontend backend и получил \nNCreate account\nUse your Nutrition account to open the chat.\n\nLogin\nRegister\nFirst name\nDenis\nSecond name\nMikov\nEmail\nbreakout.dm.06@gmail.com\nPassword\n•••••••••\nAt least 8 chars, one digit, one lowercase letter.\n\nAuth failed: 502[201~ но ошибка аутентификации. Почему? Я зашел на pgadmin и вижу базу данных nutrition_identity. Проанализируй код и сделай предположение"
+        },
+        {
+          "timestamp_unix": 1782900076,
+          "timestamp_iso": "2026-07-01T10:01:16+00:00",
+          "text": "Вот что показывает фронт 12:57:26 [vite] http proxy error: /api/v1/auth/me\nAggregateError [ECONNREFUSED]:\n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7) (x2)\n12:57:45 [vite] http proxy error: /api/v1/auth/register\nAggregateError [ECONNREFUSED]: \n    at internalConnectMultiple (node:net:1134:18)\n    at afterConnectMultiple (node:net:1715:7)\n\n\n\n\n\nвот что показывает backend \"C:/Program Files/IIS Express/iisexpress.exe\" /config:\"D:\\Code\\CSharp\\Nutriti"
+        }
+      ]
+    }
+  }
+}
