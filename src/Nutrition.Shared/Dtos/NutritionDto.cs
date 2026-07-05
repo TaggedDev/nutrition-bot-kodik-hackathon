@@ -1,6 +1,6 @@
 namespace Nutrition.Shared.Dtos;
 
-public sealed class KbjuDto
+public sealed class NutritionDto
 {
     public decimal Calories { get; init; }
 

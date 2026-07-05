@@ -6,8 +6,8 @@ namespace Nutrition.Web.Controllers;
 
 [ApiController]
 [Produces("application/json")]
-[Route("api/v1/kbju")]
-public sealed class KbjuController : ControllerBase
+[Route("api/v1/nutrition")]
+public sealed class NutritionController : ControllerBase
 {
     [HttpGet("search")]
     [ProducesResponseType(typeof(IReadOnlyCollection<ProductNutritionDto>), StatusCodes.Status200OK)]

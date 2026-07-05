@@ -10,7 +10,7 @@ public sealed class MealEntryDto
 
     public DateTimeOffset LoggedAtUtc { get; init; }
 
-    public KbjuDto TotalKbju { get; init; } = new();
+    public NutritionDto TotalNutrition { get; init; } = new();
 
     public IReadOnlyCollection<MealItemDto> Items { get; init; } = Array.Empty<MealItemDto>();
 }

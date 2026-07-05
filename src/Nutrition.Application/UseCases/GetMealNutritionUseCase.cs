@@ -4,17 +4,17 @@ using Nutrition.Shared.Dtos;
 
 namespace Nutrition.Application.UseCases;
 
-public sealed class GetMealKbjuUseCase : IGetMealKbjuUseCase
+public sealed class GetMealNutritionUseCase : IGetMealNutritionUseCase
 {
-    private readonly IMealKbjuRepository _repository;
+    private readonly IMealNutritionRepository _repository;
 
-    public GetMealKbjuUseCase(IMealKbjuRepository repository)
+    public GetMealNutritionUseCase(IMealNutritionRepository repository)
     {
         _repository = repository;
     }
 
-    public async Task<GetMealKbjuResponseDto?> ExecuteAsync(
-        GetMealKbjuRequestDto request,
+    public async Task<GetMealNutritionResponseDto?> ExecuteAsync(
+        GetMealNutritionRequestDto request,
         CancellationToken cancellationToken)
     {
         if (request.UserId == Guid.Empty || request.MealEntryId == Guid.Empty)
@@ -28,7 +28,7 @@ public sealed class GetMealKbjuUseCase : IGetMealKbjuUseCase
             return null;
         }
 
-        return new GetMealKbjuResponseDto
+        return new GetMealNutritionResponseDto
         {
             Meal = meal
         };

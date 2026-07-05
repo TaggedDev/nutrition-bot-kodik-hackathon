@@ -1,0 +1,191 @@
+.chat-footer {
+  position: sticky;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  border-top: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.625rem 0.75rem 0.75rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.chat-footer-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.625rem;
+  min-height: 44px;
+}
+
+.chat-footer-row.recording-row {
+  align-items: center;
+  min-height: 66px;
+}
+
+.composer-input-group {
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 0.625rem;
+  transition:
+    opacity 0.14s ease,
+    transform 0.14s ease,
+    flex-basis 0.14s ease;
+}
+
+.is-recording .composer-input-group {
+  flex: 0 1 0;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+}
+
+.composer-mic-slot {
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.composer-mic-slot.is-hidden {
+  display: none;
+}
+
+.is-recording .composer-mic-slot {
+  flex: 1 1 auto;
+}
+
+.chat-footer-input-area {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-textarea {
+  width: 100%;
+  min-height: 42px;
+  max-height: 128px;
+  border: 1px solid #d1d5db;
+  border-radius: 21px;
+  outline: none;
+  background: #ffffff;
+  color: #111827;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  padding: 0.575rem 0.875rem;
+  resize: none;
+  scrollbar-width: thin;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    height 0.12s ease;
+}
+
+.chat-textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+}
+
+.chat-textarea:disabled {
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: default;
+}
+
+.chat-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.file-picker-input {
+  display: none;
+}
+
+.file-picker-btn,
+.composer-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.12s ease;
+}
+
+.file-picker-btn,
+.composer-action-btn.neutral {
+  background: #eef2f7;
+  color: #4b5563;
+}
+
+.file-picker-btn:hover:not(:disabled),
+.composer-action-btn.neutral:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #111827;
+}
+
+.composer-action-btn.send {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.composer-action-btn.send:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.file-picker-btn:disabled,
+.composer-action-btn:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.file-picker-btn svg,
+.composer-action-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.spinner-icon {
+  animation: composer-spin 0.8s linear infinite;
+}
+
+.composer-status {
+  min-height: 1rem;
+  margin-top: 0.35rem;
+  padding-left: 3.25rem;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+@keyframes composer-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 520px) {
+  .chat-footer {
+    padding: 0.5rem;
+  }
+
+  .chat-footer-row {
+    gap: 0.5rem;
+  }
+}

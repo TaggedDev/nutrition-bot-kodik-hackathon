@@ -1,172 +1,117 @@
-﻿# API Contracts (MVP)
+﻿# API Contracts (текущее состояние)
 
-Документ фиксирует рабочие контракты для MVP AI Food Logging Assistant на основе `PRD.md`, `CLEAN_ARCHITECTURE.md` и `AGENTIC_ARCHITECTURE.md`.
+Документ фиксирует контракты, которые реально отражены в коде на текущий момент.
 
-## 1) Инварианты домена (обязательные правила)
+## 1) Публичный HTTP контракт (`Nutrition.Web`)
 
-1. `confidenceScore` всегда в диапазоне `[0..1]`.
-2. Если `confidenceScore < 0.70`, запись помечается как требующая подтверждения пользователя.
-3. Значения КБЖУ не могут быть отрицательными.
-4. Порция (`amount`) должна быть строго больше `0`.
-5. У каждого рассчитанного КБЖУ должен быть источник (`source.type` + `source.reference`).
+### `GET /api/v1/Nutrition/search?query={text}`
 
-## 2) Контракт разбора ввода (Agent -> API)
+Назначение: найти продукты и вернуть Nutrition (на 100г) из Open Food Facts.
 
-### `POST /api/v1/intake/parse`
+#### Query parameters
+- `query` (string, required) - поисковая строка.
 
-Назначение: принять мультимодальный ввод и вернуть черновик приёма пищи.
+#### Responses
 
-#### Request
+- `200 OK` - список `ProductNutritionDto`.
+- `400 Bad Request` - если `query` пустой или состоит только из пробелов.
 
+#### Пример `200 OK`
+```json
+[
+  {
+    "productId": "3229820129488",
+    "productName": "Skyr",
+    "brand": "Lidl",
+    "nutritionFacts": {
+      "calories": 63,
+      "protein": 11,
+      "fat": 0.2,
+      "carbs": 3.8
+    },
+    "sourceType": "OpenFoodFacts",
+    "sourceReference": "OFF:3229820129488",
+    "confidenceScore": 0.9
+  }
+]
+```
+
+## 2) DTO-контракты (`Nutrition.Shared`)
+
+### `ProductNutritionDto`
 ```json
 {
-  "userId": "uuid",
-  "mealTypeHint": "Breakfast|Lunch|Dinner|Snack|null",
-  "inputChannel": "Text|Voice|PhotoLabel|PhotoDish|Barcode",
-  "text": "string|null",
-  "voiceTranscription": "string|null",
-  "imageUrls": ["https://..."],
-  "clientTime": "2026-06-25T09:30:00+03:00"
+  "productId": "string",
+  "productName": "string",
+  "brand": "string|null",
+  "nutritionFacts": {
+    "calories": "decimal",
+    "protein": "decimal",
+    "fat": "decimal",
+    "carbs": "decimal"
+  },
+  "sourceType": "string",
+  "sourceReference": "string",
+  "confidenceScore": "decimal"
 }
 ```
 
-#### Response
-
+### `MealEntryDto`
 ```json
 {
-  "draftId": "uuid",
-  "mealType": "Breakfast",
-  "loggedAtUtc": "2026-06-25T06:30:00Z",
+  "mealEntryId": "guid",
+  "userId": "guid",
+  "mealType": "string",
+  "loggedAtUtc": "datetimeoffset",
+  "totalNutrition": {
+    "calories": "decimal",
+    "protein": "decimal",
+    "fat": "decimal",
+    "carbs": "decimal"
+  },
   "items": [
     {
-      "itemId": "uuid",
-      "productName": "Greek yogurt",
-      "portion": {
-        "amount": 200,
-        "unit": "Gram"
+      "itemId": "guid",
+      "productName": "string",
+      "portionAmount": "decimal",
+      "portionUnit": "string",
+      "Nutrition": {
+        "calories": "decimal",
+        "protein": "decimal",
+        "fat": "decimal",
+        "carbs": "decimal"
       },
-      "nutrition": {
-        "calories": 118,
-        "protein": 20,
-        "fat": 0.8,
-        "carbs": 7.2
-      },
-      "confidenceScore": 0.91,
-      "source": {
-        "type": "Usda",
-        "reference": "USDA:170859"
-      },
-      "requiresConfirmation": false
-    }
-  ],
-  "totalNutrition": {
-    "calories": 118,
-    "protein": 20,
-    "fat": 0.8,
-    "carbs": 7.2
-  },
-  "requiresUserConfirmation": false,
-  "clarificationQuestions": []
-}
-```
-
-## 3) Контракт подтверждения и сохранения записи
-
-### `POST /api/v1/meals/confirm`
-
-Назначение: подтвердить/отредактировать черновик и сохранить meal entry.
-
-#### Request
-
-```json
-{
-  "draftId": "uuid",
-  "overrides": [
-    {
-      "itemId": "uuid",
-      "portion": {
-        "amount": 250,
-        "unit": "Gram"
-      }
+      "confidenceScore": "decimal",
+      "sourceType": "string",
+      "sourceReference": "string"
     }
   ]
 }
 ```
 
-#### Response
+## 3) Application-контракты (внутренние, не HTTP)
 
-```json
-{
-  "mealEntryId": "uuid",
-  "savedAtUtc": "2026-06-25T06:31:02Z",
-  "status": "Saved"
-}
-```
+Сейчас в `Nutrition.Application` реализованы use-cases:
 
-## 4) Контракт сводки за день
+- `GetMealNutritionUseCase`
+  - Request: `GetMealNutritionRequestDto { userId, mealEntryId }`
+  - Response: `GetMealNutritionResponseDto { meal } | null`
+- `UpdateMealNutritionUseCase`
+  - Request: `UpdateMealNutritionRequestDto { userId, mealEntryId, totalNutrition }`
+  - Response: `UpdateMealNutritionResponseDto { mealEntryId, totalNutrition, updatedAtUtc } | null`
 
-### `GET /api/v1/meals/day-summary?date=2026-06-25`
+`null` возвращается при невалидном запросе (например, пустые `Guid` или отрицательные значения Nutrition).
 
-#### Response
+## 4) Доменные инварианты (`Nutrition.Core`)
 
-```json
-{
-  "date": "2026-06-25",
-  "consumed": {
-    "calories": 1460,
-    "protein": 98,
-    "fat": 47,
-    "carbs": 154
-  },
-  "goal": {
-    "calories": 2000,
-    "protein": 130,
-    "fat": 60,
-    "carbs": 220
-  },
-  "remaining": {
-    "calories": 540,
-    "protein": 32,
-    "fat": 13,
-    "carbs": 66
-  }
-}
-```
+- `ConfidenceScore` в диапазоне `[0..1]`.
+- Порог подтверждения: `< 0.70`.
+- Значения Nutrition не могут быть отрицательными.
+- Порция должна быть строго больше `0`.
 
-## 5) Контракт рекомендаций следующего приёма пищи
+## 5) Ограничения текущей версии
 
-### `GET /api/v1/recommendations/next-meal?date=2026-06-25`
+- На уровне HTTP опубликован только endpoint поиска (`/api/v1/Nutrition/search`).
+- Операции получения/обновления meal Nutrition пока доступны только как Application use-cases.
+- В качестве репозитория для meal Nutrition используется `MockMealNutritionRepository` (in-memory).
 
-#### Response
-
-```json
-{
-  "recommendations": [
-    {
-      "title": "Ужин с упором на белок",
-      "rationale": "Недобор белка 32г при оставшемся лимите 540 ккал",
-      "suggestedNutrition": {
-        "calories": 480,
-        "protein": 35,
-        "fat": 16,
-        "carbs": 45
-      },
-      "confidenceScore": 0.82
-    }
-  ]
-}
-```
-
-## 6) Доменные типы в `Nutrition.Core`
-
-В `src/Nutrition.Core` используются следующие основные доменные контракты:
-
-- `MealEntry` - агрегат приёма пищи.
-- `MealItem` - элемент приёма пищи (продукт + порция + КБЖУ + confidence + source).
-- `FoodProduct` - каталоговый продукт (название, бренд, штрихкод, КБЖУ на 100г).
-- `DailyNutritionGoal` - целевые КБЖУ пользователя на день.
-- `UserFoodPreference` - предпочтения и ограничения пользователя.
-- `NutritionFacts`, `Portion`, `ConfidenceScore`, `NutritionSource` - value objects.
-- `MealType`, `InputChannel`, `PortionUnit`, `NutritionSourceType` - перечисления домена.
-
-Эти контракты используются как основа для Application use-cases и API DTO, без утечки инфраструктурных деталей в Domain слой.

@@ -3,11 +3,11 @@ using Nutrition.Shared.Dtos;
 
 namespace Nutrition.Application.Infrastructure.Mocks;
 
-public sealed class MockMealKbjuRepository : IMealKbjuRepository
+public sealed class MockMealNutritionRepository : IMealNutritionRepository
 {
     private readonly Dictionary<Guid, MealEntryDto> _storage;
 
-    public MockMealKbjuRepository()
+    public MockMealNutritionRepository()
     {
         var mealId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var userId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -20,7 +20,7 @@ public sealed class MockMealKbjuRepository : IMealKbjuRepository
                 UserId = userId,
                 MealType = "Lunch",
                 LoggedAtUtc = DateTimeOffset.UtcNow.AddHours(-2),
-                TotalKbju = new KbjuDto
+                TotalNutrition = new NutritionDto
                 {
                     Calories = 620,
                     Protein = 42,
@@ -38,7 +38,7 @@ public sealed class MockMealKbjuRepository : IMealKbjuRepository
                         ConfidenceScore = 0.95m,
                         SourceType = "Usda",
                         SourceReference = "USDA:171077",
-                        Kbju = new KbjuDto
+                        Nutrition = new NutritionDto
                         {
                             Calories = 330,
                             Protein = 62,
@@ -68,10 +68,10 @@ public sealed class MockMealKbjuRepository : IMealKbjuRepository
         return Task.FromResult<MealEntryDto?>(meal);
     }
 
-    public Task<MealEntryDto> UpdateTotalKbjuAsync(
+    public Task<MealEntryDto> UpdateTotalNutritionAsync(
         Guid userId,
         Guid mealEntryId,
-        KbjuDto totalKbju,
+        NutritionDto totalNutrition,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -85,7 +85,7 @@ public sealed class MockMealKbjuRepository : IMealKbjuRepository
                 MealType = existing.MealType,
                 LoggedAtUtc = existing.LoggedAtUtc,
                 Items = existing.Items,
-                TotalKbju = totalKbju
+                TotalNutrition = totalNutrition
             };
 
             _storage[mealEntryId] = updated;
@@ -99,7 +99,7 @@ public sealed class MockMealKbjuRepository : IMealKbjuRepository
             MealType = "Snack",
             LoggedAtUtc = DateTimeOffset.UtcNow,
             Items = Array.Empty<MealItemDto>(),
-            TotalKbju = totalKbju
+            TotalNutrition = totalNutrition
         };
 
         _storage[mealEntryId] = created;
