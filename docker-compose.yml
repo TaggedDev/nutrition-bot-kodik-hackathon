@@ -1,0 +1,60 @@
+services:
+  nutrition-postgres:
+    image: postgres:16
+    container_name: nutrition-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    ports:
+      - "5432:5432"
+    volumes:
+      - nutrition-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  nutrition-pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: nutrition-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?PGADMIN_DEFAULT_EMAIL is required}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?PGADMIN_DEFAULT_PASSWORD is required}
+    ports:
+      - "5050:80"
+    depends_on:
+      nutrition-postgres:
+        condition: service_healthy
+
+  nutrition-backend:
+    build:
+      context: .
+      dockerfile: src/Nutrition.Web/Dockerfile
+    container_name: nutrition-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__IdentityDb: Host=nutrition-postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+    ports:
+      - "5108:8080"
+    depends_on:
+      nutrition-postgres:
+        condition: service_healthy
+
+  nutrition-frontend:
+    build:
+      context: src/nutrition-frontend
+      dockerfile: Dockerfile
+    container_name: nutrition-frontend
+    environment:
+      NUTRITION_BACKEND_URL: http://nutrition-backend:8080
+    ports:
+      - "5173:5173"
+    depends_on:
+      nutrition-backend:
+        condition: service_started
+
+volumes:
+  nutrition-postgres-data:
