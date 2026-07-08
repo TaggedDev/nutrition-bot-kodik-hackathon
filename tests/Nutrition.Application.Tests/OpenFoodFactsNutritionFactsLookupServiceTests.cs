@@ -75,6 +75,18 @@ public sealed class OpenFoodFactsNutritionFactsLookupServiceTests
     }
 
     [Fact]
+    public async Task SearchAsync_ReturnsEmpty_WhenRateLimiterRejectsTextQuery()
+    {
+        var handler = new StubHttpMessageHandler(_ => throw new InvalidOperationException("HTTP must not be called when throttled."));
+        var service = CreateService(handler, rateLimiter: new AlwaysRejectRateLimiter());
+
+        var result = await service.SearchAsync("yogurt", CancellationToken.None);
+
+        Assert.Empty(result);
+        Assert.Equal(0, handler.CallsCount);
+    }
+
+    [Fact]
     public async Task SearchAsync_UsesAbstractionContract_WithConcreteInfrastructureImplementation()
     {
         var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
@@ -86,7 +98,53 @@ public sealed class OpenFoodFactsNutritionFactsLookupServiceTests
         Assert.Empty(result);
     }
 
-    private static OpenFoodFactsNutritionFactsLookupService CreateService(StubHttpMessageHandler handler)
+    [Fact]
+    public async Task SearchAsync_LooksUpBarcodeAndMapsPayload()
+    {
+        const string payload = """
+        {
+          "product": {
+            "code": "978020137962",
+            "product_name_en": "Yogurt",
+            "brands": "BrandX",
+            "nutriments": {
+              "energy-kj_100g": 418.4,
+              "proteins": "3.2",
+              "fat": "1,1",
+              "carbohydrates_100g": 6.4
+            }
+          }
+        }
+        """;
+
+        var handler = new StubHttpMessageHandler(request =>
+        {
+            Assert.Contains("/api/v2/product/978020137962.json", request.RequestUri!.AbsoluteUri, StringComparison.OrdinalIgnoreCase);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(payload, Encoding.UTF8, "application/json")
+            };
+        });
+
+        var service = CreateService(handler);
+
+        var result = await service.SearchAsync("978020137962", CancellationToken.None);
+
+        var product = Assert.Single(result);
+        Assert.Equal("978020137962", product.ProductId);
+        Assert.Equal("Yogurt", product.ProductName);
+        Assert.Equal("BrandX", product.Brand);
+        Assert.Equal(100m, product.NutritionFacts.Calories);
+        Assert.Equal(3.2m, product.NutritionFacts.Protein);
+        Assert.Equal(1.1m, product.NutritionFacts.Fat);
+        Assert.Equal(6.4m, product.NutritionFacts.Carbs);
+        Assert.Equal("OFF:978020137962", product.SourceReference);
+        Assert.Equal(1, handler.CallsCount);
+    }
+
+    private static OpenFoodFactsNutritionFactsLookupService CreateService(
+        StubHttpMessageHandler handler,
+        IOpenFoodFactsRateLimiter? rateLimiter = null)
     {
         var httpClient = new HttpClient(handler)
         {
@@ -105,14 +163,17 @@ public sealed class OpenFoodFactsNutritionFactsLookupServiceTests
             EnableLegacyCgiFallback = false
         });
 
-        var rateLimiter = new InMemoryOpenFoodFactsRateLimiter(options);
-
         return new OpenFoodFactsNutritionFactsLookupService(
             httpClient,
             cache,
             NullLogger<OpenFoodFactsNutritionFactsLookupService>.Instance,
-            rateLimiter,
+            rateLimiter ?? new InMemoryOpenFoodFactsRateLimiter(options),
             options);
+    }
+
+    private sealed class AlwaysRejectRateLimiter : IOpenFoodFactsRateLimiter
+    {
+        public bool TryAcquireSearchSlot() => false;
     }
 
     private sealed class StubHttpMessageHandler : HttpMessageHandler
