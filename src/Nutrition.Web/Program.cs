@@ -1,13 +1,17 @@
 using Nutrition.Application;
+using Nutrition.Infrastructure.Agent;
 using Nutrition.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
+using Nutrition.Web.Configuration;
 
+DotEnvLoader.LoadFromCurrentDirectory();
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
 builder.Services.AddNutritionApplication(builder.Configuration);
+builder.Services.AddNutritionAgent(builder.Configuration);
 builder.Services.AddNutritionIdentity(builder.Configuration);
 builder.Services.AddCors(options =>{
     options.AddPolicy("FrontendDev", policy =>

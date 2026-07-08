@@ -14,7 +14,7 @@ public sealed class NutritionController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IReadOnlyCollection<ProductNutritionDto>>> SearchNutritionFactsAsync(
         [FromQuery] string query,
-        [FromServices] INutritionFactsLookupService lookupService,
+        [FromServices] INutritionChatQueryService chatQueryService,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
@@ -22,7 +22,7 @@ public sealed class NutritionController : ControllerBase
             return BadRequest("Query must not be empty.");
         }
 
-        var response = await lookupService.SearchAsync(query, cancellationToken);
+        var response = await chatQueryService.SearchAsync(query, cancellationToken);
         return Ok(response);
     }
 }

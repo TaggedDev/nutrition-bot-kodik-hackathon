@@ -16,7 +16,7 @@ public sealed class OpenFoodFactsFoodMatcher : IFoodMatcher
         _lookupService = lookupService ?? throw new ArgumentNullException(nameof(lookupService));
     }
 
-    public async Task<FoodMatchResult?> FindBestMatchAsync(FoodUnit foodUnit, CancellationToken cancellationToken)
+    public Task<FoodMatchResult?> FindBestMatchAsync(FoodUnit foodUnit, CancellationToken cancellationToken)
     {
         // TODO: Реализовать логику матчинга:
         // 1. Генерировать варианты запросов (с брендом/без, разные варианты названия)
