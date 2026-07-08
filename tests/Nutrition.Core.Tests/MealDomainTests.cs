@@ -10,27 +10,22 @@ public sealed class MealDomainTests
     [Fact]
     public void MealEntry_RejectsEmptyIdentifiers()
     {
-        Assert.Throws<DomainValidationException>(() => new MealEntry(Guid.Empty, Guid.NewGuid(), MealType.Lunch, DateTimeOffset.UtcNow, InputChannel.Text));
-        Assert.Throws<DomainValidationException>(() => new MealEntry(Guid.NewGuid(), Guid.Empty, MealType.Lunch, DateTimeOffset.UtcNow, InputChannel.Text));
+        Assert.Throws<DomainValidationException>(()
+            => new MealEntry(Guid.Empty, Guid.NewGuid(), MealType.Lunch, DateTimeOffset.UtcNow, InputChannel.Text));
+        Assert.Throws<DomainValidationException>(()
+            => new MealEntry(Guid.NewGuid(), Guid.Empty, MealType.Lunch, DateTimeOffset.UtcNow, InputChannel.Text));
     }
 
     [Fact]
     public void MealEntry_CalculatesTotalNutritionAndConfirmationState()
     {
-        var meal = new MealEntry(Guid.NewGuid(), Guid.NewGuid(), MealType.Dinner, DateTimeOffset.UtcNow, InputChannel.Text);
-        var firstItem = new MealItem(
-            Guid.NewGuid(),
-            "Chicken breast",
-            new Portion(200, PortionUnit.Gram),
-            new NutritionFacts(330, 62, 7, 0),
-            new ConfidenceScore(0.95m),
+        var meal = new MealEntry(Guid.NewGuid(), Guid.NewGuid(), MealType.Dinner, DateTimeOffset.UtcNow,
+            InputChannel.Text);
+        var firstItem = new MealItem(Guid.NewGuid(), "Chicken breast", new Portion(200, PortionUnit.Gram),
+            new NutritionFacts(330, 62, 7, 0), new ConfidenceScore(0.95m),
             new NutritionSource(NutritionSourceType.Usda, "USDA:171077"));
-        var secondItem = new MealItem(
-            Guid.NewGuid(),
-            "Rice",
-            new Portion(150, PortionUnit.Gram),
-            new NutritionFacts(180, 4, 1, 38),
-            new ConfidenceScore(0.65m),
+        var secondItem = new MealItem(Guid.NewGuid(), "Rice", new Portion(150, PortionUnit.Gram),
+            new NutritionFacts(180, 4, 1, 38), new ConfidenceScore(0.65m),
             new NutritionSource(NutritionSourceType.OpenFoodFacts, "OFF:123"));
 
         meal.AddItem(firstItem);

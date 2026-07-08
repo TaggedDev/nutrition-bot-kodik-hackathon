@@ -12,10 +12,14 @@ public sealed class DeepSeekChatClientTests
     [Fact]
     public async Task GetResponseAsync_Throws_WhenApiKeyIsMissing()
     {
-        var client = CreateClient(new RecordingHttpMessageHandler(_ => throw new InvalidOperationException("HTTP must not be called.")), apiKey: string.Empty);
+        var client =
+            CreateClient(
+                new RecordingHttpMessageHandler(_ => throw new InvalidOperationException("HTTP must not be called.")),
+                apiKey: string.Empty);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            client.GetResponseAsync(new[] { new ChatMessage(ChatRole.User, "hello") }, cancellationToken: CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(()
+            => client.GetResponseAsync(new[] { new ChatMessage(ChatRole.User, "hello") },
+                cancellationToken: CancellationToken.None));
 
         Assert.Contains("DEEPSEEK_API_KEY", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
@@ -39,18 +43,18 @@ public sealed class DeepSeekChatClientTests
             Assert.Equal("hello", messages[1].GetProperty("content").GetString());
 
             var response = """
-            {
-              "id": "resp-1",
-              "model": "deepseek-chat",
-              "choices": [
-                {
-                  "message": {
-                    "content": "parsed answer"
-                  }
-                }
-              ]
-            }
-            """;
+                           {
+                             "id": "resp-1",
+                             "model": "deepseek-chat",
+                             "choices": [
+                               {
+                                 "message": {
+                                   "content": "parsed answer"
+                                 }
+                               }
+                             ]
+                           }
+                           """;
 
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
@@ -60,8 +64,7 @@ public sealed class DeepSeekChatClientTests
 
         var client = CreateClient(handler);
 
-        var response = await client.GetResponseAsync(
-            new[] { new ChatMessage(ChatRole.User, "hello") },
+        var response = await client.GetResponseAsync(new[] { new ChatMessage(ChatRole.User, "hello") },
             new ChatOptions
             {
                 Instructions = "system prompt",
@@ -69,8 +72,7 @@ public sealed class DeepSeekChatClientTests
                 Temperature = 0.2f,
                 MaxOutputTokens = 128,
                 ResponseFormat = ChatResponseFormat.Json
-            },
-            CancellationToken.None);
+            }, CancellationToken.None);
 
         Assert.Equal("parsed answer", response.Text);
         Assert.Equal("resp-1", response.ResponseId);
@@ -84,22 +86,23 @@ public sealed class DeepSeekChatClientTests
         var handler = new RecordingHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent("""
-            {
-              "choices": [
-                {
-                  "message": {
-                    "content": "streamed text"
-                  }
-                }
-              ]
-            }
-            """, Encoding.UTF8, "application/json")
+                                        {
+                                          "choices": [
+                                            {
+                                              "message": {
+                                                "content": "streamed text"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                        """, Encoding.UTF8, "application/json")
         });
 
         var client = CreateClient(handler);
 
         var updates = new List<ChatResponseUpdate>();
-        await foreach (var update in client.GetStreamingResponseAsync(new[] { new ChatMessage(ChatRole.User, "hello") }))
+        await foreach (var update in
+                       client.GetStreamingResponseAsync(new[] { new ChatMessage(ChatRole.User, "hello") }))
         {
             updates.Add(update);
         }
@@ -110,18 +113,13 @@ public sealed class DeepSeekChatClientTests
 
     private static DeepSeekChatClient CreateClient(RecordingHttpMessageHandler handler, string apiKey = "test-key")
     {
-        var httpClient = new HttpClient(handler)
-        {
-            BaseAddress = new Uri("https://api.deepseek.com/")
-        };
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://api.deepseek.com/") };
 
-        return new DeepSeekChatClient(httpClient, Options.Create(new DeepSeekOptions
-        {
-            ApiKey = apiKey,
-            BaseUrl = "https://api.deepseek.com",
-            Model = "deepseek-chat",
-            TimeoutSeconds = 30
-        }));
+        return new DeepSeekChatClient(httpClient,
+            Options.Create(new DeepSeekOptions
+            {
+                ApiKey = apiKey, BaseUrl = "https://api.deepseek.com", Model = "deepseek-chat", TimeoutSeconds = 30
+            }));
     }
 
     private sealed class RecordingHttpMessageHandler : HttpMessageHandler
@@ -135,7 +133,8 @@ public sealed class DeepSeekChatClientTests
 
         public int CallsCount { get; private set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             CallsCount++;
             return Task.FromResult(_responseFactory(request));

@@ -1,25 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <Nullable>enable</Nullable>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <UserSecretsId>2582641b-3e7a-4cde-a39f-6d84ec9cbeeb</UserSecretsId>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>2582641b-3e7a-4cde-a39f-6d84ec9cbeeb</UserSecretsId>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.28">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.28">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\Nutrition.Application\Nutrition.Application.csproj" />
-        <ProjectReference Include="..\Nutrition.Shared\Nutrition.Shared.csproj" />
-        <ProjectReference Include="..\Nutrition.Infrastructure.Identity\Nutrition.Infrastructure.Identity.csproj" />
-        <ProjectReference Include="..\Nutrition.Infrastructure.Agent\Nutrition.Infrastructure.Agent.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Nutrition.Application\Nutrition.Application.csproj" />
+    <ProjectReference Include="..\Nutrition.Shared\Nutrition.Shared.csproj" />
+    <ProjectReference Include="..\Nutrition.Infrastructure.Identity\Nutrition.Infrastructure.Identity.csproj" />
+    <ProjectReference Include="..\Nutrition.Infrastructure.Agent\Nutrition.Infrastructure.Agent.csproj" />
+  </ItemGroup>
 
 </Project>

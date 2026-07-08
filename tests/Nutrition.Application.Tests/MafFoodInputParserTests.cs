@@ -20,28 +20,28 @@ public sealed class MafFoodInputParserTests
     public async Task ParseAsync_NormalizesAndFiltersModelOutput()
     {
         const string responseJson = """
-        {
-          "items": [
-            {
-              "productName": "  Greek yogurt  ",
-              "quantity": 0,
-              "unit": "  ",
-              "brand": "  Barilla  ",
-              "preparation": "  chilled  "
-            },
-            {
-              "productName": "   ",
-              "quantity": 2,
-              "unit": "g"
-            },
-            {
-              "productName": "Egg",
-              "quantity": 2,
-              "unit": "pieces"
-            }
-          ]
-        }
-        """;
+                                    {
+                                      "items": [
+                                        {
+                                          "productName": "  Greek yogurt  ",
+                                          "quantity": 0,
+                                          "unit": "  ",
+                                          "brand": "  Barilla  ",
+                                          "preparation": "  chilled  "
+                                        },
+                                        {
+                                          "productName": "   ",
+                                          "quantity": 2,
+                                          "unit": "g"
+                                        },
+                                        {
+                                          "productName": "Egg",
+                                          "quantity": 2,
+                                          "unit": "pieces"
+                                        }
+                                      ]
+                                    }
+                                    """;
 
         var parser = new MafFoodInputParser(new FakeChatClient(responseJson));
 
@@ -65,16 +65,13 @@ public sealed class MafFoodInputParserTests
             _response = response;
         }
 
-        public Task<ChatResponse> GetResponseAsync(
-            IEnumerable<ChatMessage> messages,
-            ChatOptions? options = null,
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, _response)));
         }
 
-        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
-            IEnumerable<ChatMessage> messages,
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null,
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {

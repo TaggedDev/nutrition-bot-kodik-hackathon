@@ -5,12 +5,7 @@ namespace Nutrition.Core.Domain.Entities;
 
 public sealed class FoodProduct
 {
-    public FoodProduct(
-        Guid id,
-        string name,
-        NutritionFacts nutritionPer100g,
-        string? brand,
-        string? barcode)
+    public FoodProduct(Guid id, string name, NutritionFacts nutritionPer100g, string? brand, string? barcode)
     {
         if (id == Guid.Empty)
         {

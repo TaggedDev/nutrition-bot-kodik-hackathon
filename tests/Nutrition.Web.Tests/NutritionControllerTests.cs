@@ -24,10 +24,7 @@ public sealed class NutritionControllerTests
     public async Task SearchNutritionFactsAsync_ReturnsOk_WithServiceResult()
     {
         var controller = new NutritionController();
-        var expected = new NutritionChatSearchResponseDto
-        {
-            Query = "milk"
-        };
+        var expected = new NutritionChatSearchResponseDto { Query = "milk" };
         var service = new RecordingChatQueryService(expected);
 
         var result = await controller.SearchNutritionFactsAsync("milk", service, CancellationToken.None);

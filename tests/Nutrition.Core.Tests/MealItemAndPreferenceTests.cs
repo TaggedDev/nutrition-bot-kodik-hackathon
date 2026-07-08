@@ -10,16 +10,13 @@ public sealed class MealItemAndPreferenceTests
     [Fact]
     public void MealItem_TrimsProductName_AndAllowsUpdates()
     {
-        var item = new MealItem(
-            Guid.NewGuid(),
-            "  Greek yogurt  ",
-            new Portion(150, PortionUnit.Gram),
-            new NutritionFacts(120, 10, 2, 8),
-            new ConfidenceScore(0.8m),
+        var item = new MealItem(Guid.NewGuid(), "  Greek yogurt  ", new Portion(150, PortionUnit.Gram),
+            new NutritionFacts(120, 10, 2, 8), new ConfidenceScore(0.8m),
             new NutritionSource(NutritionSourceType.UserProvided, "manual"));
 
         item.UpdatePortion(new Portion(200, PortionUnit.Gram), new NutritionFacts(160, 14, 3, 10));
-        item.UpdateSource(new ConfidenceScore(0.6m), new NutritionSource(NutritionSourceType.LocalHistory, "history:1"));
+        item.UpdateSource(new ConfidenceScore(0.6m),
+            new NutritionSource(NutritionSourceType.LocalHistory, "history:1"));
 
         Assert.Equal("Greek yogurt", item.ProductName);
         Assert.Equal(200, item.Portion.Amount);
@@ -31,12 +28,8 @@ public sealed class MealItemAndPreferenceTests
     [Fact]
     public void FoodProduct_TrimsOptionalFields()
     {
-        var product = new FoodProduct(
-            Guid.NewGuid(),
-            "  Barilla fusilli  ",
-            new NutritionFacts(350, 12, 1.5m, 70),
-            "  Barilla  ",
-            "  12345  ");
+        var product = new FoodProduct(Guid.NewGuid(), "  Barilla fusilli  ", new NutritionFacts(350, 12, 1.5m, 70),
+            "  Barilla  ", "  12345  ");
 
         Assert.Equal("Barilla fusilli", product.Name);
         Assert.Equal("Barilla", product.Brand);

@@ -10,17 +10,13 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
     private readonly IFoodInputParser _foodInputParser;
     private readonly INutritionFactsLookupService _lookupService;
 
-    public NutritionChatQueryService(
-        IFoodInputParser foodInputParser,
-        INutritionFactsLookupService lookupService)
+    public NutritionChatQueryService(IFoodInputParser foodInputParser, INutritionFactsLookupService lookupService)
     {
         _foodInputParser = foodInputParser;
         _lookupService = lookupService;
     }
 
-    public async Task<NutritionChatSearchResponseDto> SearchAsync(
-        string userInput,
-        CancellationToken cancellationToken)
+    public async Task<NutritionChatSearchResponseDto> SearchAsync(string userInput, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(userInput))
         {
@@ -28,10 +24,8 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
         }
 
         var foodUnits = await _foodInputParser.ParseAsync(userInput, cancellationToken);
-        var normalizedUnits = foodUnits
-            .Where(unit => !string.IsNullOrWhiteSpace(unit.ProductName))
-            .DistinctBy(unit => unit.ProductName.Trim(), StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        var normalizedUnits = foodUnits.Where(unit => !string.IsNullOrWhiteSpace(unit.ProductName))
+            .DistinctBy(unit => unit.ProductName.Trim(), StringComparer.OrdinalIgnoreCase).ToArray();
 
         if (normalizedUnits.Length == 0)
         {
@@ -56,9 +50,7 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
 
         return new NutritionChatSearchResponseDto
         {
-            Query = userInput.Trim(),
-            Items = Array.Empty<ProductNutritionDto>(),
-            Clarifications = clarifications
+            Query = userInput.Trim(), Items = Array.Empty<ProductNutritionDto>(), Clarifications = clarifications
         };
     }
 

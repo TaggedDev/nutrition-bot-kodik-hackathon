@@ -57,18 +57,20 @@ public sealed class NutritionChatQueryServiceTests
         }
     }
 
-    private sealed class FakeNutritionFactsLookupService : Nutrition.Application.Abstractions.Services.INutritionFactsLookupService
+    private sealed class
+        FakeNutritionFactsLookupService : Nutrition.Application.Abstractions.Services.INutritionFactsLookupService
     {
         private readonly List<string> _queries = new();
 
         public IReadOnlyCollection<string> Queries => _queries;
 
-        public Task<IReadOnlyCollection<ProductNutritionDto>> SearchAsync(string query, CancellationToken cancellationToken)
+        public Task<IReadOnlyCollection<ProductNutritionDto>> SearchAsync(string query,
+            CancellationToken cancellationToken)
         {
             _queries.Add(query);
 
-            IReadOnlyCollection<ProductNutritionDto> results = Enumerable.Range(1, 5)
-                .Select(index => new ProductNutritionDto
+            IReadOnlyCollection<ProductNutritionDto> results = Enumerable.Range(1, 5).Select(index
+                => new ProductNutritionDto
                 {
                     ProductId = $"{query}-{index}",
                     ProductName = $"{query} {index}",
@@ -76,8 +78,7 @@ public sealed class NutritionChatQueryServiceTests
                     SourceType = "Test",
                     SourceReference = "Test",
                     ConfidenceScore = 1
-                })
-                .ToArray();
+                }).ToArray();
 
             return Task.FromResult(results);
         }

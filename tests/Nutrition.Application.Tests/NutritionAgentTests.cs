@@ -12,21 +12,19 @@ public sealed class NutritionAgentTests
     public async Task MafFoodInputParser_SplitsCompoundMealIntoFoodUnits()
     {
         const string responseJson = """
-        {
-          "items": [
-            { "productName": "pasta", "quantity": 1, "unit": "serving", "brand": null, "preparation": null },
-            { "productName": "chicken", "quantity": 1, "unit": "serving", "brand": null, "preparation": null }
-          ]
-        }
-        """;
+                                    {
+                                      "items": [
+                                        { "productName": "pasta", "quantity": 1, "unit": "serving", "brand": null, "preparation": null },
+                                        { "productName": "chicken", "quantity": 1, "unit": "serving", "brand": null, "preparation": null }
+                                      ]
+                                    }
+                                    """;
 
         var parser = new MafFoodInputParser(new FakeChatClient(responseJson));
 
         var result = await parser.ParseAsync("pasta with chicken", CancellationToken.None);
 
-        Assert.Collection(
-            result,
-            item => Assert.Equal("pasta", item.ProductName),
+        Assert.Collection(result, item => Assert.Equal("pasta", item.ProductName),
             item => Assert.Equal("chicken", item.ProductName));
     }
 
@@ -59,16 +57,13 @@ public sealed class NutritionAgentTests
             _response = response;
         }
 
-        public Task<ChatResponse> GetResponseAsync(
-            IEnumerable<ChatMessage> messages,
-            ChatOptions? options = null,
+        public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, _response)));
         }
 
-        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
-            IEnumerable<ChatMessage> messages,
+        public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
             ChatOptions? options = null,
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
@@ -107,12 +102,13 @@ public sealed class NutritionAgentTests
 
         public IReadOnlyCollection<string> Queries => _queries;
 
-        public Task<IReadOnlyCollection<ProductNutritionDto>> SearchAsync(string query, CancellationToken cancellationToken)
+        public Task<IReadOnlyCollection<ProductNutritionDto>> SearchAsync(string query,
+            CancellationToken cancellationToken)
         {
             _queries.Add(query);
 
-            IReadOnlyCollection<ProductNutritionDto> results = Enumerable.Range(1, 5)
-                .Select(index => new ProductNutritionDto
+            IReadOnlyCollection<ProductNutritionDto> results = Enumerable.Range(1, 5).Select(index
+                => new ProductNutritionDto
                 {
                     ProductId = $"{query}-{index}",
                     ProductName = $"{query} {index}",
@@ -120,8 +116,7 @@ public sealed class NutritionAgentTests
                     SourceType = "Test",
                     SourceReference = "Test",
                     ConfidenceScore = 1
-                })
-                .ToArray();
+                }).ToArray();
 
             return Task.FromResult(results);
         }

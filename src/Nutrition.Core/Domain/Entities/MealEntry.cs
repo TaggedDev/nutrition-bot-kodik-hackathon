@@ -8,12 +8,7 @@ public sealed class MealEntry
 {
     private readonly List<MealItem> _items = new();
 
-    public MealEntry(
-        Guid id,
-        Guid userId,
-        MealType mealType,
-        DateTimeOffset loggedAtUtc,
-        InputChannel inputChannel)
+    public MealEntry(Guid id, Guid userId, MealType mealType, DateTimeOffset loggedAtUtc, InputChannel inputChannel)
     {
         if (id == Guid.Empty)
         {
@@ -44,9 +39,8 @@ public sealed class MealEntry
 
     public IReadOnlyCollection<MealItem> Items => _items.AsReadOnly();
 
-    public NutritionFacts TotalNutrition => _items
-        .Select(item => item.Nutrition)
-        .Aggregate(NutritionFacts.Zero, (current, value) => current.Add(value));
+    public NutritionFacts TotalNutrition
+        => _items.Select(item => item.Nutrition).Aggregate(NutritionFacts.Zero, (current, value) => current.Add(value));
 
     public bool RequiresUserConfirmation => _items.Any(item => item.RequiresConfirmation);
 

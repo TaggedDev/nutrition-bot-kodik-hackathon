@@ -29,10 +29,7 @@ public sealed record NutritionFacts
 
     public NutritionFacts Add(NutritionFacts other)
     {
-        return new NutritionFacts(
-            Calories + other.Calories,
-            Protein + other.Protein,
-            Fat + other.Fat,
+        return new NutritionFacts(Calories + other.Calories, Protein + other.Protein, Fat + other.Fat,
             Carbs + other.Carbs);
     }
 
@@ -43,10 +40,6 @@ public sealed record NutritionFacts
             throw new DomainValidationException("Nutrition multiplier must be greater than zero.");
         }
 
-        return new NutritionFacts(
-            Calories * factor,
-            Protein * factor,
-            Fat * factor,
-            Carbs * factor);
+        return new NutritionFacts(Calories * factor, Protein * factor, Fat * factor, Carbs * factor);
     }
 }

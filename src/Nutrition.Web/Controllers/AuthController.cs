@@ -14,9 +14,7 @@ public sealed class AuthController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
 
-    public AuthController(
-        UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager)
+    public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -46,8 +44,7 @@ public sealed class AuthController : ControllerBase
         var result = await _userManager.CreateAsync(user, request.Password);
         if (!result.Succeeded)
         {
-            return BadRequest(new AuthErrorResponseDto(
-                result.Errors.Select(error => error.Description).ToArray()));
+            return BadRequest(new AuthErrorResponseDto(result.Errors.Select(error => error.Description).ToArray()));
         }
 
         await _signInManager.SignInAsync(user, isPersistent: true);
@@ -73,10 +70,7 @@ public sealed class AuthController : ControllerBase
         }
 
         var result = await _signInManager.PasswordSignInAsync(
-            user,
-            request.Password,
-            isPersistent: true,
-            lockoutOnFailure: false);
+            user, request.Password, isPersistent: true, lockoutOnFailure: false);
 
         if (!result.Succeeded)
         {
@@ -112,16 +106,10 @@ public sealed class AuthController : ControllerBase
 
     private static CurrentUserResponseDto ToCurrentUserResponse(ApplicationUser user)
     {
-        return new CurrentUserResponseDto(
-            user.Id,
-            user.Email ?? string.Empty,
-            user.FirstName,
-            user.SecondName);
+        return new CurrentUserResponseDto(user.Id, user.Email ?? string.Empty, user.FirstName, user.SecondName);
     }
 
-    private static bool IsValidRegistrationRequest(
-        RegisterRequestDto request,
-        out IReadOnlyCollection<string> errors)
+    private static bool IsValidRegistrationRequest(RegisterRequestDto request, out IReadOnlyCollection<string> errors)
     {
         var result = new List<string>();
 

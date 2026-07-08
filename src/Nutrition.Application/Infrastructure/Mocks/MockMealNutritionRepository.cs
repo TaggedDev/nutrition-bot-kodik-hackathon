@@ -20,13 +20,7 @@ public sealed class MockMealNutritionRepository : IMealNutritionRepository
                 UserId = userId,
                 MealType = "Lunch",
                 LoggedAtUtc = DateTimeOffset.UtcNow.AddHours(-2),
-                TotalNutrition = new NutritionDto
-                {
-                    Calories = 620,
-                    Protein = 42,
-                    Fat = 20,
-                    Carbs = 58
-                },
+                TotalNutrition = new NutritionDto { Calories = 620, Protein = 42, Fat = 20, Carbs = 58 },
                 Items = new[]
                 {
                     new MealItemDto
@@ -40,10 +34,7 @@ public sealed class MockMealNutritionRepository : IMealNutritionRepository
                         SourceReference = "USDA:171077",
                         Nutrition = new NutritionDto
                         {
-                            Calories = 330,
-                            Protein = 62,
-                            Fat = 7,
-                            Carbs = 0
+                            Calories = 330, Protein = 62, Fat = 7, Carbs = 0
                         }
                     }
                 }
@@ -68,10 +59,7 @@ public sealed class MockMealNutritionRepository : IMealNutritionRepository
         return Task.FromResult<MealEntryDto?>(meal);
     }
 
-    public Task<MealEntryDto> UpdateTotalNutritionAsync(
-        Guid userId,
-        Guid mealEntryId,
-        NutritionDto totalNutrition,
+    public Task<MealEntryDto> UpdateTotalNutritionAsync(Guid userId, Guid mealEntryId, NutritionDto totalNutrition,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

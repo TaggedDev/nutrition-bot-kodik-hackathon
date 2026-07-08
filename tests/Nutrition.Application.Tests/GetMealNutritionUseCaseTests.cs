@@ -31,11 +31,7 @@ public sealed class GetMealNutritionUseCaseTests
         };
         var repository = new RecordingMealNutritionRepository(meal);
         var useCase = new GetMealNutritionUseCase(repository);
-        var request = new GetMealNutritionRequestDto
-        {
-            UserId = meal.UserId,
-            MealEntryId = meal.MealEntryId
-        };
+        var request = new GetMealNutritionRequestDto { UserId = meal.UserId, MealEntryId = meal.MealEntryId };
 
         var result = await useCase.ExecuteAsync(request, CancellationToken.None);
 
@@ -62,7 +58,8 @@ public sealed class GetMealNutritionUseCaseTests
             return Task.FromResult(_meal);
         }
 
-        public Task<MealEntryDto> UpdateTotalNutritionAsync(Guid userId, Guid mealEntryId, NutritionDto totalNutrition, CancellationToken cancellationToken)
+        public Task<MealEntryDto> UpdateTotalNutritionAsync(Guid userId, Guid mealEntryId, NutritionDto totalNutrition,
+            CancellationToken cancellationToken)
         {
             UpdateCalls++;
             return Task.FromResult(_meal ?? new MealEntryDto

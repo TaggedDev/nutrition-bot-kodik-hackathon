@@ -13,8 +13,7 @@ public sealed class UpdateMealNutritionUseCase : IUpdateMealNutritionUseCase
         _repository = repository;
     }
 
-    public async Task<UpdateMealNutritionResponseDto?> ExecuteAsync(
-        UpdateMealNutritionRequestDto request,
+    public async Task<UpdateMealNutritionResponseDto?> ExecuteAsync(UpdateMealNutritionRequestDto request,
         CancellationToken cancellationToken)
     {
         if (request.UserId == Guid.Empty || request.MealEntryId == Guid.Empty)
@@ -22,19 +21,14 @@ public sealed class UpdateMealNutritionUseCase : IUpdateMealNutritionUseCase
             return null;
         }
 
-        if (request.TotalNutrition.Calories < 0
-            || request.TotalNutrition.Protein < 0
-            || request.TotalNutrition.Fat < 0
-            || request.TotalNutrition.Carbs < 0)
+        if (request.TotalNutrition.Calories < 0 || request.TotalNutrition.Protein < 0 ||
+            request.TotalNutrition.Fat < 0 || request.TotalNutrition.Carbs < 0)
         {
             return null;
         }
 
-        var updatedMeal = await _repository.UpdateTotalNutritionAsync(
-            request.UserId,
-            request.MealEntryId,
-            request.TotalNutrition,
-            cancellationToken);
+        var updatedMeal = await _repository.UpdateTotalNutritionAsync(request.UserId, request.MealEntryId,
+            request.TotalNutrition, cancellationToken);
 
         return new UpdateMealNutritionResponseDto
         {

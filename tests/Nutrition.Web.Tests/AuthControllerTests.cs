@@ -135,10 +135,7 @@ public sealed class AuthControllerTests
             FirstName = "Alice",
             SecondName = "Smith"
         };
-        var userManager = new FakeUserManager
-        {
-            UserByEmail = user
-        };
+        var userManager = new FakeUserManager { UserByEmail = user };
         var signInManager = new FakeSignInManager(userManager)
         {
             PasswordSignInResult = Microsoft.AspNetCore.Identity.SignInResult.Success
@@ -177,20 +174,16 @@ public sealed class AuthControllerTests
             FirstName = "Alice",
             SecondName = "Smith"
         };
-        var userManager = new FakeUserManager
-        {
-            UserByClaimsPrincipal = user
-        };
+        var userManager = new FakeUserManager { UserByClaimsPrincipal = user };
         var signInManager = new FakeSignInManager(userManager);
         var controller = new AuthController(userManager, signInManager);
         controller.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
         {
             HttpContext = new DefaultHttpContext
             {
-                User = new ClaimsPrincipal(new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
-                }, "Test"))
+                User = new ClaimsPrincipal(
+                    new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()) },
+                        "Test"))
             }
         };
 

@@ -15,9 +15,12 @@ public static class DependencyInjection
         services.Configure<DeepSeekOptions>(options =>
         {
             configuration.GetSection(DeepSeekOptions.SectionName).Bind(options);
-            options.ApiKey = FirstNonEmpty(configuration["DEEPSEEK_API_KEY"], configuration["DeepSeek:ApiKey"], options.ApiKey);
-            options.BaseUrl = FirstNonEmpty(configuration["DEEPSEEK_BASE_URL"], configuration["DeepSeek:BaseUrl"], options.BaseUrl);
-            options.Model = FirstNonEmpty(configuration["DEEPSEEK_MODEL"], configuration["DeepSeek:Model"], options.Model);
+            options.ApiKey = FirstNonEmpty(configuration["DEEPSEEK_API_KEY"], configuration["DeepSeek:ApiKey"],
+                options.ApiKey);
+            options.BaseUrl = FirstNonEmpty(configuration["DEEPSEEK_BASE_URL"], configuration["DeepSeek:BaseUrl"],
+                options.BaseUrl);
+            options.Model = FirstNonEmpty(configuration["DEEPSEEK_MODEL"], configuration["DeepSeek:Model"],
+                options.Model);
 
             if (int.TryParse(configuration["DEEPSEEK_TIMEOUT_SECONDS"], out var timeoutSeconds))
             {
@@ -32,8 +35,8 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds, 5, 180));
         });
 
-        services.AddSingleton<Microsoft.Extensions.AI.IChatClient>(serviceProvider =>
-            serviceProvider.GetRequiredService<DeepSeekChatClient>());
+        services.AddSingleton<Microsoft.Extensions.AI.IChatClient>(serviceProvider
+            => serviceProvider.GetRequiredService<DeepSeekChatClient>());
 
         services.AddScoped<IFoodInputParser, MafFoodInputParser>();
         services.AddScoped<IFoodMatcher, OpenFoodFactsFoodMatcher>();

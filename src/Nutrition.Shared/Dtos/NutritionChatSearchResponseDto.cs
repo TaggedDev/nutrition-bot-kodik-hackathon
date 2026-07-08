@@ -6,7 +6,8 @@ public sealed class NutritionChatSearchResponseDto
 
     public IReadOnlyCollection<ProductNutritionDto> Items { get; init; } = Array.Empty<ProductNutritionDto>();
 
-    public IReadOnlyCollection<NutritionClarificationDto> Clarifications { get; init; } = Array.Empty<NutritionClarificationDto>();
+    public IReadOnlyCollection<NutritionClarificationDto> Clarifications { get; init; } =
+        Array.Empty<NutritionClarificationDto>();
 
     public bool RequiresClarification => Clarifications.Count > 0;
 }

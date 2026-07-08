@@ -30,8 +30,7 @@ public sealed class UpdateMealNutritionUseCaseTests
                 UserId = Guid.NewGuid(),
                 MealEntryId = Guid.NewGuid(),
                 TotalNutrition = new NutritionDto { Calories = -1 }
-            },
-            CancellationToken.None);
+            }, CancellationToken.None);
 
         Assert.Null(result);
         Assert.Equal(0, repository.UpdateCalls);
@@ -71,7 +70,8 @@ public sealed class UpdateMealNutritionUseCaseTests
             return Task.FromResult<MealEntryDto?>(null);
         }
 
-        public Task<MealEntryDto> UpdateTotalNutritionAsync(Guid userId, Guid mealEntryId, NutritionDto totalNutrition, CancellationToken cancellationToken)
+        public Task<MealEntryDto> UpdateTotalNutritionAsync(Guid userId, Guid mealEntryId, NutritionDto totalNutrition,
+            CancellationToken cancellationToken)
         {
             UpdateCalls++;
             return Task.FromResult(new MealEntryDto

@@ -5,12 +5,7 @@ namespace Nutrition.Core.Domain.Entities;
 
 public sealed class MealItem
 {
-    public MealItem(
-        Guid id,
-        string productName,
-        Portion portion,
-        NutritionFacts nutrition,
-        ConfidenceScore confidence,
+    public MealItem(Guid id, string productName, Portion portion, NutritionFacts nutrition, ConfidenceScore confidence,
         NutritionSource source)
     {
         if (id == Guid.Empty)

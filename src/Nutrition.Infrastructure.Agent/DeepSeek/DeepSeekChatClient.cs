@@ -23,9 +23,7 @@ public sealed class DeepSeekChatClient : IChatClient
         _options = options.Value;
     }
 
-    public async Task<ChatResponse> GetResponseAsync(
-        IEnumerable<ChatMessage> messages,
-        ChatOptions? options = null,
+    public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(_options.ApiKey))
@@ -52,7 +50,8 @@ public sealed class DeepSeekChatClient : IChatClient
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
         {
-            Content = new StringContent(JsonSerializer.Serialize(request, JsonOptions), Encoding.UTF8, "application/json")
+            Content = new StringContent(JsonSerializer.Serialize(request, JsonOptions), Encoding.UTF8,
+                "application/json")
         };
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
 
@@ -60,26 +59,24 @@ public sealed class DeepSeekChatClient : IChatClient
         response.EnsureSuccessStatusCode();
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        var payload = await JsonSerializer.DeserializeAsync<DeepSeekChatResponse>(stream, JsonOptions, cancellationToken);
+        var payload =
+            await JsonSerializer.DeserializeAsync<DeepSeekChatResponse>(stream, JsonOptions, cancellationToken);
         var text = payload?.Choices?.FirstOrDefault()?.Message?.Content ?? string.Empty;
 
         return new ChatResponse(new ChatMessage(ChatRole.Assistant, text))
         {
-            ModelId = payload?.Model ?? request.Model,
-            ResponseId = payload?.Id
+            ModelId = payload?.Model ?? request.Model, ResponseId = payload?.Id
         };
     }
 
-    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
-        IEnumerable<ChatMessage> messages,
+    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var response = await GetResponseAsync(messages, options, cancellationToken);
         yield return new ChatResponseUpdate(ChatRole.Assistant, response.Text)
         {
-            ResponseId = response.ResponseId,
-            ModelId = response.ModelId
+            ResponseId = response.ResponseId, ModelId = response.ModelId
         };
     }
 
@@ -94,10 +91,9 @@ public sealed class DeepSeekChatClient : IChatClient
 
     private static DeepSeekMessage ToDeepSeekMessage(ChatMessage message)
     {
-        var role = message.Role == ChatRole.System ? "system"
-            : message.Role == ChatRole.Assistant ? "assistant"
-            : message.Role == ChatRole.Tool ? "tool"
-            : "user";
+        var role = message.Role == ChatRole.System ? "system" :
+            message.Role == ChatRole.Assistant ? "assistant" :
+            message.Role == ChatRole.Tool ? "tool" : "user";
 
         return new DeepSeekMessage(role, message.Text);
     }
@@ -109,54 +105,43 @@ public sealed class DeepSeekChatClient : IChatClient
             return null;
         }
 
-        return responseFormat == ChatResponseFormat.Json
-            ? new { type = "json_object" }
-            : new { type = "json_object" };
+        return responseFormat == ChatResponseFormat.Json ? new { type = "json_object" } : new { type = "json_object" };
     }
 
     private sealed class DeepSeekChatRequest
     {
-        [JsonPropertyName("model")]
-        public string Model { get; init; } = string.Empty;
+        [JsonPropertyName("model")] public string Model { get; init; } = string.Empty;
 
         [JsonPropertyName("messages")]
         public IReadOnlyCollection<DeepSeekMessage> Messages { get; init; } = Array.Empty<DeepSeekMessage>();
 
-        [JsonPropertyName("temperature")]
-        public double? Temperature { get; init; }
+        [JsonPropertyName("temperature")] public double? Temperature { get; init; }
 
-        [JsonPropertyName("max_tokens")]
-        public int? MaxTokens { get; init; }
+        [JsonPropertyName("max_tokens")] public int? MaxTokens { get; init; }
 
-        [JsonPropertyName("response_format")]
-        public object? ResponseFormat { get; init; }
+        [JsonPropertyName("response_format")] public object? ResponseFormat { get; init; }
     }
 
-    private sealed record DeepSeekMessage(
-        [property: JsonPropertyName("role")] string Role,
-        [property: JsonPropertyName("content")] string Content);
+    private sealed record DeepSeekMessage([property: JsonPropertyName("role")] string Role,
+        [property: JsonPropertyName("content")]
+        string Content);
 
     private sealed class DeepSeekChatResponse
     {
-        [JsonPropertyName("id")]
-        public string? Id { get; init; }
+        [JsonPropertyName("id")] public string? Id { get; init; }
 
-        [JsonPropertyName("model")]
-        public string? Model { get; init; }
+        [JsonPropertyName("model")] public string? Model { get; init; }
 
-        [JsonPropertyName("choices")]
-        public List<DeepSeekChoice>? Choices { get; init; }
+        [JsonPropertyName("choices")] public List<DeepSeekChoice>? Choices { get; init; }
     }
 
     private sealed class DeepSeekChoice
     {
-        [JsonPropertyName("message")]
-        public DeepSeekResponseMessage? Message { get; init; }
+        [JsonPropertyName("message")] public DeepSeekResponseMessage? Message { get; init; }
     }
 
     private sealed class DeepSeekResponseMessage
     {
-        [JsonPropertyName("content")]
-        public string? Content { get; init; }
+        [JsonPropertyName("content")] public string? Content { get; init; }
     }
 }

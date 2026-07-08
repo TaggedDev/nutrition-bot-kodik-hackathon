@@ -13,24 +13,20 @@ builder.Services.AddControllers();
 builder.Services.AddNutritionApplication(builder.Configuration);
 builder.Services.AddNutritionAgent(builder.Configuration);
 builder.Services.AddNutritionIdentity(builder.Configuration);
-builder.Services.AddCors(options =>{
+builder.Services.AddCors(options =>
+{
     options.AddPolicy("FrontendDev", policy =>
     {
-        policy
-            .SetIsOriginAllowed(origin =>
+        policy.SetIsOriginAllowed(origin =>
+        {
+            if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
             {
-                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
-                {
-                    return false;
-                }
+                return false;
+            }
 
-                return uri.Scheme is "http" or "https"
-                    && (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
-                        || uri.Host.Equals("127.0.0.1"));
-            })
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
+            return uri.Scheme is "http" or "https" &&
+                   (uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || uri.Host.Equals("127.0.0.1"));
+        }).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
     });
 });
 builder.Services.ConfigureApplicationCookie(options =>
@@ -56,12 +52,13 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "Nutrition Web API",
-        Version = "v1",
-        Description = "Mock API for Nutrition get/update scenarios"
-    });
+    options.SwaggerDoc("v1",
+        new Microsoft.OpenApi.Models.OpenApiInfo
+        {
+            Title = "Nutrition Web API",
+            Version = "v1",
+            Description = "Mock API for Nutrition get/update scenarios"
+        });
 });
 
 var app = builder.Build();
@@ -76,16 +73,14 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Nutrition Web API v1");
-    });
+    app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "Nutrition Web API v1"); });
 }
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
 app.UseCors("FrontendDev");
 
 app.UseAuthentication();

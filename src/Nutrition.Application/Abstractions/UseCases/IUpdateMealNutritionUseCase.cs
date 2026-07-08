@@ -4,5 +4,6 @@ namespace Nutrition.Application.Abstractions.UseCases;
 
 public interface IUpdateMealNutritionUseCase
 {
-    Task<UpdateMealNutritionResponseDto?> ExecuteAsync(UpdateMealNutritionRequestDto request, CancellationToken cancellationToken);
+    Task<UpdateMealNutritionResponseDto?> ExecuteAsync(UpdateMealNutritionRequestDto request,
+        CancellationToken cancellationToken);
 }

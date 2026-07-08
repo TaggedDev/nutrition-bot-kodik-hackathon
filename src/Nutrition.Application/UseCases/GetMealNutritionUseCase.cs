@@ -13,8 +13,7 @@ public sealed class GetMealNutritionUseCase : IGetMealNutritionUseCase
         _repository = repository;
     }
 
-    public async Task<GetMealNutritionResponseDto?> ExecuteAsync(
-        GetMealNutritionRequestDto request,
+    public async Task<GetMealNutritionResponseDto?> ExecuteAsync(GetMealNutritionRequestDto request,
         CancellationToken cancellationToken)
     {
         if (request.UserId == Guid.Empty || request.MealEntryId == Guid.Empty)
@@ -28,9 +27,6 @@ public sealed class GetMealNutritionUseCase : IGetMealNutritionUseCase
             return null;
         }
 
-        return new GetMealNutritionResponseDto
-        {
-            Meal = meal
-        };
+        return new GetMealNutritionResponseDto { Meal = meal };
     }
 }

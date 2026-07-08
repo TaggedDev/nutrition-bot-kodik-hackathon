@@ -22,9 +22,7 @@ public sealed class DailyNutritionGoal
 
     public bool IsExceededBy(NutritionFacts consumed)
     {
-        return consumed.Calories > Target.Calories
-               || consumed.Protein > Target.Protein
-               || consumed.Fat > Target.Fat
-               || consumed.Carbs > Target.Carbs;
+        return consumed.Calories > Target.Calories || consumed.Protein > Target.Protein || consumed.Fat > Target.Fat ||
+               consumed.Carbs > Target.Carbs;
     }
 }

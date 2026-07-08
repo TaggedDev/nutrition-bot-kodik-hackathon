@@ -12,10 +12,8 @@ public sealed class NutritionController : ControllerBase
     [HttpGet("search")]
     [ProducesResponseType(typeof(NutritionChatSearchResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<NutritionChatSearchResponseDto>> SearchNutritionFactsAsync(
-        [FromQuery] string query,
-        [FromServices] INutritionChatQueryService chatQueryService,
-        CancellationToken cancellationToken)
+    public async Task<ActionResult<NutritionChatSearchResponseDto>> SearchNutritionFactsAsync([FromQuery] string query,
+        [FromServices] INutritionChatQueryService chatQueryService, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
         {

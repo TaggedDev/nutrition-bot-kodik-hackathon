@@ -25,22 +25,22 @@ public sealed class OpenFoodFactsNutritionFactsLookupServiceTests
     public async Task SearchAsync_CachesSuccessfulResponse_AndSkipsSecondHttpCall()
     {
         const string payload = """
-        {
-          "hits": [
-            {
-              "code": "12345678",
-              "product_name": "Milk",
-              "brands": ["Brand"],
-              "nutriments": {
-                "energy-kcal_100g": 42,
-                "proteins_100g": 3.4,
-                "fat_100g": 1.0,
-                "carbohydrates_100g": 5.0
-              }
-            }
-          ]
-        }
-        """;
+                               {
+                                 "hits": [
+                                   {
+                                     "code": "12345678",
+                                     "product_name": "Milk",
+                                     "brands": ["Brand"],
+                                     "nutriments": {
+                                       "energy-kcal_100g": 42,
+                                       "proteins_100g": 3.4,
+                                       "fat_100g": 1.0,
+                                       "carbohydrates_100g": 5.0
+                                     }
+                                   }
+                                 ]
+                               }
+                               """;
 
         var handler = new StubHttpMessageHandler(request =>
         {
@@ -77,7 +77,8 @@ public sealed class OpenFoodFactsNutritionFactsLookupServiceTests
     [Fact]
     public async Task SearchAsync_ReturnsEmpty_WhenRateLimiterRejectsTextQuery()
     {
-        var handler = new StubHttpMessageHandler(_ => throw new InvalidOperationException("HTTP must not be called when throttled."));
+        var handler = new StubHttpMessageHandler(_
+            => throw new InvalidOperationException("HTTP must not be called when throttled."));
         var service = CreateService(handler, rateLimiter: new AlwaysRejectRateLimiter());
 
         var result = await service.SearchAsync("yogurt", CancellationToken.None);
@@ -102,24 +103,25 @@ public sealed class OpenFoodFactsNutritionFactsLookupServiceTests
     public async Task SearchAsync_LooksUpBarcodeAndMapsPayload()
     {
         const string payload = """
-        {
-          "product": {
-            "code": "978020137962",
-            "product_name_en": "Yogurt",
-            "brands": "BrandX",
-            "nutriments": {
-              "energy-kj_100g": 418.4,
-              "proteins": "3.2",
-              "fat": "1,1",
-              "carbohydrates_100g": 6.4
-            }
-          }
-        }
-        """;
+                               {
+                                 "product": {
+                                   "code": "978020137962",
+                                   "product_name_en": "Yogurt",
+                                   "brands": "BrandX",
+                                   "nutriments": {
+                                     "energy-kj_100g": 418.4,
+                                     "proteins": "3.2",
+                                     "fat": "1,1",
+                                     "carbohydrates_100g": 6.4
+                                   }
+                                 }
+                               }
+                               """;
 
         var handler = new StubHttpMessageHandler(request =>
         {
-            Assert.Contains("/api/v2/product/978020137962.json", request.RequestUri!.AbsoluteUri, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("/api/v2/product/978020137962.json", request.RequestUri!.AbsoluteUri,
+                StringComparison.OrdinalIgnoreCase);
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(payload, Encoding.UTF8, "application/json")
@@ -142,14 +144,10 @@ public sealed class OpenFoodFactsNutritionFactsLookupServiceTests
         Assert.Equal(1, handler.CallsCount);
     }
 
-    private static OpenFoodFactsNutritionFactsLookupService CreateService(
-        StubHttpMessageHandler handler,
+    private static OpenFoodFactsNutritionFactsLookupService CreateService(StubHttpMessageHandler handler,
         IOpenFoodFactsRateLimiter? rateLimiter = null)
     {
-        var httpClient = new HttpClient(handler)
-        {
-            BaseAddress = new Uri("https://world.openfoodfacts.org/")
-        };
+        var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://world.openfoodfacts.org/") };
 
         var cache = new MemoryCache(new MemoryCacheOptions());
         var options = Options.Create(new OpenFoodFactsOptions
@@ -163,17 +161,15 @@ public sealed class OpenFoodFactsNutritionFactsLookupServiceTests
             EnableLegacyCgiFallback = false
         });
 
-        return new OpenFoodFactsNutritionFactsLookupService(
-            httpClient,
-            cache,
+        return new OpenFoodFactsNutritionFactsLookupService(httpClient, cache,
             NullLogger<OpenFoodFactsNutritionFactsLookupService>.Instance,
-            rateLimiter ?? new InMemoryOpenFoodFactsRateLimiter(options),
-            options);
+            rateLimiter ?? new InMemoryOpenFoodFactsRateLimiter(options), options);
     }
 
     private sealed class AlwaysRejectRateLimiter : IOpenFoodFactsRateLimiter
     {
-        public bool TryAcquireSearchSlot() => false;
+        public bool TryAcquireSearchSlot()
+            => false;
     }
 
     private sealed class StubHttpMessageHandler : HttpMessageHandler
@@ -187,7 +183,8 @@ public sealed class OpenFoodFactsNutritionFactsLookupServiceTests
 
         public int CallsCount { get; private set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             CallsCount++;
             return Task.FromResult(_responseFactory(request));
