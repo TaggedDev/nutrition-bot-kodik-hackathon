@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChatMessage, NutritionClarification, ProductNutrition } from './types'
+import type { ChatMessage, MealEditContext, NutritionClarification, ProductNutrition } from './types'
 import './ChatView.css'
 
 type Props = {
@@ -16,7 +16,9 @@ type Props = {
     clarificationId: string,
     query: string,
   ) => void
+  onSaveProduct: (product: ProductNutrition) => void
   onSetActiveClarification: (messageId: string, index: number) => void
+  mealEditContext: MealEditContext | null
 }
 
 export function ChatView({
@@ -25,7 +27,9 @@ export function ChatView({
   onResolveClarification,
   onCancelClarification,
   onManualClarification,
+  onSaveProduct,
   onSetActiveClarification,
+  mealEditContext,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -35,6 +39,13 @@ export function ChatView({
 
   return (
     <div className="chat-view">
+      {mealEditContext && (
+        <div className="edit-mode-banner">
+          <strong>Редактирование приёма</strong>
+          <span>{formatMealType(mealEditContext.mealType)} · {mealEditContext.mealEntryId}</span>
+        </div>
+      )}
+
       {messages.length === 0 && (
         <div className="chat-empty">
           <div className="chat-empty-icon">N</div>
@@ -50,7 +61,9 @@ export function ChatView({
           onResolveClarification={onResolveClarification}
           onCancelClarification={onCancelClarification}
           onManualClarification={onManualClarification}
+          onSaveProduct={onSaveProduct}
           onSetActiveClarification={onSetActiveClarification}
+          mealEditContext={mealEditContext}
         />
       ))}
 
@@ -74,13 +87,17 @@ function MessageBubble({
   onResolveClarification,
   onCancelClarification,
   onManualClarification,
+  onSaveProduct,
   onSetActiveClarification,
+  mealEditContext,
 }: {
   message: ChatMessage
   onResolveClarification: Props['onResolveClarification']
   onCancelClarification: Props['onCancelClarification']
   onManualClarification: Props['onManualClarification']
+  onSaveProduct: Props['onSaveProduct']
   onSetActiveClarification: Props['onSetActiveClarification']
+  mealEditContext: MealEditContext | null
 }) {
   switch (message.kind) {
     case 'user-text':
@@ -143,7 +160,11 @@ function MessageBubble({
               ) : null}
 
               {!allClarificationsClosed && message.items.length > 0 && (
-                <ProductList items={message.items} />
+                <ProductList
+                  items={message.items}
+                  onSaveProduct={onSaveProduct}
+                  mealEditContext={mealEditContext}
+                />
               )}
 
               {!allClarificationsClosed && hasClarifications && activeClarification && (
@@ -236,11 +257,24 @@ function FinalSelectionSummary({
   )
 }
 
-function ProductList({ items }: { items: ProductNutrition[] }) {
+function ProductList({
+  items,
+  onSaveProduct,
+  mealEditContext,
+}: {
+  items: ProductNutrition[]
+  onSaveProduct: (product: ProductNutrition) => void
+  mealEditContext: MealEditContext | null
+}) {
   return (
     <div className="product-list">
       {items.map((item, idx) => (
-        <ProductSummary key={`${item.productId}-${item.sourceReference}-${idx}`} product={item} />
+        <div key={`${item.productId}-${item.sourceReference}-${idx}`} className="product-save-row">
+          <ProductSummary product={item} />
+          <button type="button" onClick={() => onSaveProduct(item)}>
+            {mealEditContext ? 'Обновить приём' : 'Добавить в профиль'}
+          </button>
+        </div>
       ))}
     </div>
   )
@@ -450,4 +484,14 @@ function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+function formatMealType(value: string): string {
+  const map: Record<string, string> = {
+    Breakfast: 'Завтрак',
+    Lunch: 'Обед',
+    Dinner: 'Ужин',
+    Snack: 'Перекус',
+  }
+  return map[value] ?? value
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Nutrition.Infrastructure.Identity;
@@ -11,9 +12,11 @@ using Nutrition.Infrastructure.Identity;
 namespace Nutrition.Infrastructure.Identity.Migrations
 {
     [DbContext(typeof(NutritionIdentityDbContext))]
-    partial class NutritionIdentityDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260708130853_AddUserMealEntriesAndUserDailyGoals")]
+    partial class AddUserMealEntriesAndUserDailyGoals
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

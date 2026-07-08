@@ -4,6 +4,8 @@ import type {
   Attachment,
   ChatMessage,
   CurrentUser,
+  MealEditContext,
+  MealEntryItem,
   NutritionChatSearchResponse,
   NutritionClarification,
   ProductNutrition,
@@ -12,6 +14,7 @@ import { chatReducer } from './chatReducer'
 import { AuthView } from './AuthView'
 import { ChatView } from './ChatView'
 import { ChatInputFooter } from './ChatInputFooter'
+import { ProfileView } from './ProfileView'
 import './App.css'
 
 const initialState: AppState = {
@@ -27,6 +30,8 @@ function App() {
   const [state, dispatch] = useReducer(chatReducer, initialState)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
+  const [route, setRoute] = useState(window.location.pathname === '/profile' ? 'profile' : 'chat')
+  const [mealEditContext, setMealEditContext] = useState<MealEditContext | null>(readMealEditContext())
 
   const hasPendingClarification = state.messages.some(
     (message) =>
@@ -68,13 +73,33 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    const handlePopState = () => {
+      setRoute(window.location.pathname === '/profile' ? 'profile' : 'chat')
+      setMealEditContext(readMealEditContext())
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  const navigate = useCallback((nextRoute: 'chat' | 'profile') => {
+    const path = nextRoute === 'profile' ? '/profile' : '/'
+    window.history.pushState(null, '', path)
+    setRoute(nextRoute)
+    if (nextRoute === 'chat') {
+      setMealEditContext(null)
+    }
+  }, [])
+
   const handleLogout = useCallback(async () => {
     await fetch('/api/v1/auth/logout', {
       method: 'POST',
       credentials: 'include',
     })
     setCurrentUser(null)
-  }, [])
+    navigate('chat')
+  }, [navigate])
 
   const handleSendText = useCallback(async (text: string, attachments: Attachment[]) => {
     const trimmed = text.trim()
@@ -149,11 +174,33 @@ function App() {
   }, [])
 
   const handleResolveClarification = useCallback(
-    (messageId: string, clarificationId: string, product: ProductNutrition) => {
+    async (messageId: string, clarificationId: string, product: ProductNutrition) => {
+      await saveProductToProfile(product, mealEditContext)
       dispatch({ type: 'RESOLVE_CLARIFICATION', messageId, clarificationId, product })
     },
-    [],
+    [mealEditContext],
   )
+
+  const handleSaveProduct = useCallback(
+    async (product: ProductNutrition) => {
+      await saveProductToProfile(product, mealEditContext)
+      if (mealEditContext) {
+        setMealEditContext(null)
+        window.history.replaceState(null, '', '/')
+      }
+    },
+    [mealEditContext],
+  )
+
+  const handleEditMeal = useCallback((entry: MealEntryItem) => {
+    const params = new URLSearchParams({
+      mealEntryId: entry.id,
+      mealType: entry.mealType,
+    })
+    window.history.pushState(null, '', `/?${params.toString()}`)
+    setMealEditContext({ mealEntryId: entry.id, mealType: entry.mealType })
+    setRoute('chat')
+  }, [])
 
   const handleCancelClarification = useCallback((messageId: string, clarificationId: string) => {
     dispatch({ type: 'CANCEL_CLARIFICATION', messageId, clarificationId })
@@ -228,10 +275,27 @@ function App() {
     return <AuthView onAuthenticated={setCurrentUser} />
   }
 
+  if (route === 'profile') {
+    return (
+      <div className="app-shell">
+        <ProfileView
+          onBackToChat={() => navigate('chat')}
+          onUnauthorized={() => setCurrentUser(null)}
+          onEditMeal={handleEditMeal}
+        />
+      </div>
+    )
+  }
+
+  const initials = `${currentUser.firstName.charAt(0)}${currentUser.secondName.charAt(0)}`.toUpperCase()
+
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div>
+        <button type="button" className="profile-initials-btn" onClick={() => navigate('profile')} aria-label="Open profile">
+          {initials}
+        </button>
+        <div className="app-header-user">
           <strong>{currentUser.firstName} {currentUser.secondName}</strong>
           <span>{currentUser.email}</span>
         </div>
@@ -245,9 +309,11 @@ function App() {
         onResolveClarification={handleResolveClarification}
         onCancelClarification={handleCancelClarification}
         onManualClarification={handleManualClarification}
+        onSaveProduct={handleSaveProduct}
         onSetActiveClarification={(messageId, index) =>
           dispatch({ type: 'SET_ACTIVE_CLARIFICATION', messageId, index })
         }
+        mealEditContext={mealEditContext}
       />
       <ChatInputFooter
         inputText={state.inputText}
@@ -265,6 +331,55 @@ function App() {
       />
     </div>
   )
+}
+
+async function saveProductToProfile(product: ProductNutrition, editContext: MealEditContext | null) {
+  const facts = normalizeCalories(product.nutritionFacts)
+  const payload = {
+    productName: product.productName,
+    brand: product.brand ?? '',
+    calories: facts.calories,
+    protein: facts.protein,
+    fat: facts.fat,
+    carbs: facts.carbs,
+    mealType: editContext?.mealType ?? 'Snack',
+  }
+
+  const response = await fetch(
+    editContext ? `/api/v1/profile/entry/${editContext.mealEntryId}` : '/api/v1/profile/entry',
+    {
+      method: editContext ? 'PUT' : 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error(`Profile entry API error: ${response.status}`)
+  }
+}
+
+function normalizeCalories(facts: ProductNutrition['nutritionFacts']) {
+  const protein = facts?.protein ?? 0
+  const fat = facts?.fat ?? 0
+  const carbs = facts?.carbs ?? 0
+  const calculatedCalories = protein * 4 + fat * 9 + carbs * 4
+  const calories = facts?.calories ?? calculatedCalories
+
+  return {
+    protein,
+    fat,
+    carbs,
+    calories: Math.abs(calories - calculatedCalories) > 1 ? Number(calculatedCalories.toFixed(1)) : calories,
+  }
+}
+
+function readMealEditContext(): MealEditContext | null {
+  const params = new URLSearchParams(window.location.search)
+  const mealEntryId = params.get('mealEntryId')
+  const mealType = params.get('mealType')
+  return mealEntryId && mealType ? { mealEntryId, mealType } : null
 }
 
 function normalizeSearchResponse(raw: unknown, fallbackQuery: string): {

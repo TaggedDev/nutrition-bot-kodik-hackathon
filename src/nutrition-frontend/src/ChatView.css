@@ -37,6 +37,29 @@
   color: #6b7280;
 }
 
+.edit-mode-banner {
+  display: grid;
+  gap: 2px;
+  align-self: stretch;
+  padding: 0.75rem 1rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.5rem;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.edit-mode-banner strong,
+.edit-mode-banner span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edit-mode-banner span {
+  font-size: 0.8rem;
+  color: #2563eb;
+}
+
 .chat-bubble {
   max-width: 75%;
   padding: 0.75rem 1rem;
@@ -111,6 +134,23 @@
 .product-list {
   display: grid;
   gap: 0.5rem;
+}
+
+.product-save-row {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.product-save-row button {
+  justify-self: end;
+  min-height: 2.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  padding: 0 0.85rem;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .answer-summary {

@@ -75,6 +75,63 @@ export type CurrentUser = {
   secondName: string
 }
 
+export type ProfileData = {
+  userId: string
+  email: string
+  firstName: string
+  secondName: string
+}
+
+export type MealEntryItem = {
+  id: string
+  productName: string
+  brand: string
+  calories: number
+  protein: number
+  fat: number
+  carbs: number
+  mealType: string
+  createdAtUtc: string
+}
+
+export type NutritionSummary = {
+  calories: number
+  protein: number
+  fat: number
+  carbs: number
+}
+
+export type MealEntrySummaryByType = {
+  mealType: string
+  calories: number
+  protein: number
+  fat: number
+  carbs: number
+  count: number
+}
+
+export type DailyGoal = {
+  targetCalories: number
+  targetProtein: number
+  targetFat: number
+  targetCarbs: number
+}
+
+export type ProfileHistory = {
+  entries: MealEntryItem[]
+  totalSummary: NutritionSummary
+}
+
+export type ProfileSummaryByTypeResponse = {
+  summaryByType: MealEntrySummaryByType[]
+  totalSummary: NutritionSummary
+}
+
+export type MealEditContext = {
+  mealEntryId: string
+  mealType: string
+}
+
 export type AppAction =
   | { type: 'SET_INPUT_TEXT'; text: string }
   | { type: 'ADD_ATTACHMENTS'; attachments: Attachment[] }
