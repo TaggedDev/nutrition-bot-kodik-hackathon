@@ -19,11 +19,8 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
     private readonly IOpenFoodFactsRateLimiter _rateLimiter;
     private readonly OpenFoodFactsOptions _options;
 
-    public OpenFoodFactsNutritionFactsLookupService(
-        HttpClient httpClient,
-        IMemoryCache cache,
-        ILogger<OpenFoodFactsNutritionFactsLookupService> logger,
-        IOpenFoodFactsRateLimiter rateLimiter,
+    public OpenFoodFactsNutritionFactsLookupService(HttpClient httpClient, IMemoryCache cache,
+        ILogger<OpenFoodFactsNutritionFactsLookupService> logger, IOpenFoodFactsRateLimiter rateLimiter,
         IOptions<OpenFoodFactsOptions> options)
     {
         _httpClient = httpClient;
@@ -33,7 +30,8 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
         _options = options.Value;
     }
 
-    public async Task<IReadOnlyCollection<ProductNutritionDto>> SearchAsync(string query, CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<ProductNutritionDto>> SearchAsync(string query,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
         {
@@ -45,7 +43,8 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
         if (IsBarcode(normalizedQuery))
         {
             var barcodeCacheKey = BuildBarcodeCacheKey(normalizedQuery);
-            if (_cache.TryGetValue<IReadOnlyCollection<ProductNutritionDto>>(barcodeCacheKey, out var cachedBarcodeResult))
+            if (_cache.TryGetValue<IReadOnlyCollection<ProductNutritionDto>>(barcodeCacheKey,
+                    out var cachedBarcodeResult))
             {
                 return cachedBarcodeResult ?? Array.Empty<ProductNutritionDto>();
             }
@@ -100,15 +99,15 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning(
-                    "OpenFoodFacts non-success status {StatusCode} for barcode query: {Barcode}",
-                    (int)response.StatusCode,
-                    barcode);
+                _logger.LogWarning("OpenFoodFacts non-success status {StatusCode} for barcode query: {Barcode}",
+                    (int)response.StatusCode, barcode);
                 return LookupResult.CacheableEmpty;
             }
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var payload = await JsonSerializer.DeserializeAsync<OpenFoodFactsProductResponse>(stream, cancellationToken: cancellationToken);
+            var payload =
+                await JsonSerializer.DeserializeAsync<OpenFoodFactsProductResponse>(stream,
+                    cancellationToken: cancellationToken);
 
             if (payload?.Product is null)
             {
@@ -138,7 +137,8 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
     private async Task<LookupResult> LookupByTextV2Async(string query, CancellationToken cancellationToken)
     {
         var escapedQuery = Uri.EscapeDataString(query);
-        var requestUri = $"{_options.SearchBaseUrl.TrimEnd('/')}/search?q={escapedQuery}&fields={ProductFields}&page_size={_options.SearchPageSize}";
+        var requestUri =
+            $"{_options.SearchBaseUrl.TrimEnd('/')}/search?q={escapedQuery}&fields={ProductFields}&page_size={_options.SearchPageSize}";
 
         try
         {
@@ -151,15 +151,15 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning(
-                    "OpenFoodFacts search non-success status {StatusCode} for text query: {Query}",
-                    (int)response.StatusCode,
-                    query);
+                _logger.LogWarning("OpenFoodFacts search non-success status {StatusCode} for text query: {Query}",
+                    (int)response.StatusCode, query);
                 return LookupResult.CacheableFailed;
             }
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var payload = await JsonSerializer.DeserializeAsync<SearchALiciousResponse>(stream, cancellationToken: cancellationToken);
+            var payload =
+                await JsonSerializer.DeserializeAsync<SearchALiciousResponse>(stream,
+                    cancellationToken: cancellationToken);
             var mapped = MapProducts(payload?.Hits ?? new List<OpenFoodFactsProduct>(), query);
 
             return new LookupResult(mapped, true, true);
@@ -184,7 +184,8 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
     private async Task<LookupResult> LookupByLegacyCgiFallbackAsync(string query, CancellationToken cancellationToken)
     {
         var escapedQuery = Uri.EscapeDataString(query);
-        var requestUri = $"/cgi/search.pl?search_terms={escapedQuery}&search_simple=1&action=process&json=1&page_size={_options.SearchPageSize}";
+        var requestUri =
+            $"/cgi/search.pl?search_terms={escapedQuery}&search_simple=1&action=process&json=1&page_size={_options.SearchPageSize}";
 
         try
         {
@@ -199,13 +200,14 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
             {
                 _logger.LogWarning(
                     "OpenFoodFacts legacy fallback non-success status {StatusCode} for text query: {Query}",
-                    (int)response.StatusCode,
-                    query);
+                    (int)response.StatusCode, query);
                 return LookupResult.CacheableEmpty;
             }
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var payload = await JsonSerializer.DeserializeAsync<OpenFoodFactsSearchResponse>(stream, cancellationToken: cancellationToken);
+            var payload =
+                await JsonSerializer.DeserializeAsync<OpenFoodFactsSearchResponse>(stream,
+                    cancellationToken: cancellationToken);
             var mapped = MapProducts(payload?.Products ?? new List<OpenFoodFactsProduct>(), query);
             return new LookupResult(mapped, true, true);
         }
@@ -226,7 +228,8 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
         }
     }
 
-    private IReadOnlyCollection<ProductNutritionDto> MapProducts(IEnumerable<OpenFoodFactsProduct> products, string sourceQuery)
+    private IReadOnlyCollection<ProductNutritionDto> MapProducts(IEnumerable<OpenFoodFactsProduct> products,
+        string sourceQuery)
     {
         var result = new List<ProductNutritionDto>();
 
@@ -252,9 +255,7 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
                 Brand = string.IsNullOrWhiteSpace(product.Brands) ? null : product.Brands.Trim(),
                 NutritionFacts = nutritionFacts,
                 SourceType = "OpenFoodFacts",
-                SourceReference = string.IsNullOrWhiteSpace(code)
-                    ? $"OFF:search:{sourceQuery}"
-                    : $"OFF:{code}",
+                SourceReference = string.IsNullOrWhiteSpace(code) ? $"OFF:search:{sourceQuery}" : $"OFF:{code}",
                 ConfidenceScore = BuildConfidenceScore(product)
             });
         }
@@ -268,9 +269,11 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
         _cache.Set(key, result, TimeSpan.FromHours(ttlHours));
     }
 
-    private static string BuildBarcodeCacheKey(string barcode) => $"off:barcode:{barcode}";
+    private static string BuildBarcodeCacheKey(string barcode)
+        => $"off:barcode:{barcode}";
 
-    private static string BuildSearchCacheKey(string query) => $"off:search:sal:{query.Trim().ToLowerInvariant()}";
+    private static string BuildSearchCacheKey(string query)
+        => $"off:search:sal:{query.Trim().ToLowerInvariant()}";
 
     private static bool IsBarcode(string query)
     {
@@ -294,23 +297,21 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
     {
         nutritionFacts = new NutritionFactsDto();
 
-        var hasCalories = TryGetDecimalFromAny(
-            nutriments,
-            out var calories,
-            "energy-kcal_100g",
-            "energy-kcal",
+        var hasCalories = TryGetDecimalFromAny(nutriments, out var calories, "energy-kcal_100g", "energy-kcal",
             "energy-kcal_serving");
 
-        if (!hasCalories
-            && TryGetDecimalFromAny(nutriments, out var energyKj, "energy-kj_100g", "energy-kj", "energy_100g", "energy"))
+        if (!hasCalories && TryGetDecimalFromAny(nutriments, out var energyKj, "energy-kj_100g", "energy-kj",
+                "energy_100g", "energy"))
         {
             calories = decimal.Round(energyKj / 4.184m, 2, MidpointRounding.AwayFromZero);
             hasCalories = true;
         }
 
-        var hasProtein = TryGetDecimalFromAny(nutriments, out var protein, "proteins_100g", "proteins", "proteins_serving");
+        var hasProtein =
+            TryGetDecimalFromAny(nutriments, out var protein, "proteins_100g", "proteins", "proteins_serving");
         var hasFat = TryGetDecimalFromAny(nutriments, out var fat, "fat_100g", "fat", "fat_serving");
-        var hasCarbs = TryGetDecimalFromAny(nutriments, out var carbs, "carbohydrates_100g", "carbohydrates", "carbohydrates_serving");
+        var hasCarbs = TryGetDecimalFromAny(nutriments, out var carbs, "carbohydrates_100g", "carbohydrates",
+            "carbohydrates_serving");
 
         if (!hasCalories)
         {
@@ -364,11 +365,7 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
                 }
 
                 var normalized = raw.Replace(',', '.');
-                return decimal.TryParse(
-                    normalized,
-                    NumberStyles.Any,
-                    CultureInfo.InvariantCulture,
-                    out value);
+                return decimal.TryParse(normalized, NumberStyles.Any, CultureInfo.InvariantCulture, out value);
             default:
                 return false;
         }
@@ -422,39 +419,32 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
 
     private sealed class OpenFoodFactsProductResponse
     {
-        [JsonPropertyName("product")]
-        public OpenFoodFactsProduct? Product { get; init; }
+        [JsonPropertyName("product")] public OpenFoodFactsProduct? Product { get; init; }
     }
 
     private sealed class OpenFoodFactsSearchResponse
     {
-        [JsonPropertyName("products")]
-        public List<OpenFoodFactsProduct>? Products { get; init; }
+        [JsonPropertyName("products")] public List<OpenFoodFactsProduct>? Products { get; init; }
     }
 
     private sealed class SearchALiciousResponse
     {
-        [JsonPropertyName("hits")]
-        public List<OpenFoodFactsProduct>? Hits { get; init; }
+        [JsonPropertyName("hits")] public List<OpenFoodFactsProduct>? Hits { get; init; }
     }
 
     private sealed class OpenFoodFactsProduct
     {
-        [JsonPropertyName("code")]
-        public string? Code { get; init; }
+        [JsonPropertyName("code")] public string? Code { get; init; }
 
-        [JsonPropertyName("product_name")]
-        public string? ProductName { get; init; }
+        [JsonPropertyName("product_name")] public string? ProductName { get; init; }
 
-        [JsonPropertyName("product_name_en")]
-        public string? ProductNameEn { get; init; }
+        [JsonPropertyName("product_name_en")] public string? ProductNameEn { get; init; }
 
         [JsonPropertyName("brands")]
         [JsonConverter(typeof(StringOrStringArrayJsonConverter))]
         public string? Brands { get; init; }
 
-        [JsonPropertyName("nutriments")]
-        public JsonElement Nutriments { get; init; }
+        [JsonPropertyName("nutriments")] public JsonElement Nutriments { get; init; }
     }
 
     private sealed class StringOrStringArrayJsonConverter : JsonConverter<string?>
@@ -499,6 +489,7 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
                     {
                         values.Add(value.Trim());
                     }
+
                     continue;
                 }
 

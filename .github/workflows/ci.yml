@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore Nutrition.Web.sln
+
+      - name: Check editorconfig style
+        run: dotnet format Nutrition.Web.sln style --verify-no-changes --severity warn --no-restore
+
+      - name: Build
+        run: dotnet build Nutrition.Web.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test Nutrition.Web.sln --configuration Release --no-build --collect "XPlat Code Coverage"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend deps
+        working-directory: src/nutrition-frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: src/nutrition-frontend
+        run: npm run build

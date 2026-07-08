@@ -13,6 +13,7 @@ type Props = {
   attachments: Attachment[]
   recordingState: RecordingState
   loading: boolean
+  locked: boolean
   onInputTextChange: (text: string) => void
   onAddAttachments: (atts: Attachment[]) => void
   onRemoveAttachment: (id: string) => void
@@ -27,6 +28,7 @@ export function ChatInputFooter({
   attachments,
   recordingState,
   loading,
+  locked,
   onInputTextChange,
   onAddAttachments,
   onRemoveAttachment,
@@ -76,12 +78,12 @@ export function ChatInputFooter({
 
   const handleSend = useCallback(() => {
     const trimmed = inputText.trim()
-    if (loading || (!trimmed && attachments.length === 0)) return
+    if (loading || locked || (!trimmed && attachments.length === 0)) return
 
     setStatusMessage('Отправляется...')
     onSendText(trimmed, attachments)
     onClearAttachments()
-  }, [attachments, inputText, loading, onClearAttachments, onSendText])
+  }, [attachments, inputText, loading, locked, onClearAttachments, onSendText])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -112,10 +114,10 @@ export function ChatInputFooter({
   }, [loading, statusMessage])
 
   useEffect(() => {
-    if (!statusMessage || loading || isRecording) return
+    if (!statusMessage || loading || locked || isRecording) return
     const timeout = window.setTimeout(() => setStatusMessage(null), 2400)
     return () => window.clearTimeout(timeout)
-  }, [isRecording, loading, statusMessage])
+  }, [isRecording, loading, locked, statusMessage])
 
   return (
     <footer className={`chat-footer ${isRecording ? 'is-recording' : ''}`}>
@@ -140,7 +142,7 @@ export function ChatInputFooter({
               onKeyDown={handleKeyDown}
               placeholder="Введите продукт..."
               rows={1}
-              disabled={loading || isRecording}
+              disabled={loading || locked || isRecording}
               aria-label="Message text"
             />
           </div>
@@ -150,7 +152,7 @@ export function ChatInputFooter({
               type="button"
               className="composer-action-btn send"
               onClick={handleSend}
-              disabled={loading}
+              disabled={loading || locked}
               aria-label="Send message"
             >
               {loading ? <SpinnerIcon className="spinner-icon" /> : <SendIcon />}
@@ -163,14 +165,14 @@ export function ChatInputFooter({
             recordingState={recordingState}
             onRecordingStateChange={onRecordingStateChange}
             onVoiceReady={handleVoiceReady}
-            disabled={loading}
+            disabled={loading || locked}
           />
         </div>
       </div>
 
-      {(statusMessage || loading) && !isRecording && (
+      {(statusMessage || loading || locked) && !isRecording && (
         <div className="composer-status" aria-live="polite">
-          {loading ? 'Отправляется...' : statusMessage}
+          {locked ? 'Сначала завершите уточнение в предыдущем ответе' : loading ? 'Отправляется...' : statusMessage}
         </div>
       )}
     </footer>

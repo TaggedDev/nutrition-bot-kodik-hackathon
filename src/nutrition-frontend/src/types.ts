@@ -15,6 +15,23 @@ export type ProductNutrition = {
   confidenceScore: number
 }
 
+export type NutritionClarification = {
+  id: string
+  originalInput: string
+  parsedProductName: string
+  question: string
+  candidates: ProductNutrition[]
+  status: 'pending' | 'answered' | 'cancelled' | 'refining'
+  selectedProduct: ProductNutrition | null
+}
+
+export type NutritionChatSearchResponse = {
+  query: string
+  items: ProductNutrition[]
+  clarifications: Omit<NutritionClarification, 'status' | 'selectedProduct'>[]
+  requiresClarification: boolean
+}
+
 export type Attachment = {
   id: string
   file: File
@@ -44,6 +61,8 @@ export type ChatMessage =
       id: string
       query: string
       items: ProductNutrition[]
+      clarifications: NutritionClarification[]
+      activeClarificationIndex: number
       error?: string
     }
 
@@ -64,6 +83,23 @@ export type AppAction =
   | { type: 'SET_RECORDING_STATE'; state: RecordingState }
   | { type: 'SET_LOADING'; loading: boolean }
   | { type: 'ADD_MESSAGE'; message: ChatMessage }
+  | {
+      type: 'RESOLVE_CLARIFICATION'
+      messageId: string
+      clarificationId: string
+      product: ProductNutrition
+    }
+  | { type: 'CANCEL_CLARIFICATION'; messageId: string; clarificationId: string }
+  | { type: 'START_MANUAL_CLARIFICATION'; messageId: string; clarificationId: string }
+  | {
+      type: 'REPLACE_CLARIFICATION_CANDIDATES'
+      messageId: string
+      clarificationId: string
+      parsedProductName: string
+      question: string
+      candidates: ProductNutrition[]
+    }
+  | { type: 'SET_ACTIVE_CLARIFICATION'; messageId: string; index: number }
   | { type: 'SET_ERROR'; error: string | null }
   | { type: 'RESET_INPUT' }
 

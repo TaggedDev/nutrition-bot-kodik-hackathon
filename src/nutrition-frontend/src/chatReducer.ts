@@ -30,6 +30,109 @@ export function chatReducer(state: AppState, action: AppAction): AppState {
     case 'ADD_MESSAGE':
       return { ...state, messages: [...state.messages, action.message] }
 
+    case 'RESOLVE_CLARIFICATION':
+      return {
+        ...state,
+        messages: state.messages.map((message) => {
+          if (message.kind !== 'assistant-result' || message.id !== action.messageId) {
+            return message
+          }
+
+          const clarifications = message.clarifications.map((clarification) =>
+            clarification.id === action.clarificationId
+              ? { ...clarification, status: 'answered' as const, selectedProduct: action.product }
+              : clarification,
+          )
+          const nextPendingIndex = clarifications.findIndex((item) => item.status === 'pending')
+
+          return {
+            ...message,
+            clarifications,
+            activeClarificationIndex:
+              nextPendingIndex >= 0 ? nextPendingIndex : message.activeClarificationIndex,
+          }
+        }),
+      }
+
+    case 'CANCEL_CLARIFICATION':
+      return {
+        ...state,
+        messages: state.messages.map((message) => {
+          if (message.kind !== 'assistant-result' || message.id !== action.messageId) {
+            return message
+          }
+
+          const clarifications = message.clarifications.map((clarification) =>
+            clarification.id === action.clarificationId
+              ? { ...clarification, status: 'cancelled' as const, selectedProduct: null }
+              : clarification,
+          )
+          const nextPendingIndex = clarifications.findIndex((item) => item.status === 'pending')
+
+          return {
+            ...message,
+            clarifications,
+            activeClarificationIndex:
+              nextPendingIndex >= 0 ? nextPendingIndex : message.activeClarificationIndex,
+          }
+        }),
+      }
+
+    case 'START_MANUAL_CLARIFICATION':
+      return {
+        ...state,
+        messages: state.messages.map((message) => {
+          if (message.kind !== 'assistant-result' || message.id !== action.messageId) {
+            return message
+          }
+
+          return {
+            ...message,
+            clarifications: message.clarifications.map((clarification) =>
+              clarification.id === action.clarificationId
+                ? { ...clarification, status: 'refining' as const, selectedProduct: null }
+                : clarification,
+            ),
+          }
+        }),
+      }
+
+    case 'REPLACE_CLARIFICATION_CANDIDATES':
+      return {
+        ...state,
+        messages: state.messages.map((message) => {
+          if (message.kind !== 'assistant-result' || message.id !== action.messageId) {
+            return message
+          }
+
+          return {
+            ...message,
+            clarifications: message.clarifications.map((clarification) =>
+              clarification.id === action.clarificationId
+                ? {
+                    ...clarification,
+                    parsedProductName: action.parsedProductName,
+                    question: action.question,
+                    candidates: action.candidates,
+                    status: 'pending' as const,
+                    selectedProduct: null,
+                  }
+                : clarification,
+            ),
+          }
+        }),
+      }
+
+    case 'SET_ACTIVE_CLARIFICATION':
+      return {
+        ...state,
+        messages: state.messages.map((message) =>
+          message.kind === 'assistant-result' && message.id === action.messageId
+            ? { ...message, activeClarificationIndex: action.index }
+            : message,
+        ),
+      }
+
     case 'SET_ERROR':
       return { ...state, error: action.error }
 

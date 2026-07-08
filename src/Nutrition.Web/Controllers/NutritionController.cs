@@ -10,19 +10,17 @@ namespace Nutrition.Web.Controllers;
 public sealed class NutritionController : ControllerBase
 {
     [HttpGet("search")]
-    [ProducesResponseType(typeof(IReadOnlyCollection<ProductNutritionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(NutritionChatSearchResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IReadOnlyCollection<ProductNutritionDto>>> SearchNutritionFactsAsync(
-        [FromQuery] string query,
-        [FromServices] INutritionFactsLookupService lookupService,
-        CancellationToken cancellationToken)
+    public async Task<ActionResult<NutritionChatSearchResponseDto>> SearchNutritionFactsAsync([FromQuery] string query,
+        [FromServices] INutritionChatQueryService chatQueryService, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
         {
             return BadRequest("Query must not be empty.");
         }
 
-        var response = await lookupService.SearchAsync(query, cancellationToken);
+        var response = await chatQueryService.SearchAsync(query, cancellationToken);
         return Ok(response);
     }
 }
