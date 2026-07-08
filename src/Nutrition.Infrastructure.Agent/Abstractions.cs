@@ -1,4 +1,4 @@
-﻿namespace Nutrition.Infrastructure.Agent;
+namespace Nutrition.Infrastructure.Agent;
 
 /// <summary>
 /// Абстракция для агента, который парсит человеческий ввод и разбивает его на пищевые единицы.
