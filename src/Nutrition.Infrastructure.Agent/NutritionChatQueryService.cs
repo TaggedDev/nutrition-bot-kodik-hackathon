@@ -18,13 +18,13 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
         _lookupService = lookupService;
     }
 
-    public async Task<IReadOnlyCollection<ProductNutritionDto>> SearchAsync(
+    public async Task<NutritionChatSearchResponseDto> SearchAsync(
         string userInput,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(userInput))
         {
-            return Array.Empty<ProductNutritionDto>();
+            return new NutritionChatSearchResponseDto { Query = userInput };
         }
 
         var foodUnits = await _foodInputParser.ParseAsync(userInput, cancellationToken);
@@ -35,17 +35,35 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
 
         if (normalizedUnits.Length == 0)
         {
-            return Array.Empty<ProductNutritionDto>();
+            return new NutritionChatSearchResponseDto { Query = userInput.Trim() };
         }
 
-        var results = new List<ProductNutritionDto>();
+        var clarifications = new List<NutritionClarificationDto>();
 
         foreach (var foodUnit in normalizedUnits)
         {
             var matches = await _lookupService.SearchAsync(foodUnit.ProductName, cancellationToken);
-            results.AddRange(matches.Take(ResultsPerFoodUnit));
+
+            clarifications.Add(new NutritionClarificationDto
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                OriginalInput = userInput.Trim(),
+                ParsedProductName = foodUnit.ProductName,
+                Question = BuildClarificationQuestion(foodUnit.ProductName),
+                Candidates = matches.Take(ResultsPerFoodUnit).ToArray()
+            });
         }
 
-        return results;
+        return new NutritionChatSearchResponseDto
+        {
+            Query = userInput.Trim(),
+            Items = Array.Empty<ProductNutritionDto>(),
+            Clarifications = clarifications
+        };
+    }
+
+    private static string BuildClarificationQuestion(string productName)
+    {
+        return $"Выберите подходящий вариант для \"{productName}\"";
     }
 }

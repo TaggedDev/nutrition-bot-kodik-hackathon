@@ -1,13 +1,32 @@
-import { useEffect, useRef } from 'react'
-import type { ChatMessage } from './types'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ChatMessage, NutritionClarification, ProductNutrition } from './types'
 import './ChatView.css'
 
 type Props = {
   messages: ChatMessage[]
   loading: boolean
+  onResolveClarification: (
+    messageId: string,
+    clarificationId: string,
+    product: ProductNutrition,
+  ) => void
+  onCancelClarification: (messageId: string, clarificationId: string) => void
+  onManualClarification: (
+    messageId: string,
+    clarificationId: string,
+    query: string,
+  ) => void
+  onSetActiveClarification: (messageId: string, index: number) => void
 }
 
-export function ChatView({ messages, loading }: Props) {
+export function ChatView({
+  messages,
+  loading,
+  onResolveClarification,
+  onCancelClarification,
+  onManualClarification,
+  onSetActiveClarification,
+}: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -20,14 +39,19 @@ export function ChatView({ messages, loading }: Props) {
         <div className="chat-empty">
           <div className="chat-empty-icon">N</div>
           <h2>Поиск Nutrition продуктов</h2>
-          <p>
-            Введите название продукта, прикрепите фото этикетки или запишите голосовое сообщение
-          </p>
+          <p>Введите блюдо или продукт, а я помогу подобрать КБЖУ на 100 г.</p>
         </div>
       )}
 
       {messages.map((msg) => (
-        <MessageBubble key={msg.id} message={msg} />
+        <MessageBubble
+          key={msg.id}
+          message={msg}
+          onResolveClarification={onResolveClarification}
+          onCancelClarification={onCancelClarification}
+          onManualClarification={onManualClarification}
+          onSetActiveClarification={onSetActiveClarification}
+        />
       ))}
 
       {loading && (
@@ -45,7 +69,19 @@ export function ChatView({ messages, loading }: Props) {
   )
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({
+  message,
+  onResolveClarification,
+  onCancelClarification,
+  onManualClarification,
+  onSetActiveClarification,
+}: {
+  message: ChatMessage
+  onResolveClarification: Props['onResolveClarification']
+  onCancelClarification: Props['onCancelClarification']
+  onManualClarification: Props['onManualClarification']
+  onSetActiveClarification: Props['onSetActiveClarification']
+}) {
   switch (message.kind) {
     case 'user-text':
       return (
@@ -70,63 +106,344 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       return (
         <div className="chat-bubble user voice">
           <span className="voice-icon">Voice</span>
-          <span className="voice-duration">
-            {formatDuration(message.audio.duration)}
-          </span>
+          <span className="voice-duration">{formatDuration(message.audio.duration)}</span>
           <audio controls src={message.audio.url} className="voice-player" />
         </div>
       )
 
-    case 'assistant-result':
+    case 'assistant-result': {
+      const hasClarifications = message.clarifications.length > 0
+      const activeIndex = Math.min(
+        message.activeClarificationIndex,
+        Math.max(message.clarifications.length - 1, 0),
+      )
+      const activeClarification = message.clarifications[activeIndex]
+      const allClarificationsClosed =
+        hasClarifications &&
+        message.clarifications.every(
+          (clarification) =>
+            clarification.status === 'answered' || clarification.status === 'cancelled',
+        )
+
       return (
-        <div className="chat-bubble assistant">
-          <div className="bubble-header">
-            Результаты поиска: &ldquo;{message.query}&rdquo;
-          </div>
+        <div className="chat-bubble assistant result-bubble">
+          <div className="bubble-header">Результат: &ldquo;{message.query}&rdquo;</div>
           {message.error ? (
             <div className="bubble-error">{message.error}</div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Название</th>
-                    <th>Бренд</th>
-                    <th>Ккал</th>
-                    <th>Белки</th>
-                    <th>Жиры</th>
-                    <th>Углеводы</th>
-                    <th>Источник</th>
-                    <th>Conf.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {message.items.map((item, idx) => (
-                    <tr key={`${item.productId ?? idx}-${item.sourceReference ?? idx}`}>
-                      <td>{item.productName}</td>
-                      <td>{item.brand ?? '-'}</td>
-                      <td>{item.nutritionFacts?.calories ?? '-'}</td>
-                      <td>{item.nutritionFacts?.protein ?? '-'}</td>
-                      <td>{item.nutritionFacts?.fat ?? '-'}</td>
-                      <td>{item.nutritionFacts?.carbs ?? '-'}</td>
-                      <td>{item.sourceType}</td>
-                      <td>
-                        {typeof item.confidenceScore === 'number'
-                          ? item.confidenceScore.toFixed(2)
-                          : '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {allClarificationsClosed ? (
+                <FinalSelectionSummary clarifications={message.clarifications} />
+              ) : hasClarifications ? (
+                <ClarificationSummary
+                  clarifications={message.clarifications}
+                  activeIndex={activeIndex}
+                  onSelect={(index) => onSetActiveClarification(message.id, index)}
+                />
+              ) : null}
+
+              {!allClarificationsClosed && message.items.length > 0 && (
+                <ProductList items={message.items} />
+              )}
+
+              {!allClarificationsClosed && hasClarifications && activeClarification && (
+                <ClarificationPanel
+                  messageId={message.id}
+                  clarification={activeClarification}
+                  clarifications={message.clarifications}
+                  activeIndex={activeIndex}
+                  onResolveClarification={onResolveClarification}
+                  onCancelClarification={onCancelClarification}
+                  onManualClarification={onManualClarification}
+                  onSetActiveClarification={onSetActiveClarification}
+                />
+              )}
+            </>
           )}
         </div>
       )
+    }
 
     default:
       return null
   }
+}
+
+function ClarificationSummary({
+  clarifications,
+  activeIndex,
+  onSelect,
+}: {
+  clarifications: NutritionClarification[]
+  activeIndex: number
+  onSelect: (index: number) => void
+}) {
+  return (
+    <div className="answer-summary">
+      {clarifications.map((item, index) => (
+        <button
+          key={item.id}
+          type="button"
+          className={`answer-summary-row ${index === activeIndex ? 'active' : ''} ${item.status}`}
+          onClick={() => onSelect(index)}
+        >
+          <span className="answer-summary-title">{item.parsedProductName}</span>
+          <span className="answer-summary-state">
+            {item.status === 'answered'
+              ? item.selectedProduct?.productName ?? 'Выбрано'
+              : item.status === 'cancelled'
+                ? 'Отменено'
+                : item.status === 'refining'
+                  ? 'Уточняю варианты'
+                : 'Требует ответа'}
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function FinalSelectionSummary({
+  clarifications,
+}: {
+  clarifications: NutritionClarification[]
+}) {
+  return (
+    <div className="final-selection-list">
+      {clarifications.map((clarification) => {
+        const product = clarification.selectedProduct
+
+        return (
+          <div key={clarification.id} className={`final-selection-row ${clarification.status}`}>
+            <span className="final-selection-source">{clarification.parsedProductName}</span>
+            <span className="final-selection-choice">
+              {product ? (
+                <>
+                  <strong>{product.productName}</strong>
+                  <span>{product.brand || 'Бренд не указан'}</span>
+                </>
+              ) : (
+                <strong>Отменено</strong>
+              )}
+            </span>
+            <span className="final-selection-macros">
+              {product ? formatMacroSlash(product) : '-/-/-/-'}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function ProductList({ items }: { items: ProductNutrition[] }) {
+  return (
+    <div className="product-list">
+      {items.map((item, idx) => (
+        <ProductSummary key={`${item.productId}-${item.sourceReference}-${idx}`} product={item} />
+      ))}
+    </div>
+  )
+}
+
+function ClarificationPanel({
+  messageId,
+  clarification,
+  clarifications,
+  activeIndex,
+  onResolveClarification,
+  onCancelClarification,
+  onManualClarification,
+  onSetActiveClarification,
+}: {
+  messageId: string
+  clarification: NutritionClarification
+  clarifications: NutritionClarification[]
+  activeIndex: number
+  onResolveClarification: Props['onResolveClarification']
+  onCancelClarification: Props['onCancelClarification']
+  onManualClarification: Props['onManualClarification']
+  onSetActiveClarification: Props['onSetActiveClarification']
+}) {
+  const [selectedValue, setSelectedValue] = useState<string>('')
+  const [manualQuery, setManualQuery] = useState('')
+  const isManual = selectedValue === 'manual'
+  const candidateKey = clarification.candidates
+    .map((candidate) => candidate.productId)
+    .join('|')
+  const isRefining = clarification.status === 'refining'
+
+  useEffect(() => {
+    setSelectedValue(clarification.selectedProduct?.productId ?? '')
+    setManualQuery('')
+  }, [clarification.id, clarification.selectedProduct?.productId, clarification.status, candidateKey])
+
+  const selectedProduct = useMemo(
+    () => clarification.candidates.find((candidate) => candidate.productId === selectedValue),
+    [clarification.candidates, selectedValue],
+  )
+  const completedCount = clarifications.filter(
+    (item) => item.status === 'answered' || item.status === 'cancelled',
+  ).length
+
+  function handleAdd() {
+    if (isManual) {
+      onManualClarification(messageId, clarification.id, manualQuery)
+      return
+    }
+
+    if (selectedProduct) {
+      onResolveClarification(messageId, clarification.id, selectedProduct)
+    }
+  }
+
+  return (
+    <div className={`clarification-panel ${isRefining ? 'is-refining' : ''}`}>
+      <div className="clarification-progress">
+        <span>{completedCount} из {clarifications.length} закрыто</span>
+        <div className="clarification-dots" aria-label="Статус уточнений">
+          {clarifications.map((item, index) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`clarification-dot ${index === activeIndex ? 'active' : ''} ${item.status}`}
+              onClick={() => onSetActiveClarification(messageId, index)}
+              aria-label={`${index + 1}: ${item.status}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="clarification-question">{clarification.question}</div>
+
+      {isRefining && (
+        <div className="refining-answer">
+          <span>Подбираю новые варианты для вашего уточнения...</span>
+        </div>
+      )}
+
+      {clarification.status === 'answered' && clarification.selectedProduct && (
+        <div className="selected-answer">
+          <span>Выбрано</span>
+          <ProductSummary product={clarification.selectedProduct} compact />
+        </div>
+      )}
+
+      {clarification.status === 'cancelled' && (
+        <div className="cancelled-answer">
+          <span>Этот товар отменён</span>
+        </div>
+      )}
+
+      <fieldset className="clarification-options" disabled={clarification.status !== 'pending'}>
+        {clarification.candidates.map((candidate) => (
+          <label key={candidate.productId} className="clarification-option">
+            <input
+              type="radio"
+              name={clarification.id}
+              value={candidate.productId}
+              checked={selectedValue === candidate.productId}
+              onChange={(event) => setSelectedValue(event.target.value)}
+            />
+            <ProductSummary product={candidate} compact />
+          </label>
+        ))}
+
+        <div className={`clarification-option manual-option ${isManual ? 'manual-active' : ''}`}>
+          <input
+            type="radio"
+            name={clarification.id}
+            value="manual"
+            checked={isManual}
+            onChange={(event) => setSelectedValue(event.target.value)}
+            aria-label="Напишу уточнение сам"
+          />
+          <div className="manual-option-body">
+            <strong>Напишу уточнение сам</strong>
+            <span>Лучше указать тип, бренд, форму, готовность или упаковку.</span>
+            <input
+              type="text"
+              value={manualQuery}
+              onFocus={() => setSelectedValue('manual')}
+              onChange={(event) => setManualQuery(event.target.value)}
+              placeholder="Например: макароны Barilla fusilli, сухие"
+            />
+          </div>
+        </div>
+      </fieldset>
+
+      <div className="clarification-actions">
+        <button
+          type="button"
+          className="cancel-btn"
+          onClick={() => onCancelClarification(messageId, clarification.id)}
+          disabled={clarification.status !== 'pending'}
+        >
+          Отмена
+        </button>
+        <button
+          type="button"
+          className="add-btn"
+          onClick={handleAdd}
+          disabled={
+            clarification.status !== 'pending' ||
+            (!selectedProduct && !isManual) ||
+            (isManual && manualQuery.trim().length === 0)
+          }
+        >
+          Добавить
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ProductSummary({
+  product,
+  compact = false,
+}: {
+  product: ProductNutrition
+  compact?: boolean
+}) {
+  return (
+    <div className={`product-summary ${compact ? 'compact' : ''}`}>
+      <div className="product-title">
+        <strong>{product.productName}</strong>
+        <span>{product.brand || 'Бренд не указан'}</span>
+      </div>
+      <div className="macro-grid">
+        <Macro label="к" value={product.nutritionFacts?.calories} />
+        <Macro label="б" value={product.nutritionFacts?.protein} />
+        <Macro label="ж" value={product.nutritionFacts?.fat} />
+        <Macro label="у" value={product.nutritionFacts?.carbs} />
+      </div>
+    </div>
+  )
+}
+
+function Macro({ label, value }: { label: string; value?: number }) {
+  return (
+    <span className="macro-pill">
+      <span>{label}</span>
+      <strong>{typeof value === 'number' ? formatNumber(value) : '-'}</strong>
+    </span>
+  )
+}
+
+function formatNumber(value: number): string {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(1)
+}
+
+function formatMacroSlash(product: ProductNutrition): string {
+  const facts = product.nutritionFacts
+  return [
+    facts?.calories,
+    facts?.protein,
+    facts?.fat,
+    facts?.carbs,
+  ]
+    .map((value) => (typeof value === 'number' ? formatNumber(value) : '-'))
+    .join('/')
 }
 
 function formatDuration(seconds: number): string {

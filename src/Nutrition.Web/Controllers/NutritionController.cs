@@ -10,9 +10,9 @@ namespace Nutrition.Web.Controllers;
 public sealed class NutritionController : ControllerBase
 {
     [HttpGet("search")]
-    [ProducesResponseType(typeof(IReadOnlyCollection<ProductNutritionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(NutritionChatSearchResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IReadOnlyCollection<ProductNutritionDto>>> SearchNutritionFactsAsync(
+    public async Task<ActionResult<NutritionChatSearchResponseDto>> SearchNutritionFactsAsync(
         [FromQuery] string query,
         [FromServices] INutritionChatQueryService chatQueryService,
         CancellationToken cancellationToken)

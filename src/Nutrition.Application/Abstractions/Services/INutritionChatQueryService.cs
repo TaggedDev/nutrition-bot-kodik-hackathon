@@ -4,5 +4,5 @@ namespace Nutrition.Application.Abstractions.Services;
 
 public interface INutritionChatQueryService
 {
-    Task<IReadOnlyCollection<ProductNutritionDto>> SearchAsync(string userInput, CancellationToken cancellationToken);
+    Task<NutritionChatSearchResponseDto> SearchAsync(string userInput, CancellationToken cancellationToken);
 }

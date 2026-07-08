@@ -22,7 +22,7 @@ public sealed class NutritionAgentTests
 
         var parser = new MafFoodInputParser(new FakeChatClient(responseJson));
 
-        var result = await parser.ParseAsync("макароны с курицей", CancellationToken.None);
+        var result = await parser.ParseAsync("pasta with chicken", CancellationToken.None);
 
         Assert.Collection(
             result,
@@ -31,7 +31,7 @@ public sealed class NutritionAgentTests
     }
 
     [Fact]
-    public async Task NutritionChatQueryService_SearchesEachParsedFoodUnit_AndReturnsTopThree()
+    public async Task NutritionChatQueryService_ReturnsClarificationForEachParsedFoodUnit()
     {
         var parser = new FakeFoodInputParser(new[]
         {
@@ -41,12 +41,13 @@ public sealed class NutritionAgentTests
         var lookup = new FakeNutritionFactsLookupService();
         var service = new NutritionChatQueryService(parser, lookup);
 
-        var result = await service.SearchAsync("макароны с курицей", CancellationToken.None);
+        var result = await service.SearchAsync("pasta with chicken", CancellationToken.None);
 
         Assert.Equal(new[] { "pasta", "chicken" }, lookup.Queries);
-        Assert.Equal(6, result.Count);
-        Assert.Equal(3, result.Count(item => item.ProductName.StartsWith("pasta", StringComparison.Ordinal)));
-        Assert.Equal(3, result.Count(item => item.ProductName.StartsWith("chicken", StringComparison.Ordinal)));
+        Assert.True(result.RequiresClarification);
+        Assert.Empty(result.Items);
+        Assert.Equal(2, result.Clarifications.Count);
+        Assert.All(result.Clarifications, clarification => Assert.Equal(3, clarification.Candidates.Count));
     }
 
     private sealed class FakeChatClient : IChatClient
