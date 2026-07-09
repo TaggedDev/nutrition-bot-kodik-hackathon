@@ -47,18 +47,19 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
   const [loadingDay, setLoadingDay] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [day, setDay] = useState<ProfileDay | null>(null)
+  const [selectedDate, setSelectedDate] = useState(() => new Date())
   const [currentMealType, setCurrentMealType] = useState<MealType>(() => getCurrentMealType(new Date()))
   const [portionMap, setPortionMap] = useState<Record<string, PortionState>>({})
   const [editingGrams, setEditingGrams] = useState<Record<string, string>>({})
 
-  const today = useMemo(() => toDateOnly(new Date()), [])
+  const selectedDateOnly = useMemo(() => toDateOnly(selectedDate), [selectedDate])
 
   const loadDay = useCallback(async () => {
     setLoadingDay(true)
     setError(null)
     try {
       const utcOffsetMinutes = -new Date().getTimezoneOffset()
-      const response = await fetch(`/api/v1/profile/day?date=${today}&utcOffsetMinutes=${utcOffsetMinutes}`, { credentials: 'include' })
+      const response = await fetch(`/api/v1/profile/day?date=${selectedDateOnly}&utcOffsetMinutes=${utcOffsetMinutes}`, { credentials: 'include' })
       if (response.status === 401) {
         onUnauthorized()
         return
@@ -67,13 +68,13 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
         throw new Error(`Ошибка загрузки дня: ${response.status}`)
       }
 
-      setDay(normalizeDay((await response.json()) as ProfileDay, today))
+      setDay(normalizeDay((await response.json()) as ProfileDay, selectedDateOnly))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось загрузить текущий день.')
     } finally {
       setLoadingDay(false)
     }
-  }, [onUnauthorized, today])
+  }, [onUnauthorized, selectedDateOnly])
 
   useEffect(() => {
     loadDay()
@@ -86,8 +87,6 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
 
   const currentMealEntries = currentMeal?.entries ?? []
   const currentMealSummary = currentMeal?.summary ?? emptySummary
-  const totalSummary = day?.totalSummary ?? emptySummary
-  const goal = day?.goal ?? null
   const addedByProduct = useMemo(() => {
     const entries = new Map<string, MealEntryItem>()
     for (const entry of currentMealEntries) {
@@ -187,7 +186,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
         portionLabel: portionLabel(state),
         sourceType: product.sourceType,
         sourceReference: key,
-        loggedAtUtc: new Date().toISOString(),
+        loggedAtUtc: toLoggedAtIso(selectedDate),
       }),
     })
 
@@ -201,7 +200,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
     }
 
     const entry = (await response.json()) as MealEntryItem
-    setDay((current) => addEntryToDay(current, normalizeEntry(entry), currentMealType, today))
+    setDay((current) => addEntryToDay(current, normalizeEntry(entry), currentMealType, selectedDateOnly))
     setLines((current) => [
       ...current,
       {
@@ -228,7 +227,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
       return
     }
 
-    setDay((current) => removeEntryFromDay(current, entryId, today))
+    setDay((current) => removeEntryFromDay(current, entryId, selectedDateOnly))
   }
 
   async function handleMealEntryGrams(entry: MealEntryItem, gramsValue: string) {
@@ -249,7 +248,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
       carbs: round(entry.carbs * ratio),
     }
 
-    setDay((current) => replaceEntryInDay(current, nextEntry, today))
+    setDay((current) => replaceEntryInDay(current, nextEntry, selectedDateOnly))
 
     const response = await fetch(`/api/v1/profile/entry/${entry.id}`, {
       method: 'PUT',
@@ -282,7 +281,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
     }
 
     const savedEntry = normalizeEntry((await response.json()) as MealEntryItem)
-    setDay((current) => replaceEntryInDay(current, savedEntry, today))
+    setDay((current) => replaceEntryInDay(current, savedEntry, selectedDateOnly))
   }
 
   function resetChat() {
@@ -304,8 +303,6 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
             <span>AI-трекер питания</span>
           </div>
         </div>
-
-        <SidebarRecommendation goal={goal} totalSummary={totalSummary} />
 
         <button type="button" className="new-chat-btn active" onClick={resetChat}>
           <span className="nav-icon" aria-hidden="true">+</span>
@@ -395,6 +392,8 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
 
       <MealContextPanel
         loading={loadingDay}
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
         currentMealType={currentMealType}
         onMealTypeChange={setCurrentMealType}
         day={day}
@@ -406,35 +405,6 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
         onRemove={handleRemoveEntry}
       />
     </main>
-  )
-}
-
-function SidebarRecommendation({ goal, totalSummary }: { goal: DailyGoal | null; totalSummary: NutritionSummary }) {
-  const fallbackGoal: DailyGoal = goal ?? {
-    targetCalories: 2300,
-    targetProtein: 150,
-    targetFat: 77,
-    targetCarbs: 288,
-  }
-  const eatenCalories = totalSummary.calories
-  const remainingCalories = Math.max(0, fallbackGoal.targetCalories - eatenCalories)
-  const progress = Math.min(100, Math.round((eatenCalories / Math.max(fallbackGoal.targetCalories, 1)) * 100))
-
-  return (
-    <section className="sidebar-recommend-card" aria-label="Рекомендации">
-      <span>Рекомендации</span>
-      <h2>Осталось калорий</h2>
-      <div className="recommend-main">
-        <div>
-          <strong>{formatNumber(remainingCalories)} ккал</strong>
-          <small>из {formatNumber(fallbackGoal.targetCalories)} ккал</small>
-        </div>
-        <Donut value={progress} />
-      </div>
-      <MacroProgress label="Белки" value={totalSummary.protein} max={fallbackGoal.targetProtein} />
-      <MacroProgress label="Жиры" value={totalSummary.fat} max={fallbackGoal.targetFat} />
-      <MacroProgress label="Углеводы" value={totalSummary.carbs} max={fallbackGoal.targetCarbs} />
-    </section>
   )
 }
 
@@ -557,6 +527,8 @@ function FoodSearchResultCard({
 
 function MealContextPanel({
   loading,
+  selectedDate,
+  onDateChange,
   currentMealType,
   onMealTypeChange,
   day,
@@ -568,6 +540,8 @@ function MealContextPanel({
   onRemove,
 }: {
   loading: boolean
+  selectedDate: Date
+  onDateChange: (date: Date) => void
   currentMealType: MealType
   onMealTypeChange: (mealType: MealType) => void
   day: ProfileDay | null
@@ -579,6 +553,7 @@ function MealContextPanel({
   onRemove: (id: string) => void
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [calendarOpen, setCalendarOpen] = useState(false)
   const totalSummary = day?.totalSummary ?? emptySummary
   const goal = day?.goal ?? null
 
@@ -589,7 +564,7 @@ function MealContextPanel({
           <span className="meal-icon" aria-hidden="true">
             <UtensilsIcon />
           </span>
-          <strong>Текущий приём пищи</strong>
+          <strong>{formatPanelDate(selectedDate)}</strong>
         </div>
         <div className="meal-header-actions">
           <div className="meal-switcher">
@@ -622,9 +597,26 @@ function MealContextPanel({
               </div>
             )}
           </div>
-          <button type="button" className="meal-more-button" aria-label="Дополнительные действия">
-            ⋮
-          </button>
+          <div className="calendar-anchor">
+            <button
+              type="button"
+              className="calendar-button"
+              aria-label="Открыть календарь"
+              aria-expanded={calendarOpen}
+              onClick={() => setCalendarOpen((open) => !open)}
+            >
+              <CalendarIcon />
+            </button>
+            {calendarOpen && (
+              <CalendarPopover
+                selectedDate={selectedDate}
+                onDateChange={(nextDate) => {
+                  onDateChange(nextDate)
+                  setCalendarOpen(false)
+                }}
+              />
+            )}
+          </div>
         </div>
       </header>
 
@@ -741,6 +733,58 @@ function RecommendationCard({ goal, totalSummary }: { goal: DailyGoal | null; to
   )
 }
 
+function CalendarPopover({
+  selectedDate,
+  onDateChange,
+}: {
+  selectedDate: Date
+  onDateChange: (date: Date) => void
+}) {
+  const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(selectedDate))
+  const days = useMemo(() => getMonthDays(visibleMonth), [visibleMonth])
+  const monthLabel = new Intl.DateTimeFormat('ru-RU', { month: 'long' }).format(visibleMonth)
+  const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+  return (
+    <div className="calendar-popover" role="dialog" aria-label="Календарь выбора дня">
+      <div className="calendar-popover-header">
+        <button type="button" aria-label="Предыдущий месяц" onClick={() => setVisibleMonth(addMonths(visibleMonth, -1))}>
+          ‹
+        </button>
+        <strong>{capitalize(monthLabel)}</strong>
+        <button type="button" aria-label="Следующий месяц" onClick={() => setVisibleMonth(addMonths(visibleMonth, 1))}>
+          ›
+        </button>
+      </div>
+
+      <div className="calendar-weekdays" aria-hidden="true">
+        {weekDays.map((day) => (
+          <span key={day}>{day}</span>
+        ))}
+      </div>
+
+      <div className="calendar-grid">
+        {days.map((item, index) =>
+          item ? (
+            <button
+              key={item.toISOString()}
+              type="button"
+              className={isSameDay(item, selectedDate) ? 'active' : ''}
+              onClick={() => onDateChange(item)}
+            >
+              {item.getDate()}
+            </button>
+          ) : (
+            <span key={`empty-${index}`} aria-hidden="true" />
+          ),
+        )}
+      </div>
+
+      <div className="calendar-year">{visibleMonth.getFullYear()}</div>
+    </div>
+  )
+}
+
 function FoodThumb({ index, title, small = false }: { index: number; title: string; small?: boolean }) {
   return (
     <div className={`food-thumb thumb-${index % 3} ${small ? 'small' : ''}`} role="img" aria-label={title}>
@@ -804,6 +848,14 @@ function UtensilsIcon() {
   )
 }
 
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 2.5A1.5 1.5 0 0 1 8.5 4v1h7V4a1.5 1.5 0 0 1 3 0v1H20a2 2 0 0 1 2 2v12.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1.5V4A1.5 1.5 0 0 1 7 2.5ZM4 10v9.5h16V10H4Zm3 3h2v2H7v-2Zm4 0h2v2h-2v-2Zm4 0h2v2h-2v-2Z" />
+    </svg>
+  )
+}
+
 function getCurrentMealType(date: Date): MealType {
   const hour = date.getHours()
   if (hour >= 5 && hour < 11) return 'Breakfast'
@@ -817,6 +869,56 @@ function toDateOnly(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function toLoggedAtIso(date: Date): string {
+  const now = new Date()
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+    now.getMilliseconds(),
+  ).toISOString()
+}
+
+function formatPanelDate(date: Date): string {
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date)
+}
+
+function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+}
+
+function addMonths(date: Date, months: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1)
+}
+
+function getMonthDays(date: Date): Array<Date | null> {
+  const firstDay = startOfMonth(date)
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+  const mondayOffset = (firstDay.getDay() + 6) % 7
+  const days: Array<Date | null> = Array.from({ length: mondayOffset }, () => null)
+
+  for (let day = 1; day <= lastDay.getDate(); day += 1) {
+    days.push(new Date(date.getFullYear(), date.getMonth(), day))
+  }
+
+  return days
+}
+
+function isSameDay(left: Date, right: Date): boolean {
+  return toDateOnly(left) === toDateOnly(right)
+}
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
 function extractProducts(payload: NutritionChatSearchResponse): ProductNutrition[] {

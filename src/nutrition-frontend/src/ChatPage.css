@@ -35,6 +35,8 @@ body {
     radial-gradient(circle at 10% 0%, rgba(192, 132, 252, 0.18), transparent 32%),
     radial-gradient(circle at 90% 12%, rgba(124, 58, 237, 0.1), transparent 30%),
     linear-gradient(135deg, #f9f7ff 0%, #f5f1ff 48%, #fbfaff 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
 }
 
 button,
@@ -129,7 +131,8 @@ input:focus-visible {
 }
 
 .brand-icon svg,
-.meal-icon svg {
+.meal-icon svg,
+.calendar-button svg {
   width: 22px;
   height: 22px;
   fill: currentColor;
@@ -364,7 +367,6 @@ input:focus-visible {
 .clear-btn,
 .icon-btn,
 .attach-btn,
-.meal-panel-header button,
 .clarify-row button,
 .confirmed-card button {
   min-height: 42px;
@@ -809,6 +811,8 @@ input:focus-visible {
   margin: -2px 0 16px;
   padding: 2px 0 12px;
   background: linear-gradient(180deg, #ffffff 76%, rgba(255, 255, 255, 0));
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
 }
 
 .meal-title,
@@ -822,9 +826,10 @@ input:focus-visible {
 .meal-title strong {
   overflow: hidden;
   color: var(--text);
-  font-size: 15px;
-  font-weight: 900;
-  line-height: 1.15;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -845,14 +850,14 @@ input:focus-visible {
 }
 
 .meal-switcher-button,
-.meal-more-button {
+.calendar-button {
   min-height: 38px;
   border: 1px solid transparent;
   border-radius: 12px;
   background: #f2edff;
   color: var(--accent);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 800;
   box-shadow: none;
   transition: 160ms ease;
 }
@@ -865,7 +870,7 @@ input:focus-visible {
 }
 
 .meal-switcher-button:hover,
-.meal-more-button:hover {
+.calendar-button:hover {
   border-color: #d8cdf2;
   background: #ece3ff;
 }
@@ -875,11 +880,122 @@ input:focus-visible {
   line-height: 1;
 }
 
-.meal-more-button {
+.calendar-anchor {
+  position: relative;
+}
+
+.calendar-button {
   width: 38px;
   padding: 0;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+
+.calendar-button svg {
+  width: 19px;
+  height: 19px;
+}
+
+.calendar-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 12;
+  width: 284px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 22px 46px rgba(56, 35, 112, 0.18);
+}
+
+.calendar-popover-header {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.calendar-popover-header strong {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.calendar-popover-header button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: #fbfaff;
+  color: var(--accent);
+  font-size: 22px;
+  line-height: 1;
+  transition: 160ms ease;
+}
+
+.calendar-popover-header button:hover {
+  border-color: var(--border-strong);
+  background: #f2edff;
+}
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.calendar-weekdays {
+  margin-bottom: 7px;
+}
+
+.calendar-weekdays span {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.calendar-grid button,
+.calendar-grid span {
+  width: 30px;
+  height: 30px;
+}
+
+.calendar-grid button {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  transition: 160ms ease;
+}
+
+.calendar-grid button:hover {
+  border-color: var(--border-strong);
+  background: #f2edff;
+  color: var(--accent);
+}
+
+.calendar-grid button.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(124, 58, 237, 0.22);
+}
+
+.calendar-year {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
   color: var(--text-muted);
-  font-size: 18px;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
 }
 
 .meal-switcher-menu {
@@ -1147,8 +1263,7 @@ input:focus-visible {
 }
 
 .recommendation-card,
-.recommend-card,
-.sidebar-recommend-card {
+.recommend-card {
   position: relative;
   overflow: hidden;
   background:
@@ -1157,8 +1272,7 @@ input:focus-visible {
 }
 
 .recommendation-card::after,
-.recommend-card::after,
-.sidebar-recommend-card::after {
+.recommend-card::after {
   content: "";
   position: absolute;
   right: -28px;
@@ -1169,8 +1283,7 @@ input:focus-visible {
   background: rgba(192, 132, 252, 0.18);
 }
 
-.recommend-card h2,
-.sidebar-recommend-card h2 {
+.recommend-card h2 {
   margin: -8px 0 0;
 }
 
@@ -1264,42 +1377,6 @@ input:focus-visible {
 .recommend-main {
   position: relative;
   z-index: 1;
-}
-
-.sidebar-recommend-card {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 14px;
-  padding: 15px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
-  color: var(--text);
-  box-shadow: none;
-}
-
-.sidebar-recommend-card > span,
-.sidebar-recommend-card small,
-.sidebar-recommend-card .macro-progress span {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.sidebar-recommend-card h2 {
-  font-size: 15px;
-}
-
-.sidebar-recommend-card .recommend-main strong {
-  font-size: 24px;
-}
-
-.sidebar-recommend-card .donut {
-  width: 66px;
-  height: 66px;
-}
-
-.sidebar-recommend-card .donut::before {
-  width: 46px;
-  height: 46px;
 }
 
 .meal-empty {
@@ -1470,7 +1547,6 @@ input:focus-visible {
 
   .brand-block,
   .premium-card,
-  .sidebar-recommend-card,
   .user-card {
     display: none;
   }
