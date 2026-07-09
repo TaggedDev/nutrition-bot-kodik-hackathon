@@ -4,7 +4,7 @@
   place-items: center;
   padding: 24px;
   background:
-    linear-gradient(135deg, rgba(15, 23, 42, 0.84), rgba(22, 101, 52, 0.72)),
+    linear-gradient(135deg, rgba(23, 16, 68, 0.9), rgba(124, 58, 237, 0.68)),
     url('./assets/hero.png') center / cover;
 }
 
@@ -28,10 +28,16 @@
   height: 48px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  background: #111827;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #7c3aed, #9f67ff);
   color: #ffffff;
-  font-weight: 800;
+  box-shadow: 0 12px 28px rgba(124, 58, 237, 0.26);
+}
+
+.auth-logo svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
 }
 
 .auth-brand h1 {
@@ -97,9 +103,22 @@
 }
 
 .auth-form input:focus {
-  outline: 2px solid #22c55e;
+  outline: 2px solid rgba(124, 58, 237, 0.35);
   outline-offset: 1px;
-  border-color: #22c55e;
+  border-color: #7c3aed;
+}
+
+.remember-row {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px !important;
+  font-weight: 600 !important;
+}
+
+.remember-row input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: #7c3aed;
 }
 
 .auth-name-grid {
@@ -126,7 +145,7 @@
   min-height: 46px;
   border: 0;
   border-radius: 8px;
-  background: #166534;
+  background: linear-gradient(135deg, #7c3aed, #9f67ff);
   color: #ffffff;
   font-weight: 800;
   cursor: pointer;

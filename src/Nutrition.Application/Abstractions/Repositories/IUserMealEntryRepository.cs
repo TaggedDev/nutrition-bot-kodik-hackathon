@@ -13,6 +13,8 @@ public interface IUserMealEntryRepository
 
     Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAndDateAsync(Guid userId, DateTimeOffset date, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAndRangeAsync(Guid userId, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken cancellationToken = default);
+
     Task AddAsync(UserMealEntry entry, CancellationToken cancellationToken = default);
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);

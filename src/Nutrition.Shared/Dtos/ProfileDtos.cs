@@ -15,6 +15,11 @@ public sealed record UserMealEntryDto(
     decimal Fat,
     decimal Carbs,
     string MealType,
+    decimal ServingGrams,
+    string PortionLabel,
+    string SourceType,
+    string SourceReference,
+    DateTimeOffset LoggedAtUtc,
     DateTimeOffset CreatedAtUtc);
 
 public sealed record MealEntrySummaryByTypeDto(
@@ -56,7 +61,12 @@ public sealed record CreateUserMealEntryRequestDto(
     decimal Protein,
     decimal Fat,
     decimal Carbs,
-    string MealType);
+    string MealType,
+    decimal ServingGrams,
+    string? PortionLabel,
+    string? SourceType,
+    string? SourceReference,
+    DateTimeOffset? LoggedAtUtc);
 
 public sealed record UpdateUserMealEntryRequestDto(
     string ProductName,
@@ -65,7 +75,12 @@ public sealed record UpdateUserMealEntryRequestDto(
     decimal Protein,
     decimal Fat,
     decimal Carbs,
-    string MealType);
+    string MealType,
+    decimal ServingGrams,
+    string? PortionLabel,
+    string? SourceType,
+    string? SourceReference,
+    DateTimeOffset? LoggedAtUtc);
 
 public sealed record ProfileHistoryResponseDto(
     IReadOnlyCollection<UserMealEntryDto> Entries,
@@ -73,4 +88,15 @@ public sealed record ProfileHistoryResponseDto(
 
 public sealed record ProfileSummaryByTypeResponseDto(
     IReadOnlyCollection<MealEntrySummaryByTypeDto> SummaryByType,
+    NutritionSummaryDto TotalSummary);
+
+public sealed record MealEntriesByTypeDto(
+    string MealType,
+    IReadOnlyCollection<UserMealEntryDto> Entries,
+    NutritionSummaryDto Summary);
+
+public sealed record ProfileDayResponseDto(
+    DateOnly Date,
+    UserDailyGoalDto? Goal,
+    IReadOnlyCollection<MealEntriesByTypeDto> Meals,
     NutritionSummaryDto TotalSummary);

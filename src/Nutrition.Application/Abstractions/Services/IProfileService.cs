@@ -14,6 +14,8 @@ public interface IProfileService
 
     Task<ProfileSummaryByTypeResponseDto> GetUserSummaryByMealTypeAsync(Guid userId, CancellationToken cancellationToken = default);
 
+    Task<ProfileDayResponseDto> GetUserDayAsync(Guid userId, DateOnly date, int utcOffsetMinutes = 0, CancellationToken cancellationToken = default);
+
     Task<UserDailyGoalDto?> GetUserDailyGoalAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<UserDailyGoalDto> CreateUserDailyGoalAsync(Guid userId, CreateDailyGoalRequestDto request, CancellationToken cancellationToken = default);

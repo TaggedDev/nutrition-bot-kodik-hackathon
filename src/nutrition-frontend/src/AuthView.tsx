@@ -25,13 +25,14 @@ export function AuthView({ onAuthenticated }: Props) {
   const [password, setPassword] = useState('')
   const [firstName, setFirstName] = useState('')
   const [secondName, setSecondName] = useState('')
+  const [rememberMe, setRememberMe] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const title = mode === 'login' ? 'Sign in' : 'Create account'
-  const submitLabel = mode === 'login' ? 'Sign in' : 'Register'
+  const title = mode === 'login' ? 'Вход' : 'Создать аккаунт'
+  const submitLabel = mode === 'login' ? 'Войти' : 'Зарегистрироваться'
   const passwordHint = useMemo(
-    () => (mode === 'register' ? 'At least 8 chars, one digit, one lowercase letter.' : null),
+    () => (mode === 'register' ? 'Минимум 8 символов, одна цифра и одна строчная буква.' : null),
     [mode],
   )
 
@@ -43,7 +44,7 @@ export function AuthView({ onAuthenticated }: Props) {
     const endpoint = mode === 'login' ? '/api/v1/auth/login' : '/api/v1/auth/register'
     const payload =
       mode === 'login'
-        ? { email, password }
+        ? { email, password, rememberMe }
         : { ...emptyRegisterForm, email, firstName, secondName, password }
 
     try {
@@ -58,17 +59,17 @@ export function AuthView({ onAuthenticated }: Props) {
 
       if (!response.ok) {
         if (response.status === 401) {
-          throw new Error('Invalid email or password.')
+          throw new Error('Неверный email или пароль.')
         }
 
         const body = (await response.json().catch(() => null)) as AuthErrorResponse | null
-        throw new Error(body?.errors?.join(' ') || `Auth failed: ${response.status}`)
+        throw new Error(body?.errors?.join(' ') || `Ошибка входа: ${response.status}`)
       }
 
       const user = (await response.json()) as CurrentUser
       onAuthenticated(user)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed.')
+      setError(err instanceof Error ? err.message : 'Не удалось войти.')
     } finally {
       setLoading(false)
     }
@@ -83,27 +84,29 @@ export function AuthView({ onAuthenticated }: Props) {
     <main className="auth-shell">
       <section className="auth-panel" aria-labelledby="auth-title">
         <div className="auth-brand">
-          <div className="auth-logo">N</div>
+          <div className="auth-logo" aria-hidden="true">
+            <AuthUtensilsIcon />
+          </div>
           <div>
             <h1 id="auth-title">{title}</h1>
-            <p>Use your Nutrition account to open the chat.</p>
+            <p>Войдите в аккаунт Nutrition, чтобы открыть чат.</p>
           </div>
         </div>
 
-        <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
+        <div className="auth-tabs" role="tablist" aria-label="Режим авторизации">
           <button
             type="button"
             className={mode === 'login' ? 'active' : ''}
             onClick={() => switchMode('login')}
           >
-            Login
+            Вход
           </button>
           <button
             type="button"
             className={mode === 'register' ? 'active' : ''}
             onClick={() => switchMode('register')}
           >
-            Register
+            Регистрация
           </button>
         </div>
 
@@ -111,7 +114,7 @@ export function AuthView({ onAuthenticated }: Props) {
           {mode === 'register' && (
             <div className="auth-name-grid">
               <label>
-                First name
+                Имя
                 <input
                   value={firstName}
                   onChange={(event) => setFirstName(event.target.value)}
@@ -121,7 +124,7 @@ export function AuthView({ onAuthenticated }: Props) {
               </label>
 
               <label>
-                Second name
+                Фамилия
                 <input
                   value={secondName}
                   onChange={(event) => setSecondName(event.target.value)}
@@ -144,7 +147,7 @@ export function AuthView({ onAuthenticated }: Props) {
           </label>
 
           <label>
-            Password
+            Пароль
             <input
               type="password"
               value={password}
@@ -154,14 +157,33 @@ export function AuthView({ onAuthenticated }: Props) {
             />
           </label>
 
+          {mode === 'login' && (
+            <label className="remember-row">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+              />
+              <span>Запомнить меня на этом устройстве</span>
+            </label>
+          )}
+
           {passwordHint && <p className="auth-hint">{passwordHint}</p>}
           {error && <div className="auth-error">{error}</div>}
 
           <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? 'Please wait...' : submitLabel}
+            {loading ? 'Подождите...' : submitLabel}
           </button>
         </form>
       </section>
     </main>
+  )
+}
+
+function AuthUtensilsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 3v7.2a3 3 0 0 1-1.9 2.8V21H3.7v-8A3 3 0 0 1 2 10.2V3h1.4v6h1V3h1.3v6h1V3H7Zm6.8 0c2.9.8 4.7 3.2 4.7 6v3.4h-2.1V21H15V3h-1.2Z" />
+    </svg>
   )
 }

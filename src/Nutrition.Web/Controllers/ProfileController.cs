@@ -79,6 +79,20 @@ public sealed class ProfileController : ControllerBase
         return Ok(await _profileService.GetUserSummaryByMealTypeAsync(userId.Value, cancellationToken));
     }
 
+    [HttpGet("day")]
+    [ProducesResponseType(typeof(ProfileDayResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ProfileDayResponseDto>> DayAsync([FromQuery] DateOnly? date, [FromQuery] int utcOffsetMinutes, CancellationToken cancellationToken)
+    {
+        var userId = await GetCurrentUserIdAsync();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(await _profileService.GetUserDayAsync(userId.Value, date ?? DateOnly.FromDateTime(DateTime.UtcNow), utcOffsetMinutes, cancellationToken));
+    }
+
     [HttpGet("goal")]
     [ProducesResponseType(typeof(UserDailyGoalDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

@@ -70,7 +70,7 @@ public sealed class AuthController : ControllerBase
         }
 
         var result = await _signInManager.PasswordSignInAsync(
-            user, request.Password, isPersistent: true, lockoutOnFailure: false);
+            user, request.Password, isPersistent: request.RememberMe, lockoutOnFailure: false);
 
         if (!result.Succeeded)
         {

@@ -149,6 +149,31 @@ public sealed class AuthControllerTests
         Assert.Equal(user.Id, response.UserId);
         Assert.Equal("alice@example.com", response.Email);
         Assert.Same(user, signInManager.PasswordSignInUser);
+        Assert.False(signInManager.IsPersistent);
+    }
+
+    [Fact]
+    public async Task LoginAsync_UsesPersistentCookie_WhenRememberMeIsEnabled()
+    {
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            Email = "alice@example.com",
+            UserName = "alice@example.com",
+            FirstName = "Alice",
+            SecondName = "Smith"
+        };
+        var userManager = new FakeUserManager { UserByEmail = user };
+        var signInManager = new FakeSignInManager(userManager)
+        {
+            PasswordSignInResult = Microsoft.AspNetCore.Identity.SignInResult.Success
+        };
+        var controller = new AuthController(userManager, signInManager);
+
+        var result = await controller.LoginAsync(new LoginRequestDto("alice@example.com", "Secret123", true));
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        Assert.True(signInManager.IsPersistent);
     }
 
     [Fact]

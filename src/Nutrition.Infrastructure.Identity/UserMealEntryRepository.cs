@@ -23,7 +23,7 @@ public sealed class UserMealEntryRepository : IUserMealEntryRepository
     {
         return await _context.UserMealEntries
             .Where(e => e.UserId == userId)
-            .OrderByDescending(e => e.CreatedAtUtc)
+            .OrderByDescending(e => e.LoggedAtUtc)
             .ToListAsync(cancellationToken);
     }
 
@@ -31,18 +31,23 @@ public sealed class UserMealEntryRepository : IUserMealEntryRepository
     {
         return await _context.UserMealEntries
             .Where(e => e.UserId == userId && e.MealType == mealType)
-            .OrderByDescending(e => e.CreatedAtUtc)
+            .OrderByDescending(e => e.LoggedAtUtc)
             .ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAndDateAsync(Guid userId, DateTimeOffset date, CancellationToken cancellationToken = default)
     {
-        var startOfDay = date.Date;
+        var startOfDay = new DateTimeOffset(date.Date, TimeSpan.Zero);
         var endOfDay = startOfDay.AddDays(1);
 
+        return await GetByUserIdAndRangeAsync(userId, startOfDay, endOfDay, cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAndRangeAsync(Guid userId, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken cancellationToken = default)
+    {
         return await _context.UserMealEntries
-            .Where(e => e.UserId == userId && e.CreatedAtUtc >= startOfDay && e.CreatedAtUtc < endOfDay)
-            .OrderByDescending(e => e.CreatedAtUtc)
+            .Where(e => e.UserId == userId && e.LoggedAtUtc >= startUtc && e.LoggedAtUtc < endUtc)
+            .OrderByDescending(e => e.LoggedAtUtc)
             .ToListAsync(cancellationToken);
     }
 

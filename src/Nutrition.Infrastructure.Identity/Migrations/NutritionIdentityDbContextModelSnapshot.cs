@@ -208,8 +208,16 @@ namespace Nutrition.Infrastructure.Identity.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
 
+                    b.Property<DateTimeOffset>("LoggedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("MealType")
                         .HasColumnType("integer");
+
+                    b.Property<string>("PortionLabel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
@@ -219,6 +227,20 @@ namespace Nutrition.Infrastructure.Identity.Migrations
                     b.Property<decimal>("Protein")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
+
+                    b.Property<decimal>("ServingGrams")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("SourceReference")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -231,6 +253,8 @@ namespace Nutrition.Infrastructure.Identity.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("UserId", "CreatedAtUtc");
+
+                    b.HasIndex("UserId", "LoggedAtUtc");
 
                     b.ToTable("UserMealEntries");
                 });

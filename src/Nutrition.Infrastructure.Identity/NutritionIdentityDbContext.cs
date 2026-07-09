@@ -37,11 +37,17 @@ public sealed class NutritionIdentityDbContext : IdentityDbContext<ApplicationUs
             entity.Property(e => e.Fat).HasPrecision(10, 2);
             entity.Property(e => e.Carbs).HasPrecision(10, 2);
             entity.Property(e => e.MealType).IsRequired();
+            entity.Property(e => e.ServingGrams).HasPrecision(10, 2);
+            entity.Property(e => e.PortionLabel).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.SourceType).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.SourceReference).HasMaxLength(512).IsRequired();
+            entity.Property(e => e.LoggedAtUtc).IsRequired();
             entity.Property(e => e.CreatedAtUtc).IsRequired();
             entity.Property(e => e.UpdatedAtUtc).IsRequired();
 
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => new { e.UserId, e.CreatedAtUtc });
+            entity.HasIndex(e => new { e.UserId, e.LoggedAtUtc });
         });
 
         builder.Entity<UserDailyGoal>(entity =>

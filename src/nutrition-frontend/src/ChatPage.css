@@ -65,7 +65,7 @@ input:focus-visible {
 
 .nutri-page {
   display: grid;
-  grid-template-columns: 250px minmax(520px, 1fr) minmax(360px, 400px);
+  grid-template-columns: 250px minmax(520px, 1fr) 414px;
   gap: 20px;
   height: 100vh;
   min-height: 100vh;
@@ -103,7 +103,6 @@ input:focus-visible {
   margin-bottom: 42px;
 }
 
-.brand-mark,
 .ai-icon,
 .bot-avatar,
 .avatar {
@@ -113,12 +112,27 @@ input:focus-visible {
   font-weight: 800;
 }
 
-.brand-mark {
+.brand-icon {
   width: 42px;
   height: 42px;
   border-radius: 15px;
   background: linear-gradient(135deg, var(--accent-2), var(--accent-3));
   box-shadow: 0 14px 30px rgba(159, 103, 255, 0.3);
+}
+
+.brand-icon {
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 12px 28px rgba(124, 58, 237, 0.26);
+}
+
+.brand-icon svg,
+.meal-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
 }
 
 .brand-block strong {
@@ -134,6 +148,26 @@ input:focus-visible {
 .sidebar-nav {
   display: grid;
   gap: 8px;
+}
+
+.new-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 16px;
+  background: var(--sidebar-active);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: left;
+  transition: 160ms ease;
+}
+
+.new-chat-btn:hover {
+  background: rgba(159, 103, 255, 0.36);
 }
 
 .sidebar-nav button {
@@ -211,7 +245,7 @@ input:focus-visible {
 }
 
 .premium-card button,
-.select-btn,
+.add-result-btn,
 .send-btn {
   border: 0;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -268,7 +302,7 @@ input:focus-visible {
   margin: 12px 0;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: 18px;
   background: var(--surface);
   box-shadow: var(--shadow-soft);
 }
@@ -291,7 +325,7 @@ input:focus-visible {
 .ai-icon {
   width: 48px;
   height: 48px;
-  border-radius: 17px;
+  border-radius: 12px;
   background: linear-gradient(135deg, var(--accent), var(--accent-3));
   color: #ffffff;
   box-shadow: var(--shadow-purple);
@@ -341,7 +375,7 @@ input:focus-visible {
 }
 
 .clear-btn {
-  border-radius: 13px;
+  border-radius: 9px;
   padding: 0 15px;
 }
 
@@ -420,7 +454,7 @@ input:focus-visible {
   width: min(100%, 820px);
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 12px;
   background: #ffffff;
   box-shadow: var(--shadow-card);
   transition: 160ms ease;
@@ -432,8 +466,8 @@ input:focus-visible {
   box-shadow: 0 12px 28px rgba(56, 35, 112, 0.11);
 }
 
-.food-card.is-selected {
-  border-color: rgba(54, 179, 126, 0.45);
+.food-card.is-added {
+  border-color: rgba(124, 58, 237, 0.28);
 }
 
 .food-thumb {
@@ -480,7 +514,7 @@ input:focus-visible {
 .thumb-1 {
   background:
     radial-gradient(circle at 56% 45%, rgba(255, 255, 255, 0.82), transparent 16%),
-    linear-gradient(135deg, #c4b5fd, #a7f3d0 56%, #fef3c7);
+    linear-gradient(135deg, #c4b5fd, #99f6e4 56%, #f5d0fe);
 }
 
 .thumb-2 {
@@ -490,9 +524,9 @@ input:focus-visible {
 }
 
 .food-thumb.small {
-  width: 64px;
-  height: 54px;
-  border-radius: 14px;
+  width: 58px;
+  height: 52px;
+  border-radius: 12px;
 }
 
 .food-info {
@@ -551,7 +585,7 @@ input:focus-visible {
 .portion-buttons button {
   min-height: 34px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: #ffffff;
   color: var(--accent);
   font-size: 12px;
@@ -568,16 +602,56 @@ input:focus-visible {
   min-width: 0;
   min-height: 38px;
   border: 1px solid var(--border);
-  border-radius: 11px;
+  border-radius: 8px;
   padding: 0 11px;
   color: var(--text);
   font-weight: 800;
 }
 
-.select-btn {
+.add-result-btn {
+  position: relative;
   min-height: 40px;
-  border-radius: 12px;
+  border-radius: 9px;
+  border: 2px solid transparent;
   font-weight: 800;
+  transition: 160ms ease;
+}
+
+.add-result-btn .added-label,
+.add-result-btn .remove-label {
+  display: none;
+}
+
+.add-result-btn[data-added='true'] {
+  background: #f5efff;
+  border-color: #9f67ff;
+  color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(159, 103, 255, 0.12);
+}
+
+.add-result-btn[data-added='true'] .add-label {
+  display: none;
+}
+
+.add-result-btn[data-added='true'] .added-label {
+  display: inline;
+  font-size: 18px;
+}
+
+.add-result-btn[data-added='true']:hover {
+  background: #ffffff;
+  border-color: #ef233c;
+  color: #ef233c;
+  box-shadow: 0 0 0 4px rgba(239, 35, 60, 0.12);
+}
+
+.add-result-btn[data-added='true']:hover .added-label {
+  display: none;
+}
+
+.add-result-btn[data-added='true']:hover .remove-label {
+  display: inline;
+  font-size: 22px;
 }
 
 .clarify-row {
@@ -690,7 +764,7 @@ input:focus-visible {
 .send-btn {
   width: 56px;
   height: 56px;
-  border-radius: 16px;
+  border-radius: 12px;
   font-size: 32px;
   line-height: 1;
   transition: 160ms ease;
@@ -698,6 +772,11 @@ input:focus-visible {
 
 .send-btn:hover {
   transform: scale(1.03);
+}
+
+.send-btn:disabled {
+  cursor: progress;
+  opacity: 0.65;
 }
 
 .input-helper {
@@ -708,7 +787,9 @@ input:focus-visible {
   font-size: 12px;
 }
 
-.meal-panel {
+.meal-panel,
+.meal-context-panel {
+  width: 390px;
   height: calc(100vh - 24px);
   margin: 12px 12px 12px 0;
   overflow-y: auto;
@@ -716,58 +797,182 @@ input:focus-visible {
   border: 1px solid var(--border);
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: var(--shadow-soft);
+  box-shadow: 0 10px 30px rgba(56, 35, 112, 0.08);
 }
 
 .meal-panel-header {
+  position: sticky;
+  top: -18px;
+  z-index: 3;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin: -2px 0 16px;
+  padding: 2px 0 12px;
+  background: linear-gradient(180deg, #ffffff 76%, rgba(255, 255, 255, 0));
 }
 
-.meal-panel-header > div {
+.meal-title,
+.meal-header-actions {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+
+.meal-title strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .meal-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 13px;
-  background: var(--surface-lavender);
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f2edff, #ebe1ff);
   color: var(--accent);
-  font-weight: 800;
 }
 
-.meal-panel-header button {
+.meal-switcher {
+  position: relative;
+}
+
+.meal-switcher-button,
+.meal-more-button {
+  min-height: 38px;
+  border: 1px solid transparent;
   border-radius: 12px;
-  padding: 0 12px;
+  background: #f2edff;
+  color: var(--accent);
   font-size: 12px;
+  font-weight: 900;
+  box-shadow: none;
+  transition: 160ms ease;
+}
+
+.meal-switcher-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+}
+
+.meal-switcher-button:hover,
+.meal-more-button:hover {
+  border-color: #d8cdf2;
+  background: #ece3ff;
+}
+
+.meal-switcher-button span {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.meal-more-button {
+  width: 38px;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 18px;
+}
+
+.meal-switcher-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 10;
+  display: grid;
+  min-width: 142px;
+  gap: 4px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 18px 36px rgba(56, 35, 112, 0.16);
+}
+
+.meal-switcher-menu button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.meal-switcher-menu button:hover,
+.meal-switcher-menu button.active {
+  background: #f2edff;
+  color: var(--accent);
 }
 
 .basket-list {
   display: grid;
   gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .basket-item {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto 32px;
+  grid-template-columns: 58px minmax(0, 1fr) auto 28px;
   gap: 10px;
   align-items: center;
-  min-height: 76px;
+  min-height: 78px;
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: #ffffff;
+  box-shadow: 0 8px 18px rgba(56, 35, 112, 0.045);
+  transition: 160ms ease;
+}
+
+.basket-item:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 12px 24px rgba(56, 35, 112, 0.08);
 }
 
 .basket-item div:nth-child(2) {
   display: grid;
   gap: 3px;
   min-width: 0;
+}
+
+.basket-grams {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  margin-top: 3px;
+}
+
+.basket-grams input {
+  width: 58px;
+  min-height: 24px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 6px;
+  background: #fbfaff;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.basket-grams input:disabled {
+  color: var(--text-soft);
+  background: var(--surface-soft);
+}
+
+.basket-grams small {
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 .basket-item h3,
@@ -780,30 +985,40 @@ input:focus-visible {
 .basket-item strong {
   color: var(--text);
   font-size: 13px;
+  font-weight: 900;
   white-space: nowrap;
 }
 
 .basket-item button {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 0;
-  border-radius: 11px;
+  border-radius: 10px;
   background: var(--surface-soft);
   color: var(--text-soft);
-  font-size: 20px;
+  font-size: 18px;
+  transition: 160ms ease;
+}
+
+.basket-item button:hover {
+  background: #fff1f3;
+  color: #e11d48;
 }
 
 .meal-total-card,
-.today-card,
-.recommend-card {
+.today-card {
   display: grid;
-  gap: 14px;
+  gap: 13px;
   margin-bottom: 14px;
-  padding: 16px;
+  padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 16px;
+  background: #fbfaff;
+  box-shadow: 0 8px 20px rgba(56, 35, 112, 0.05);
+}
+
+.today-card {
   background: #ffffff;
-  box-shadow: 0 6px 18px rgba(56, 35, 112, 0.045);
 }
 
 .total-head,
@@ -824,13 +1039,15 @@ input:focus-visible {
 }
 
 .total-head strong {
-  font-size: 30px;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 900;
 }
 
 .macro-total-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
 }
 
 .macro-dot {
@@ -864,6 +1081,7 @@ input:focus-visible {
   border: 0;
   background: transparent;
   color: var(--accent);
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -871,6 +1089,34 @@ input:focus-visible {
 .macro-progress {
   display: grid;
   gap: 7px;
+}
+
+.progress-row > div:first-child span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.progress-row > div:first-child span i {
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.22), transparent 38%),
+    #f2edff;
+}
+
+.progress-row > div:first-child b {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.progress-row.active > div:first-child span,
+.progress-row.active > div:first-child span i {
+  color: var(--accent);
+  font-weight: 800;
 }
 
 .progress-row span,
@@ -887,7 +1133,7 @@ input:focus-visible {
 }
 
 .progress-track {
-  height: 7px;
+  height: 6px;
   overflow: hidden;
   border-radius: 999px;
   background: #ece7f7;
@@ -900,7 +1146,9 @@ input:focus-visible {
   background: linear-gradient(90deg, var(--accent), var(--accent-3));
 }
 
-.recommend-card {
+.recommendation-card,
+.recommend-card,
+.sidebar-recommend-card {
   position: relative;
   overflow: hidden;
   background:
@@ -908,7 +1156,9 @@ input:focus-visible {
     #ffffff;
 }
 
-.recommend-card::after {
+.recommendation-card::after,
+.recommend-card::after,
+.sidebar-recommend-card::after {
   content: "";
   position: absolute;
   right: -28px;
@@ -919,13 +1169,168 @@ input:focus-visible {
   background: rgba(192, 132, 252, 0.18);
 }
 
-.recommend-card h2 {
+.recommend-card h2,
+.sidebar-recommend-card h2 {
   margin: -8px 0 0;
+}
+
+.recommendation-card {
+  display: grid;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px solid #eadfff;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 80% 18%, rgba(124, 58, 237, 0.18), transparent 34%),
+    radial-gradient(circle at 14% 88%, rgba(192, 132, 252, 0.14), transparent 28%),
+    linear-gradient(135deg, #f4edff 0%, #ffffff 100%);
+  box-shadow: 0 10px 30px rgba(56, 35, 112, 0.08);
+}
+
+.recommendation-top {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.recommendation-top > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.recommendation-top span,
+.recommendation-top small {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.recommendation-top p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.recommendation-top strong {
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.recommendation-donut {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+}
+
+.recommendation-donut .donut {
+  width: 92px;
+  height: 92px;
+}
+
+.recommendation-donut .donut::before {
+  width: 68px;
+  height: 68px;
+}
+
+.recommendation-macros {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.recommendation-card .macro-progress {
+  min-width: 0;
+}
+
+.recommendation-card .macro-progress > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.recommendation-card .macro-progress strong {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 11px;
 }
 
 .recommend-main {
   position: relative;
   z-index: 1;
+}
+
+.sidebar-recommend-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  color: var(--text);
+  box-shadow: none;
+}
+
+.sidebar-recommend-card > span,
+.sidebar-recommend-card small,
+.sidebar-recommend-card .macro-progress span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.sidebar-recommend-card h2 {
+  font-size: 15px;
+}
+
+.sidebar-recommend-card .recommend-main strong {
+  font-size: 24px;
+}
+
+.sidebar-recommend-card .donut {
+  width: 66px;
+  height: 66px;
+}
+
+.sidebar-recommend-card .donut::before {
+  width: 46px;
+  height: 46px;
+}
+
+.meal-empty {
+  display: grid;
+  gap: 5px;
+  padding: 16px;
+  margin-bottom: 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 16px;
+  color: var(--text-muted);
+  background: var(--surface-soft);
+  font-size: 13px;
+}
+
+.meal-empty strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.meal-empty span {
+  color: var(--text-muted);
+}
+
+.chat-error {
+  margin: 0 20px 8px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .recommend-main > div {
@@ -1012,8 +1417,13 @@ input:focus-visible {
 
 @media (max-width: 1279px) {
   .nutri-page {
-    grid-template-columns: 220px minmax(440px, 1fr) 340px;
+    grid-template-columns: 220px minmax(440px, 1fr) minmax(330px, 360px);
     gap: 14px;
+  }
+
+  .meal-panel,
+  .meal-context-panel {
+    width: auto;
   }
 
   .food-card {
@@ -1060,6 +1470,7 @@ input:focus-visible {
 
   .brand-block,
   .premium-card,
+  .sidebar-recommend-card,
   .user-card {
     display: none;
   }
@@ -1067,6 +1478,11 @@ input:focus-visible {
   .sidebar-nav {
     grid-template-columns: repeat(6, minmax(52px, 1fr));
     gap: 4px;
+  }
+
+  .new-chat-btn {
+    justify-content: center;
+    width: 100%;
   }
 
   .sidebar-nav button {

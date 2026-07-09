@@ -69,6 +69,32 @@ public sealed class ProfileService : IProfileService
         return new ProfileSummaryByTypeResponseDto(summaryByType, Sum(entries));
     }
 
+    public async Task<ProfileDayResponseDto> GetUserDayAsync(Guid userId, DateOnly date, int utcOffsetMinutes = 0, CancellationToken cancellationToken = default)
+    {
+        var offset = TimeSpan.FromMinutes(utcOffsetMinutes);
+        var localStart = new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue), offset);
+        var utcStart = localStart.ToUniversalTime();
+        var utcEnd = utcStart.AddDays(1);
+        var entries = await _mealEntryRepository.GetByUserIdAndRangeAsync(userId, utcStart, utcEnd, cancellationToken);
+        var goal = await GetUserDailyGoalAsync(userId, cancellationToken);
+        var meals = Enum.GetValues<MealType>()
+            .Select(mealType =>
+            {
+                var mealEntries = entries
+                    .Where(entry => entry.MealType == mealType)
+                    .OrderByDescending(entry => entry.LoggedAtUtc)
+                    .ToArray();
+
+                return new MealEntriesByTypeDto(
+                    mealType.ToString(),
+                    mealEntries.Select(ToDto).ToArray(),
+                    Sum(mealEntries));
+            })
+            .ToArray();
+
+        return new ProfileDayResponseDto(date, goal, meals, Sum(entries));
+    }
+
     public async Task<UserDailyGoalDto?> GetUserDailyGoalAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var goal = await _goalRepository.GetByUserIdAsync(userId, cancellationToken);
@@ -123,6 +149,11 @@ public sealed class ProfileService : IProfileService
             request.Fat,
             request.Carbs,
             mealType,
+            Math.Max(0, request.ServingGrams),
+            request.PortionLabel,
+            request.SourceType,
+            request.SourceReference,
+            request.LoggedAtUtc ?? DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow);
 
         await _mealEntryRepository.AddAsync(entry, cancellationToken);
@@ -145,7 +176,12 @@ public sealed class ProfileService : IProfileService
             request.Protein,
             request.Fat,
             request.Carbs,
-            ParseMealType(request.MealType));
+            ParseMealType(request.MealType),
+            Math.Max(0, request.ServingGrams),
+            request.PortionLabel,
+            request.SourceType,
+            request.SourceReference,
+            request.LoggedAtUtc ?? entry.LoggedAtUtc);
 
         await _mealEntryRepository.SaveChangesAsync(cancellationToken);
         return ToDto(entry);
@@ -195,6 +231,11 @@ public sealed class ProfileService : IProfileService
             entry.Fat,
             entry.Carbs,
             entry.MealType.ToString(),
+            entry.ServingGrams,
+            entry.PortionLabel,
+            entry.SourceType,
+            entry.SourceReference,
+            entry.LoggedAtUtc,
             entry.CreatedAtUtc);
     }
 

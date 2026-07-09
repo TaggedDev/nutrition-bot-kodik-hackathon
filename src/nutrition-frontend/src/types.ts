@@ -91,6 +91,11 @@ export type MealEntryItem = {
   fat: number
   carbs: number
   mealType: string
+  servingGrams: number
+  portionLabel: string
+  sourceType: string
+  sourceReference: string
+  loggedAtUtc: string
   createdAtUtc: string
 }
 
@@ -124,6 +129,19 @@ export type ProfileHistory = {
 
 export type ProfileSummaryByTypeResponse = {
   summaryByType: MealEntrySummaryByType[]
+  totalSummary: NutritionSummary
+}
+
+export type MealEntriesByType = {
+  mealType: string
+  entries: MealEntryItem[]
+  summary: NutritionSummary
+}
+
+export type ProfileDay = {
+  date: string
+  goal: DailyGoal | null
+  meals: MealEntriesByType[]
   totalSummary: NutritionSummary
 }
 
