@@ -120,6 +120,10 @@ export type DailyGoal = {
   targetProtein: number
   targetFat: number
   targetCarbs: number
+  breakfastPercent?: number
+  lunchPercent?: number
+  dinnerPercent?: number
+  snackPercent?: number
 }
 
 export type ProfileHistory = {

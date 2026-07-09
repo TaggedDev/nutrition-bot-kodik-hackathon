@@ -34,7 +34,11 @@ public sealed record UserDailyGoalDto(
     decimal TargetCalories,
     decimal TargetProtein,
     decimal TargetFat,
-    decimal TargetCarbs);
+    decimal TargetCarbs,
+    decimal BreakfastPercent,
+    decimal LunchPercent,
+    decimal DinnerPercent,
+    decimal SnackPercent);
 
 public sealed record ProfileResponseDto(
     Guid UserId,
@@ -46,13 +50,21 @@ public sealed record CreateDailyGoalRequestDto(
     decimal TargetCalories,
     decimal TargetProtein,
     decimal TargetFat,
-    decimal TargetCarbs);
+    decimal TargetCarbs,
+    decimal? BreakfastPercent = null,
+    decimal? LunchPercent = null,
+    decimal? DinnerPercent = null,
+    decimal? SnackPercent = null);
 
 public sealed record UpdateDailyGoalRequestDto(
     decimal TargetCalories,
     decimal TargetProtein,
     decimal TargetFat,
-    decimal TargetCarbs);
+    decimal TargetCarbs,
+    decimal? BreakfastPercent = null,
+    decimal? LunchPercent = null,
+    decimal? DinnerPercent = null,
+    decimal? SnackPercent = null);
 
 public sealed record CreateUserMealEntryRequestDto(
     string ProductName,

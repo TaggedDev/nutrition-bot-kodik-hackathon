@@ -21,6 +21,10 @@ type GoalForm = {
   targetProtein: string
   targetFat: string
   targetCarbs: string
+  breakfastPercent: string
+  lunchPercent: string
+  dinnerPercent: string
+  snackPercent: string
 }
 
 const emptySummary: NutritionSummary = { calories: 0, protein: 0, fat: 0, carbs: 0 }
@@ -39,6 +43,10 @@ export function ProfileView({ onBackToChat, onUnauthorized, onEditMeal }: Props)
     targetProtein: '',
     targetFat: '',
     targetCarbs: '',
+    breakfastPercent: '25',
+    lunchPercent: '35',
+    dinnerPercent: '30',
+    snackPercent: '10',
   })
   const [loading, setLoading] = useState(true)
   const [savingGoal, setSavingGoal] = useState(false)
@@ -109,6 +117,10 @@ export function ProfileView({ onBackToChat, onUnauthorized, onEditMeal }: Props)
       targetProtein: toNumber(goalForm.targetProtein),
       targetFat: toNumber(goalForm.targetFat),
       targetCarbs: toNumber(goalForm.targetCarbs),
+      breakfastPercent: toNumber(goalForm.breakfastPercent),
+      lunchPercent: toNumber(goalForm.lunchPercent),
+      dinnerPercent: toNumber(goalForm.dinnerPercent),
+      snackPercent: toNumber(goalForm.snackPercent),
     }
 
     try {
@@ -195,6 +207,10 @@ export function ProfileView({ onBackToChat, onUnauthorized, onEditMeal }: Props)
           <NumberInput label="Белки" value={goalForm.targetProtein} onChange={(value) => setGoalForm((form) => ({ ...form, targetProtein: value }))} />
           <NumberInput label="Жиры" value={goalForm.targetFat} onChange={(value) => setGoalForm((form) => ({ ...form, targetFat: value }))} />
           <NumberInput label="Углеводы" value={goalForm.targetCarbs} onChange={(value) => setGoalForm((form) => ({ ...form, targetCarbs: value }))} />
+          <NumberInput label="Завтрак, %" value={goalForm.breakfastPercent} onChange={(value) => setGoalForm((form) => ({ ...form, breakfastPercent: value }))} />
+          <NumberInput label="Обед, %" value={goalForm.lunchPercent} onChange={(value) => setGoalForm((form) => ({ ...form, lunchPercent: value }))} />
+          <NumberInput label="Ужин, %" value={goalForm.dinnerPercent} onChange={(value) => setGoalForm((form) => ({ ...form, dinnerPercent: value }))} />
+          <NumberInput label="Перекус, %" value={goalForm.snackPercent} onChange={(value) => setGoalForm((form) => ({ ...form, snackPercent: value }))} />
           <button type="submit" disabled={savingGoal}>
             {savingGoal ? 'Сохраняю...' : 'Сохранить цель'}
           </button>
@@ -280,6 +296,10 @@ function toGoalForm(goal: DailyGoal | null): GoalForm {
     targetProtein: goal?.targetProtein?.toString() ?? '',
     targetFat: goal?.targetFat?.toString() ?? '',
     targetCarbs: goal?.targetCarbs?.toString() ?? '',
+    breakfastPercent: (goal?.breakfastPercent ?? 25).toString(),
+    lunchPercent: (goal?.lunchPercent ?? 35).toString(),
+    dinnerPercent: (goal?.dinnerPercent ?? 30).toString(),
+    snackPercent: (goal?.snackPercent ?? 10).toString(),
   }
 }
 

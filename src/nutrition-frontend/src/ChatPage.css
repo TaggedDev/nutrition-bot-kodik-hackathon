@@ -1129,17 +1129,16 @@ input:focus-visible {
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 16px;
-  background: #fbfaff;
+  background: #fbf7ff;
   box-shadow: 0 8px 20px rgba(56, 35, 112, 0.05);
 }
 
 .today-card {
-  background: #ffffff;
+  background: #f8f2ff;
 }
 
 .total-head,
 .section-head,
-.progress-row > div:first-child,
 .macro-progress > div:first-child,
 .recommend-main {
   display: flex;
@@ -1193,49 +1192,100 @@ input:focus-visible {
   background: var(--carbs);
 }
 
-.section-head button {
-  border: 0;
-  background: transparent;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.progress-row,
 .macro-progress {
   display: grid;
   gap: 7px;
 }
 
-.progress-row > div:first-child span {
-  display: inline-flex;
+.progress-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 11px;
   align-items: center;
-  gap: 7px;
+  width: 100%;
+  min-height: 62px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.56);
+  color: var(--text);
+  text-align: left;
+  transition: 160ms ease;
 }
 
-.progress-row > div:first-child span i {
-  width: 22px;
-  height: 22px;
-  border-radius: 8px;
+.progress-row:hover,
+.progress-row.active {
+  border-color: var(--border-strong);
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(56, 35, 112, 0.055);
+}
+
+.meal-progress-icon {
+  position: relative;
+  display: block;
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  border-radius: 12px;
   background:
-    radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.22), transparent 38%),
-    #f2edff;
+    radial-gradient(circle at 34% 36%, rgba(255, 255, 255, 0.92), transparent 18%),
+    radial-gradient(circle at 70% 66%, rgba(255, 255, 255, 0.72), transparent 16%),
+    linear-gradient(135deg, #ddd6fe, #f5d0fe 55%, #ccfbf1);
 }
 
-.progress-row > div:first-child b {
-  width: 7px;
-  height: 7px;
+.meal-progress-icon::before,
+.meal-progress-icon::after {
+  content: "";
+  position: absolute;
   border-radius: 999px;
-  background: var(--accent);
+  background: rgba(255, 255, 255, 0.72);
 }
 
-.progress-row.active > div:first-child span,
-.progress-row.active > div:first-child span i {
-  color: var(--accent);
+.meal-progress-icon::before {
+  width: 18px;
+  height: 18px;
+  left: 8px;
+  bottom: 8px;
+}
+
+.meal-progress-icon::after {
+  width: 13px;
+  height: 13px;
+  right: 8px;
+  top: 9px;
+}
+
+.meal-progress-content {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.meal-progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.meal-progress-head span {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.progress-row span,
+.meal-progress-head strong {
+  color: var(--text);
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .macro-progress span,
 .recommend-card span,
 .recommend-card small {
@@ -1243,7 +1293,6 @@ input:focus-visible {
   font-size: 12px;
 }
 
-.progress-row strong,
 .macro-progress strong {
   font-size: 12px;
 }

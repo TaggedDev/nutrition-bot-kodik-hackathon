@@ -57,6 +57,10 @@ public sealed class NutritionIdentityDbContext : IdentityDbContext<ApplicationUs
             entity.Property(e => e.TargetProtein).HasPrecision(10, 2);
             entity.Property(e => e.TargetFat).HasPrecision(10, 2);
             entity.Property(e => e.TargetCarbs).HasPrecision(10, 2);
+            entity.Property(e => e.BreakfastPercent).HasPrecision(5, 2);
+            entity.Property(e => e.LunchPercent).HasPrecision(5, 2);
+            entity.Property(e => e.DinnerPercent).HasPrecision(5, 2);
+            entity.Property(e => e.SnackPercent).HasPrecision(5, 2);
             entity.Property(e => e.UpdatedAtUtc).IsRequired();
         });
     }

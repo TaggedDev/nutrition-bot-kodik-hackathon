@@ -676,9 +676,6 @@ function MealContextPanel({
       <section className="today-card">
         <div className="section-head">
           <strong>Сегодня</strong>
-          <button type="button" onClick={() => console.log('Подробнее о дне')}>
-            Подробнее
-          </button>
         </div>
         {mealOrder.map((mealType) => {
           const meal = findMeal(day, mealType)
@@ -690,6 +687,7 @@ function MealContextPanel({
               value={value}
               max={mealTarget(day?.goal, mealType)}
               active={mealType === currentMealType}
+              onSelect={() => onMealTypeChange(mealType)}
             />
           )
         })}
@@ -801,20 +799,34 @@ function MacroDot({ label, value, kind }: { label: string; value: number; kind: 
   )
 }
 
-function ProgressRow({ label, value, max, active = false }: { label: string; value: number; max: number; active?: boolean }) {
+function ProgressRow({
+  label,
+  value,
+  max,
+  active = false,
+  onSelect,
+}: {
+  label: string
+  value: number
+  max: number
+  active?: boolean
+  onSelect: () => void
+}) {
   const pct = Math.min(100, Math.round((value / Math.max(max, 1)) * 100))
 
   return (
-    <div className={`progress-row ${active ? 'active' : ''}`}>
-      <div>
-        <span><i aria-hidden="true" />{label}</span>
-        <strong>{formatNumber(value)} / {formatNumber(max)} ккал</strong>
-        {active && <b aria-hidden="true" />}
+    <button type="button" className={`progress-row ${active ? 'active' : ''}`} onClick={onSelect}>
+      <span className="meal-progress-icon" aria-hidden="true" />
+      <div className="meal-progress-content">
+        <div className="meal-progress-head">
+          <span>{label}</span>
+          <strong>{formatNumber(value)} / {formatNumber(max)} ккал</strong>
+        </div>
+        <div className="progress-track">
+          <span style={{ width: `${pct}%` }} />
+        </div>
       </div>
-      <div className="progress-track">
-        <span style={{ width: `${pct}%` }} />
-      </div>
-    </div>
+    </button>
   )
 }
 
@@ -1057,12 +1069,16 @@ function sumEntries(entries: MealEntryItem[]): NutritionSummary {
 function mealTarget(goal: DailyGoal | null | undefined, mealType: MealType): number {
   const calories = goal?.targetCalories ?? 2300
   const weights: Record<MealType, number> = {
-    Breakfast: 0.25,
-    Lunch: 0.35,
-    Dinner: 0.3,
-    Snack: 0.1,
+    Breakfast: mealPercent(goal?.breakfastPercent, 25) / 100,
+    Lunch: mealPercent(goal?.lunchPercent, 35) / 100,
+    Dinner: mealPercent(goal?.dinnerPercent, 30) / 100,
+    Snack: mealPercent(goal?.snackPercent, 10) / 100,
   }
   return Math.round(calories * weights[mealType])
+}
+
+function mealPercent(value: number | null | undefined, fallback: number): number {
+  return Number.isFinite(value) && value !== null && value !== undefined ? value : fallback
 }
 
 function formatSource(product: ProductNutrition): string {

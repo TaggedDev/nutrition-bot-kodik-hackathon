@@ -19,6 +19,8 @@
 - Use 22-24px radius only for major panels or premium recommendation cards.
 - Use fixed or constrained dimensions for toolbars, thumbnails, calendar cells, and action buttons so hover/active states do not shift layout.
 - Text must fit inside its container on desktop and mobile. Truncate product names in compact rows.
+- Meal progress rows use two columns: a square placeholder icon on the left and content on the right.
+- Summary sections such as "Итого" and "Сегодня" use pastel lavender backgrounds with lavender borders.
 
 ## Typography
 
@@ -32,6 +34,7 @@
 - Idle primary action: purple gradient fill, white foreground, subtle purple shadow.
 - Idle secondary action: white or light lavender background, purple foreground, lavender border.
 - Hover secondary action: light lavender background and stronger lavender border.
+- Clickable meal rows use a stable white/pastel fill, subtle border change, and no separate active dot.
 - Selected/add state: pastel purple foreground, light fill, bright purple 2px outline.
 - Remove hover state: red foreground, white or very light red fill, saturated red outline.
 - Click state: keep layout stable; use small translate or brightness changes only when it does not move neighboring content.
@@ -48,6 +51,7 @@
 ## Meal Context Behavior
 
 - Selected meal type controls the right panel basket and where new chat results are added.
+- Clicking a meal row in the "Сегодня" card changes the selected meal type and updates the dropdown.
 - Date selection controls the loaded day, current meal totals, and day progress.
 - Empty current meal state should be explicit and helpful, not a broken empty card.
 - Removing an item immediately recalculates meal total and progress.

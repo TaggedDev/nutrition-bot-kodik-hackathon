@@ -106,13 +106,30 @@ public sealed class ProfileService : IProfileService
         var existing = await _goalRepository.GetByUserIdAsync(userId, cancellationToken);
         if (existing is not null)
         {
-            existing.Update(request.TargetCalories, request.TargetProtein, request.TargetFat, request.TargetCarbs);
+            existing.Update(
+                request.TargetCalories,
+                request.TargetProtein,
+                request.TargetFat,
+                request.TargetCarbs,
+                request.BreakfastPercent ?? existing.BreakfastPercent,
+                request.LunchPercent ?? existing.LunchPercent,
+                request.DinnerPercent ?? existing.DinnerPercent,
+                request.SnackPercent ?? existing.SnackPercent);
             await _goalRepository.UpdateAsync(existing, cancellationToken);
             await _goalRepository.SaveChangesAsync(cancellationToken);
             return ToDto(existing);
         }
 
-        var goal = new UserDailyGoal(userId, request.TargetCalories, request.TargetProtein, request.TargetFat, request.TargetCarbs);
+        var goal = new UserDailyGoal(
+            userId,
+            request.TargetCalories,
+            request.TargetProtein,
+            request.TargetFat,
+            request.TargetCarbs,
+            request.BreakfastPercent ?? UserDailyGoal.DefaultBreakfastPercent,
+            request.LunchPercent ?? UserDailyGoal.DefaultLunchPercent,
+            request.DinnerPercent ?? UserDailyGoal.DefaultDinnerPercent,
+            request.SnackPercent ?? UserDailyGoal.DefaultSnackPercent);
         await _goalRepository.AddAsync(goal, cancellationToken);
         await _goalRepository.SaveChangesAsync(cancellationToken);
         return ToDto(goal);
@@ -123,12 +140,29 @@ public sealed class ProfileService : IProfileService
         var goal = await _goalRepository.GetByUserIdAsync(userId, cancellationToken);
         if (goal is null)
         {
-            goal = new UserDailyGoal(userId, request.TargetCalories, request.TargetProtein, request.TargetFat, request.TargetCarbs);
+            goal = new UserDailyGoal(
+                userId,
+                request.TargetCalories,
+                request.TargetProtein,
+                request.TargetFat,
+                request.TargetCarbs,
+                request.BreakfastPercent ?? UserDailyGoal.DefaultBreakfastPercent,
+                request.LunchPercent ?? UserDailyGoal.DefaultLunchPercent,
+                request.DinnerPercent ?? UserDailyGoal.DefaultDinnerPercent,
+                request.SnackPercent ?? UserDailyGoal.DefaultSnackPercent);
             await _goalRepository.AddAsync(goal, cancellationToken);
         }
         else
         {
-            goal.Update(request.TargetCalories, request.TargetProtein, request.TargetFat, request.TargetCarbs);
+            goal.Update(
+                request.TargetCalories,
+                request.TargetProtein,
+                request.TargetFat,
+                request.TargetCarbs,
+                request.BreakfastPercent ?? goal.BreakfastPercent,
+                request.LunchPercent ?? goal.LunchPercent,
+                request.DinnerPercent ?? goal.DinnerPercent,
+                request.SnackPercent ?? goal.SnackPercent);
             await _goalRepository.UpdateAsync(goal, cancellationToken);
         }
 
@@ -241,7 +275,15 @@ public sealed class ProfileService : IProfileService
 
     private static UserDailyGoalDto ToDto(UserDailyGoal goal)
     {
-        return new UserDailyGoalDto(goal.TargetCalories, goal.TargetProtein, goal.TargetFat, goal.TargetCarbs);
+        return new UserDailyGoalDto(
+            goal.TargetCalories,
+            goal.TargetProtein,
+            goal.TargetFat,
+            goal.TargetCarbs,
+            goal.BreakfastPercent,
+            goal.LunchPercent,
+            goal.DinnerPercent,
+            goal.SnackPercent);
     }
 
     private static NutritionSummaryDto Sum(IEnumerable<UserMealEntry> entries)

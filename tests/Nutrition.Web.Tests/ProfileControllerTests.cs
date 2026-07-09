@@ -44,6 +44,8 @@ public sealed class ProfileControllerTests
         Assert.Equal(180, service.DayUtcOffsetMinutes);
         Assert.Equal(userId, service.DayUserId);
         Assert.Equal(date, payload.Date);
+        Assert.NotNull(payload.Goal);
+        Assert.Equal(35, payload.Goal.LunchPercent);
         Assert.Contains(payload.Meals, meal => meal.MealType == "Lunch");
     }
 
@@ -133,17 +135,17 @@ public sealed class ProfileControllerTests
                 new MealEntriesByTypeDto("Dinner", Array.Empty<UserMealEntryDto>(), EmptySummary()),
                 new MealEntriesByTypeDto("Snack", Array.Empty<UserMealEntryDto>(), EmptySummary())
             };
-            return Task.FromResult(new ProfileDayResponseDto(date, null, meals, EmptySummary()));
+            return Task.FromResult(new ProfileDayResponseDto(date, DefaultGoal(), meals, EmptySummary()));
         }
 
         public Task<UserDailyGoalDto?> GetUserDailyGoalAsync(Guid userId, CancellationToken cancellationToken = default)
-            => Task.FromResult<UserDailyGoalDto?>(null);
+            => Task.FromResult<UserDailyGoalDto?>(DefaultGoal());
 
         public Task<UserDailyGoalDto> CreateUserDailyGoalAsync(Guid userId, CreateDailyGoalRequestDto request, CancellationToken cancellationToken = default)
-            => Task.FromResult(new UserDailyGoalDto(request.TargetCalories, request.TargetProtein, request.TargetFat, request.TargetCarbs));
+            => Task.FromResult(ToGoal(request));
 
         public Task<UserDailyGoalDto> UpdateUserDailyGoalAsync(Guid userId, UpdateDailyGoalRequestDto request, CancellationToken cancellationToken = default)
-            => Task.FromResult(new UserDailyGoalDto(request.TargetCalories, request.TargetProtein, request.TargetFat, request.TargetCarbs));
+            => Task.FromResult(ToGoal(request));
 
         public Task<UserMealEntryDto> CreateUserMealEntryAsync(Guid userId, CreateUserMealEntryRequestDto request, CancellationToken cancellationToken = default)
         {
@@ -168,5 +170,29 @@ public sealed class ProfileControllerTests
                 request.LoggedAtUtc ?? DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
 
         private static NutritionSummaryDto EmptySummary() => new(0, 0, 0, 0);
+
+        private static UserDailyGoalDto DefaultGoal() => new(2300, 150, 77, 288, 25, 35, 30, 10);
+
+        private static UserDailyGoalDto ToGoal(CreateDailyGoalRequestDto request)
+            => new(
+                request.TargetCalories,
+                request.TargetProtein,
+                request.TargetFat,
+                request.TargetCarbs,
+                request.BreakfastPercent ?? 25,
+                request.LunchPercent ?? 35,
+                request.DinnerPercent ?? 30,
+                request.SnackPercent ?? 10);
+
+        private static UserDailyGoalDto ToGoal(UpdateDailyGoalRequestDto request)
+            => new(
+                request.TargetCalories,
+                request.TargetProtein,
+                request.TargetFat,
+                request.TargetCarbs,
+                request.BreakfastPercent ?? 25,
+                request.LunchPercent ?? 35,
+                request.DinnerPercent ?? 30,
+                request.SnackPercent ?? 10);
     }
 }
