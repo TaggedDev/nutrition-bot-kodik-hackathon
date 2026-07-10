@@ -1,5 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { KeyboardEvent } from 'react'
+import type { KeyboardEvent, ReactNode } from 'react'
+import {
+  BarChart3,
+  Calendar,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Crown,
+  Download,
+  LogOut,
+  MessageCircle,
+  Pencil,
+  Plus,
+  Search,
+  Shield,
+  SlidersHorizontal,
+  Sparkles,
+  Target,
+  Trash2,
+  User,
+  Utensils,
+  X,
+} from 'lucide-react'
+import aiCrystalUrl from './assets/ai-crystal.svg'
 import { authApi, chatApi, profileApi } from './profileApi'
 import type { ChatHistoryItemData, ProfileStatistics } from './profileApi'
 import type { DailyGoal, MealEntryItem, ProfileData } from './types'
@@ -11,12 +34,24 @@ type Props = {
   onEditMeal: (entry: MealEntryItem) => void
 }
 
-type EditableField = 'firstName' | 'secondName' | 'targetCalories' | 'targetProtein' | 'targetFat' | 'targetCarbs' | 'breakfastPercent' | 'lunchPercent' | 'dinnerPercent' | 'snackPercent'
+type EditableField =
+  | 'firstName'
+  | 'secondName'
+  | 'targetCalories'
+  | 'targetProtein'
+  | 'targetFat'
+  | 'targetCarbs'
+  | 'breakfastPercent'
+  | 'lunchPercent'
+  | 'dinnerPercent'
+  | 'snackPercent'
 
 type Toast = {
   id: number
   text: string
 }
+
+type SystemBusyAction = 'export' | 'logout' | 'delete'
 
 const defaultGoal: DailyGoal = {
   targetCalories: 2100,
@@ -49,6 +84,7 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
   const [toast, setToast] = useState<Toast | null>(null)
   const [unitsOpen, setUnitsOpen] = useState(false)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [systemBusy, setSystemBusy] = useState<SystemBusyAction | null>(null)
 
   const showToast = useCallback((text: string) => {
     const nextToast = { id: Date.now(), text }
@@ -128,6 +164,8 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
     return `${formatter.format(start)} - ${formatter.format(end)}`
   }, [selectedRange])
 
+  const displayName = profile ? `${profile.firstName} ${profile.secondName}`.trim() : 'Профиль'
+
   function startEdit(field: EditableField, value: string | number | undefined) {
     setEditingField(field)
     setDraftValue(String(value ?? ''))
@@ -178,7 +216,8 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
       }
       cancelEdit()
     } catch (error) {
-      handleApiError(error, 'Не удалось сохранить изменения.', field.startsWith('target') || field.endsWith('Percent') ? setGoalsError : setProfileError)
+      const isGoalField = field.startsWith('target') || field.endsWith('Percent')
+      handleApiError(error, 'Не удалось сохранить изменения.', isGoalField ? setGoalsError : setProfileError)
       setFieldError('Не удалось сохранить изменения.')
     } finally {
       setSavingField(null)
@@ -202,6 +241,7 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
   }
 
   async function handleExportCsv() {
+    setSystemBusy('export')
     try {
       showToast('Экспорт CSV начат')
       const blob = await profileApi.exportDailyCsv()
@@ -214,34 +254,46 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
       showToast('CSV скачан')
     } catch (error) {
       handleApiError(error, 'Не удалось экспортировать CSV.', setProfileError)
+      showToast('Не удалось экспортировать CSV')
+    } finally {
+      setSystemBusy(null)
     }
   }
 
   async function handleLogout() {
+    setSystemBusy('logout')
     try {
       await authApi.logout()
       onUnauthorized()
     } catch (error) {
       handleApiError(error, 'Не удалось выйти из аккаунта.', setProfileError)
       showToast('Не удалось выйти')
+      setSystemBusy(null)
     }
   }
 
   async function handleDeleteRequest() {
+    setSystemBusy('delete')
     try {
       await profileApi.requestAccountDeletion()
       setConfirmDeleteOpen(false)
       showToast('Запрос на удаление аккаунта создан')
     } catch (error) {
       handleApiError(error, 'Не удалось создать запрос на удаление.', setProfileError)
+      showToast('Не удалось создать запрос')
+    } finally {
+      setSystemBusy(null)
     }
+  }
+
+  function handleSelectMetricUnits() {
+    setUnitsOpen(false)
+    showToast('Единицы измерения: метрические')
   }
 
   if (loading) {
     return <ProfileSkeleton />
   }
-
-  const displayName = profile ? `${profile.firstName} ${profile.secondName}`.trim() : 'Профиль'
 
   return (
     <main className="profile-page">
@@ -256,15 +308,18 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
       <section className="profile-main" aria-label="Личный кабинет">
         <header className="profile-topbar">
           <div className="profile-title-group">
-            <span className="profile-title-icon" aria-hidden="true">◎</span>
+            <span className="profile-title-icon" aria-hidden="true">
+              <User size={30} strokeWidth={2.4} />
+            </span>
             <div>
               <h1>Личный кабинет</h1>
               <p>Профиль, цели и статистика</p>
             </div>
           </div>
           <button type="button" className="date-range-button" aria-label="Выбранный период">
-            <span aria-hidden="true">▣</span>
-            {dateRangeLabel}
+            <Calendar size={18} />
+            <span>{dateRangeLabel}</span>
+            <ChevronDown size={18} />
           </button>
         </header>
 
@@ -286,6 +341,7 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
           />
           <DailyGoalsCard
             goal={goal}
+            statistics={statistics}
             error={goalsError}
             editingField={editingField}
             draftValue={draftValue}
@@ -308,10 +364,11 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
           <SystemCard
             unitsOpen={unitsOpen}
             onToggleUnits={() => setUnitsOpen((value) => !value)}
-            onCloseUnits={() => setUnitsOpen(false)}
+            onSelectMetricUnits={handleSelectMetricUnits}
             onExportCsv={handleExportCsv}
             onLogout={handleLogout}
             onOpenDelete={() => setConfirmDeleteOpen(true)}
+            busyAction={systemBusy}
           />
         </div>
       </section>
@@ -321,6 +378,7 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
         <ConfirmDeleteAccountModal
           onCancel={() => setConfirmDeleteOpen(false)}
           onConfirm={handleDeleteRequest}
+          isSubmitting={systemBusy === 'delete'}
         />
       )}
     </main>
@@ -344,19 +402,27 @@ function ProfileSidebar({
   return (
     <aside className="profile-sidebar" aria-label="История чатов">
       <div className="sidebar-brand">
-        <span className="brand-mark">N</span>
-        <strong>NutriMate AI</strong>
+        <span className="brand-mark" aria-hidden="true">
+          <Sparkles size={38} fill="currentColor" strokeWidth={1.8} />
+        </span>
+        <span>
+          <strong>NutriMate AI</strong>
+          <small>AI-трекер питания</small>
+        </span>
       </div>
       <div className="sidebar-actions">
         <button type="button" className="primary-action" onClick={onBackToChat}>
-          <span aria-hidden="true">＋</span>
+          <Plus size={22} />
           Новый чат
         </button>
-        <button type="button" className="icon-action" aria-label="Фильтры истории">⌘</button>
+        <button type="button" className="sidebar-tool-button" aria-label="Фильтры истории">
+          <SlidersHorizontal size={18} />
+        </button>
       </div>
       <label className="chat-search">
-        <span>Поиск по чатам</span>
-        <input value={chatQuery} onChange={(event) => onChatQueryChange(event.target.value)} placeholder="Поиск" />
+        <Search size={20} aria-hidden="true" />
+        <span className="sr-only">Поиск по чатам</span>
+        <input value={chatQuery} onChange={(event) => onChatQueryChange(event.target.value)} placeholder="Поиск по чатам" />
       </label>
       <div className="chat-history-list">
         {Object.entries(chatGroups).map(([label, items]) => (
@@ -364,12 +430,14 @@ function ProfileSidebar({
             <h2>{label}</h2>
             {items.map((item, index) => (
               <button key={item.id} type="button" className={`chat-history-item ${index === 0 && label === 'Сегодня' ? 'selected' : ''}`} onClick={onBackToChat}>
-                <span className="chat-icon" aria-hidden="true">□</span>
+                <MessageCircle size={22} className="chat-row-icon" aria-hidden="true" />
                 <span className="chat-copy">
-                  <strong>{item.title}</strong>
+                  <span className="chat-title-row">
+                    <strong>{item.title}</strong>
+                    <time>{item.timeLabel}</time>
+                  </span>
                   <small>{item.preview}</small>
                 </span>
-                <time>{item.timeLabel}</time>
               </button>
             ))}
           </section>
@@ -379,9 +447,9 @@ function ProfileSidebar({
         <span className="avatar">{initials}</span>
         <span>
           <strong>{profile ? `${profile.firstName} ${profile.secondName}` : 'Пользователь'}</strong>
-          <small>Тариф: Базовый</small>
+          <small>Премиум</small>
         </span>
-        <span aria-hidden="true">⌄</span>
+        <ChevronDown size={20} aria-hidden="true" />
       </button>
     </aside>
   )
@@ -402,28 +470,32 @@ function ProfileCard(props: {
 }) {
   return (
     <article className="profile-tile profile-card-tile">
-      <TileHeader icon="◌" title="Профиль" />
-      <div className="profile-identity">
-        <span className="profile-avatar">{getInitials(props.profile)}</span>
-        <div>
-          <strong>{props.displayName}</strong>
-          <span>Тариф: Базовый</span>
+      <TileHeader icon={<User size={22} />} title="Профиль" />
+      <div className="profile-form-shell">
+        <span className="profile-avatar-large">{getInitials(props.profile)}</span>
+        <div className="profile-fields">
+          <EditableProfileField label="Имя" field="firstName" value={props.profile?.firstName ?? ''} {...props} />
+          <EditableProfileField label="Фамилия" field="secondName" value={props.profile?.secondName ?? ''} {...props} />
+          <EditableProfileField label="Email" value={props.profile?.email ?? ''} readOnlyTitle="Изменение email пока недоступно" {...props} />
         </div>
       </div>
-      <EditableRow label="Имя" field="firstName" value={props.profile?.firstName ?? ''} {...props} />
-      <EditableRow label="Фамилия" field="secondName" value={props.profile?.secondName ?? ''} {...props} />
-      <div className="readonly-row">
-        <span>Email</span>
-        <strong>{props.profile?.email}</strong>
-        <small>Изменение email пока недоступно</small>
+      <div className="subscription-strip">
+        <span className="subscription-icon">
+          <Crown size={24} fill="currentColor" />
+        </span>
+        <span>
+          <strong>Тариф: Премиум</strong>
+          <small>Доступен до 20.09.2026</small>
+        </span>
+        <button type="button" className="subscription-button">Управление</button>
       </div>
-      <button type="button" className="secondary-action" disabled>Управление подпиской</button>
     </article>
   )
 }
 
 function DailyGoalsCard(props: {
   goal: DailyGoal
+  statistics: ProfileStatistics | null
   error: string | null
   editingField: EditableField | null
   draftValue: string
@@ -435,37 +507,46 @@ function DailyGoalsCard(props: {
   onCancel: () => void
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>, field: EditableField) => void
 }) {
+  const lastStatsDay = props.statistics?.items.find((item) => item.date === todayIso)
+    ?? props.statistics?.items[(props.statistics?.items.length ?? 0) - 1]
+  const mealCalories = {
+    breakfast: lastStatsDay?.breakfastCalories ?? 0,
+    lunch: lastStatsDay?.lunchCalories ?? 0,
+    dinner: lastStatsDay?.dinnerCalories ?? 0,
+    snack: lastStatsDay?.snackCalories ?? 0,
+  }
+  const mealTotal = mealCalories.breakfast + mealCalories.lunch + mealCalories.dinner + mealCalories.snack
   const meals = [
-    { field: 'breakfastPercent' as const, label: 'Завтрак', percent: props.goal.breakfastPercent ?? 25 },
-    { field: 'lunchPercent' as const, label: 'Обед', percent: props.goal.lunchPercent ?? 35 },
-    { field: 'dinnerPercent' as const, label: 'Ужин', percent: props.goal.dinnerPercent ?? 30 },
-    { field: 'snackPercent' as const, label: 'Перекус', percent: props.goal.snackPercent ?? 10 },
-  ]
-  const mealPercentTotal = meals.reduce((sum, item) => sum + item.percent, 0)
+    { label: 'Завтрак', kcal: mealCalories.breakfast, iconClass: 'sun' },
+    { label: 'Обед', kcal: mealCalories.lunch, iconClass: 'lunch' },
+    { label: 'Ужин', kcal: mealCalories.dinner, iconClass: 'moon' },
+    { label: 'Перекус', kcal: mealCalories.snack, iconClass: 'snack' },
+  ].map((meal) => ({
+    ...meal,
+    percent: mealTotal > 0 ? Math.round((meal.kcal / mealTotal) * 1000) / 10 : 0,
+  }))
 
   return (
     <article className="profile-tile goals-tile">
-      <TileHeader icon="◍" title="Цели на день" />
+      <TileHeader icon={<Target size={22} />} title="Цели на день" />
       {props.error && <TileError text={props.error} />}
-      <div className="goal-metric-grid">
+      <div className="goal-summary-panel">
         <EditableMetric label="Калории" suffix="ккал" field="targetCalories" value={props.goal.targetCalories} {...props} />
         <EditableMetric label="Белки" suffix="г" field="targetProtein" value={props.goal.targetProtein} tone="protein" {...props} />
         <EditableMetric label="Жиры" suffix="г" field="targetFat" value={props.goal.targetFat} tone="fat" {...props} />
         <EditableMetric label="Углеводы" suffix="г" field="targetCarbs" value={props.goal.targetCarbs} tone="carbs" {...props} />
       </div>
       <div className="meal-distribution">
-        <h3>Распределение калорий по приёмам пищи</h3>
+        <h3>Распределение калорий за день</h3>
         {meals.map((meal) => (
           <MealGoalRow
-            key={meal.field}
+            key={meal.label}
             label={meal.label}
-            kcal={Math.round(props.goal.targetCalories * meal.percent / 100)}
+            kcal={Math.round(meal.kcal)}
             percent={meal.percent}
-            field={meal.field}
-            {...props}
+            iconClass={meal.iconClass}
           />
         ))}
-        {mealPercentTotal !== 100 && <small className="goal-warning">Сумма приёмов отличается от дневной цели</small>}
       </div>
     </article>
   )
@@ -482,7 +563,9 @@ function NutritionDynamicsCard({ statistics, goal, rangeDays, error, onRangeChan
     <article className="profile-tile dynamics-tile">
       <div className="tile-header wide">
         <div className="tile-heading">
-          <span className="tile-icon" aria-hidden="true">▥</span>
+          <span className="tile-icon" aria-hidden="true">
+            <BarChart3 size={22} />
+          </span>
           <div>
             <h2>Статистика и динамика</h2>
             <p>Калории по макронутриентам (ккал)</p>
@@ -497,70 +580,111 @@ function NutritionDynamicsCard({ statistics, goal, rangeDays, error, onRangeChan
         <div className="empty-chart">Нет данных для графика.</div>
       )}
       <div className="macro-legend">
-        <span><i className="protein" />Белки</span>
-        <span><i className="fat" />Жиры</span>
-        <span><i className="carbs" />Углеводы</span>
+        <span><i className="protein" />Белки (г)</span>
+        <span><i className="fat" />Жиры (г)</span>
+        <span><i className="carbs" />Углеводы (г)</span>
       </div>
-      <div className="advice-strip">Совет: старайтесь держать белки на уровне 20-30% от дневной нормы.</div>
     </article>
   )
 }
 
 function StackedMacroBarChart({ statistics, goal, rangeDays }: { statistics: ProfileStatistics; goal: DailyGoal; rangeDays: number }) {
-  const maxValue = Math.max(goal.targetCalories, ...statistics.items.map((item) => item.totalCalories), 1) * 1.12
-  const goalY = 190 - (goal.targetCalories / maxValue) * 170
-  const barStep = 700 / statistics.items.length
-  const barWidth = rangeDays === 7 ? 44 : rangeDays === 14 ? 22 : 10
+  const rawMaxValue = Math.max(goal.targetCalories, ...statistics.items.map((item) => item.totalCalories), 1)
+  const maxValue = Math.max(500, Math.ceil((rawMaxValue * 1.18) / 250) * 250)
+  const chartHeight = 250
+  const plotTop = 30
+  const plotBottom = 204
+  const plotHeight = plotBottom - plotTop
+  const goalY = plotBottom - (goal.targetCalories / maxValue) * plotHeight
+  const barStep = 704 / Math.max(statistics.items.length, 1)
+  const barWidth = rangeDays === 7 ? 42 : rangeDays === 14 ? 22 : 10
   const showLabels = rangeDays === 7
 
   return (
     <div className="chart-wrap" aria-label="График калорий по макронутриентам">
-      <svg viewBox="0 0 760 230" role="img">
-        <line x1="44" y1={goalY} x2="724" y2={goalY} className="goal-line" />
-        <text x="616" y={Math.max(14, goalY - 6)} className="goal-label">Цель {formatNumber(goal.targetCalories)} ккал</text>
-        {[0, 0.5, 1].map((ratio) => (
+      <svg viewBox={`0 0 780 ${chartHeight}`} role="img">
+        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+          const tickValue = maxValue * ratio
+          const tickY = plotBottom - ratio * plotHeight
+          return (
           <g key={ratio}>
-            <line x1="44" x2="724" y1={190 - ratio * 170} y2={190 - ratio * 170} className="axis-line" />
-            <text x="4" y={195 - ratio * 170} className="axis-label">{formatNumber(maxValue * ratio)}</text>
+            <line x1="54" x2="748" y1={tickY} y2={tickY} className="axis-line" />
+            <text x="4" y={tickY + 4} className="axis-label">{formatNumber(tickValue)}</text>
           </g>
-        ))}
+          )
+        })}
+        <line x1="54" y1={goalY} x2="748" y2={goalY} className="goal-line" />
+        <text x="646" y={Math.max(16, goalY - 7)} className="goal-label">Цель {formatNumber(goal.targetCalories)} ккал</text>
         {statistics.items.map((item, index) => {
-          const x = 58 + index * barStep + (barStep - barWidth) / 2
-          const totalHeight = item.hasData ? Math.max(6, (item.totalCalories / maxValue) * 170) : 36
-          const baseY = 190
+          const x = 68 + index * barStep + (barStep - barWidth) / 2
+          const date = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(new Date(`${item.date}T00:00:00`))
+          const labelVisible = rangeDays !== 30 || index % 4 === 0
+
+          if (!item.hasData || item.totalCalories <= 0) {
+            const emptyHeight = showLabels ? 58 : 34
+            return (
+              <g key={item.date}>
+                <title>{date}: нет данных</title>
+                <rect x={x} y={plotBottom - emptyHeight} width={barWidth} height={emptyHeight} rx="7" className="empty-bar" />
+                {showLabels && <text x={x + barWidth / 2} y={plotBottom - emptyHeight / 2 - 2} className="bar-empty-label">Нет</text>}
+                {showLabels && <text x={x + barWidth / 2} y={plotBottom - emptyHeight / 2 + 11} className="bar-empty-label">данных</text>}
+                {labelVisible && <text x={x + barWidth / 2} y="232" className="x-label">{shortDate(item.date, rangeDays)}</text>}
+              </g>
+            )
+          }
+
+          const totalHeight = Math.max(4, (item.totalCalories / maxValue) * plotHeight)
+          const barTop = plotBottom - totalHeight
           const macroKcal = {
             protein: item.proteinGrams * 4,
             fat: item.fatGrams * 9,
             carbs: item.carbsGrams * 4,
           }
-          const macroTotal = Math.max(macroKcal.protein + macroKcal.fat + macroKcal.carbs, item.totalCalories, 1)
-          const proteinHeight = item.hasData ? totalHeight * macroKcal.protein / macroTotal : 0
-          const fatHeight = item.hasData ? totalHeight * macroKcal.fat / macroTotal : 0
-          const carbsHeight = item.hasData ? Math.max(0, totalHeight - proteinHeight - fatHeight) : 0
-          const date = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(new Date(`${item.date}T00:00:00`))
-          const labelVisible = rangeDays !== 30 || index % 4 === 0
-          const title = `${date}: ${formatNumber(item.totalCalories)} ккал, Б ${formatNumber(item.proteinGrams)} г, Ж ${formatNumber(item.fatGrams)} г, У ${formatNumber(item.carbsGrams)} г`
-
-          if (!item.hasData) {
-            return (
-              <g key={item.date}>
-                <title>{date}: нет данных</title>
-                <rect x={x} y={baseY - totalHeight} width={barWidth} height={totalHeight} rx="6" className="empty-bar" />
-                {showLabels && <text x={x + barWidth / 2} y={baseY - totalHeight - 8} className="bar-empty-label">Нет данных</text>}
-                {labelVisible && <text x={x + barWidth / 2} y="214" className="x-label">{shortDate(item.date, rangeDays)}</text>}
-              </g>
-            )
-          }
+          const macroTotal = Math.max(macroKcal.protein + macroKcal.fat + macroKcal.carbs, 1)
+          const proteinHeight = Math.max(macroKcal.protein > 0 ? 2 : 0, totalHeight * macroKcal.protein / macroTotal)
+          const fatHeight = Math.max(macroKcal.fat > 0 ? 2 : 0, totalHeight * macroKcal.fat / macroTotal)
+          const carbsHeight = Math.max(0, totalHeight - proteinHeight - fatHeight)
+          const proteinPct = Math.round(macroKcal.protein / macroTotal * 100)
+          const fatPct = Math.round(macroKcal.fat / macroTotal * 100)
+          const carbsPct = Math.max(0, 100 - proteinPct - fatPct)
+          const goalPercent = Math.round(item.totalCalories / Math.max(goal.targetCalories, 1) * 100)
+          const clipId = `macro-bar-${rangeDays}-${index}`
+          const radius = Math.min(7, barWidth / 2, totalHeight)
+          const barPath = [
+            `M ${x} ${plotBottom}`,
+            `L ${x} ${barTop + radius}`,
+            `Q ${x} ${barTop} ${x + radius} ${barTop}`,
+            `L ${x + barWidth - radius} ${barTop}`,
+            `Q ${x + barWidth} ${barTop} ${x + barWidth} ${barTop + radius}`,
+            `L ${x + barWidth} ${plotBottom}`,
+            'Z',
+          ].join(' ')
+          const title = `${date}
+${formatNumber(item.totalCalories)} ккал
+Белки: ${formatNumber(item.proteinGrams)} г / ${formatNumber(macroKcal.protein)} ккал
+Жиры: ${formatNumber(item.fatGrams)} г / ${formatNumber(macroKcal.fat)} ккал
+Углеводы: ${formatNumber(item.carbsGrams)} г / ${formatNumber(macroKcal.carbs)} ккал
+${goalPercent}% от цели`
 
           return (
             <g key={item.date}>
               <title>{title}</title>
-              {showLabels && <text x={x + barWidth / 2} y={baseY - totalHeight - 8} className="bar-total">{formatNumber(item.totalCalories)}</text>}
-              <rect x={x} y={baseY - carbsHeight} width={barWidth} height={carbsHeight} rx="5" className="bar-carbs" />
-              <rect x={x} y={baseY - carbsHeight - fatHeight} width={barWidth} height={fatHeight} className="bar-fat" />
-              <rect x={x} y={baseY - carbsHeight - fatHeight - proteinHeight} width={barWidth} height={proteinHeight} rx="5" className="bar-protein" />
-              {showLabels && totalHeight > 72 && <text x={x + barWidth / 2} y={baseY - totalHeight / 2} className="bar-percent">{Math.round(item.totalCalories / goal.targetCalories * 100)}%</text>}
-              {labelVisible && <text x={x + barWidth / 2} y="214" className="x-label">{shortDate(item.date, rangeDays)}</text>}
+              <defs>
+                <clipPath id={clipId}>
+                  <path d={barPath} />
+                </clipPath>
+              </defs>
+              {showLabels && <text x={x + barWidth / 2} y={Math.max(13, barTop - 7)} className="bar-total">{formatNumber(item.totalCalories)}</text>}
+              <path d={barPath} className="bar-shell" />
+              <g clipPath={`url(#${clipId})`}>
+                <rect x={x} y={plotBottom - carbsHeight} width={barWidth} height={carbsHeight} className="bar-carbs" />
+                <rect x={x} y={plotBottom - carbsHeight - fatHeight} width={barWidth} height={fatHeight} className="bar-fat" />
+                <rect x={x} y={barTop} width={barWidth} height={proteinHeight} className="bar-protein" />
+              </g>
+              {showLabels && proteinHeight > 22 && <text x={x + barWidth / 2} y={barTop + proteinHeight / 2 + 4} className="bar-percent">{proteinPct}%</text>}
+              {showLabels && fatHeight > 22 && <text x={x + barWidth / 2} y={plotBottom - carbsHeight - fatHeight / 2 + 4} className="bar-percent">{fatPct}%</text>}
+              {showLabels && carbsHeight > 22 && <text x={x + barWidth / 2} y={plotBottom - carbsHeight / 2 + 4} className="bar-percent">{carbsPct}%</text>}
+              {labelVisible && <text x={x + barWidth / 2} y="232" className="x-label">{shortDate(item.date, rangeDays)}</text>}
             </g>
           )
         })}
@@ -569,33 +693,36 @@ function StackedMacroBarChart({ statistics, goal, rangeDays }: { statistics: Pro
   )
 }
 
-function SystemCard({ unitsOpen, onToggleUnits, onCloseUnits, onExportCsv, onLogout, onOpenDelete }: {
+function SystemCard({ unitsOpen, onToggleUnits, onSelectMetricUnits, onExportCsv, onLogout, onOpenDelete, busyAction }: {
   unitsOpen: boolean
   onToggleUnits: () => void
-  onCloseUnits: () => void
+  onSelectMetricUnits: () => void
   onExportCsv: () => void
   onLogout: () => void
   onOpenDelete: () => void
+  busyAction: SystemBusyAction | null
 }) {
   return (
     <article className="profile-tile system-tile">
-      <TileHeader icon="⚙" title="Система" />
+      <TileHeader icon={<Shield size={22} />} title="Система" />
       <div className="system-row with-popover">
         <span>
           <strong>Единицы измерения</strong>
           <small>Метрические (кг, см)</small>
         </span>
-        <button type="button" className="icon-action" aria-label="Изменить единицы измерения" onClick={onToggleUnits}>✎</button>
+        <button type="button" className="icon-action" aria-label="Изменить единицы измерения" onClick={onToggleUnits}>
+          <Pencil size={17} />
+        </button>
         {unitsOpen && (
           <div className="units-popover">
-            <button type="button" onClick={onCloseUnits}>Метрические (кг, см)</button>
+            <button type="button" onClick={onSelectMetricUnits}>Метрические (кг, см)</button>
             <button type="button" disabled title="Будет позже">Имперские (lb, ft)</button>
           </div>
         )}
       </div>
-      <SystemActionRow icon="⇩" label="Экспортировать данные в CSV" onClick={onExportCsv} />
-      <SystemActionRow icon="↪" label="Разлогиниться" onClick={onLogout} />
-      <SystemActionRow icon="!" label="Запросить удаление аккаунта" onClick={onOpenDelete} destructive />
+      <SystemActionRow icon={<Download size={18} />} label="Экспорт CSV" onClick={onExportCsv} isLoading={busyAction === 'export'} />
+      <SystemActionRow icon={<LogOut size={18} />} label="Разлогиниться" onClick={onLogout} isLoading={busyAction === 'logout'} />
+      <SystemActionRow icon={<Trash2 size={18} />} label="Удаление аккаунта" onClick={onOpenDelete} destructive />
     </article>
   )
 }
@@ -605,26 +732,30 @@ function AiInsightsStubCard() {
     <article className="profile-tile insights-tile">
       <div className="tile-header">
         <div className="tile-heading">
-          <span className="tile-icon" aria-hidden="true">✦</span>
+          <span className="tile-icon" aria-hidden="true">
+            <Sparkles size={21} />
+          </span>
           <h2>AI-инсайты и рекомендации</h2>
         </div>
         <span className="soon-badge">скоро</span>
       </div>
+      <img className="ai-crystal" src={aiCrystalUrl} alt="" />
       <p>Мы анализируем ваши привычки питания и готовим персональные рекомендации.</p>
-      <small>Пример рекомендаций</small>
+      <small className="insight-preview-label">Примеры рекомендаций</small>
       <ul>
-        <li>Вы часто недобираете белок в обед.</li>
-        <li>Попробуйте добавить больше белка в завтрак.</li>
-        <li>Ваш ужин часто слишком калорийный.</li>
+        <li><Sparkles size={15} />Вы часто недобираете белок в обед.</li>
+        <li><Sparkles size={15} />Попробуйте добавить больше белка в завтрак.</li>
+        <li><Sparkles size={15} />Ваш ужин часто слишком калорийный.</li>
       </ul>
     </article>
   )
 }
 
-function EditableRow({ label, field, value, editingField, draftValue, savingField, fieldError, onStartEdit, onDraftChange, onSave, onCancel, onKeyDown }: {
+function EditableProfileField({ label, field, value, readOnlyTitle, editingField, draftValue, savingField, fieldError, onStartEdit, onDraftChange, onSave, onCancel, onKeyDown }: {
   label: string
-  field: EditableField
+  field?: EditableField
   value: string
+  readOnlyTitle?: string
   editingField: EditableField | null
   draftValue: string
   savingField: EditableField | null
@@ -635,29 +766,46 @@ function EditableRow({ label, field, value, editingField, draftValue, savingFiel
   onCancel: () => void
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>, field: EditableField) => void
 }) {
-  const isEditing = editingField === field
+  const isReadOnly = !field
+  const isEditing = field ? editingField === field : false
   return (
-    <label className="editable-row">
-      <span>{label}</span>
+    <label className={`editable-profile-field ${isReadOnly ? 'is-readonly' : ''}`} title={readOnlyTitle}>
       {isEditing ? (
-        <span className="edit-control">
-          <input autoFocus value={draftValue} onChange={(event) => onDraftChange(event.target.value)} onKeyDown={(event) => onKeyDown(event, field)} />
-          <button type="button" aria-label="Сохранить" disabled={savingField === field} onClick={() => onSave(field)}>{savingField === field ? '…' : '✓'}</button>
-          <button type="button" aria-label="Отмена" onClick={onCancel}>×</button>
-          {fieldError && <small>{fieldError}</small>}
+        <span className="profile-field-shell is-editing">
+          <span className="profile-field-copy">
+            <span className="profile-field-label">{label}</span>
+          </span>
+          <input autoFocus value={draftValue} onChange={(event) => onDraftChange(event.target.value)} onKeyDown={(event) => onKeyDown(event, field!)} />
+          <span className="profile-field-actions">
+            <button type="button" aria-label="Сохранить" disabled={savingField === field} onClick={() => onSave(field!)}>
+              <Check size={15} />
+            </button>
+            <button type="button" aria-label="Отмена" onClick={onCancel}>
+              <X size={15} />
+            </button>
+          </span>
         </span>
       ) : (
-        <span className="field-display">
-          <strong>{value}</strong>
-          <button type="button" aria-label={`Редактировать ${label}`} onClick={() => onStartEdit(field, value)}>✎</button>
+        <span className="profile-field-shell">
+          <span className="profile-field-copy">
+            <span className="profile-field-label">{label}</span>
+            <strong className="profile-field-value">{value}</strong>
+          </span>
+          {field && (
+            <button type="button" className="profile-field-edit" aria-label={`Редактировать ${label}`} onClick={() => onStartEdit(field, value)}>
+              <Pencil size={16} />
+            </button>
+          )}
         </span>
       )}
+      {field && isEditing && fieldError && <small className="profile-field-error">{fieldError}</small>}
     </label>
   )
 }
 
 function EditableMetric(props: {
   label: string
+  helper?: string
   suffix: string
   field: EditableField
   value: number
@@ -676,18 +824,21 @@ function EditableMetric(props: {
   return (
     <label className={`goal-metric ${props.tone ?? ''}`}>
       <span>{props.label}</span>
+      {props.helper && <small>{props.helper}</small>}
       {isEditing ? (
         <span className="metric-edit">
           <input autoFocus type="number" min="0" value={props.draftValue} onChange={(event) => props.onDraftChange(event.target.value)} onKeyDown={(event) => props.onKeyDown(event, props.field)} />
-          <button type="button" aria-label="Сохранить" disabled={props.savingField === props.field} onClick={() => props.onSave(props.field)}>{props.savingField === props.field ? '…' : '✓'}</button>
+          <button type="button" aria-label="Сохранить" disabled={props.savingField === props.field} onClick={() => props.onSave(props.field)}>✓</button>
           <button type="button" aria-label="Отмена" onClick={props.onCancel}>×</button>
           {props.fieldError && <small>{props.fieldError}</small>}
         </span>
       ) : (
         <span className="metric-value">
           <strong>{formatNumber(props.value)}</strong>
-          <small>{props.suffix}</small>
-          <button type="button" aria-label={`Редактировать ${props.label}`} onClick={() => props.onStartEdit(props.field, props.value)}>✎</button>
+          <em>{props.suffix}</em>
+          <button type="button" aria-label={`Редактировать ${props.label}`} onClick={() => props.onStartEdit(props.field, props.value)}>
+            <Pencil size={17} />
+          </button>
         </span>
       )}
     </label>
@@ -698,36 +849,17 @@ function MealGoalRow(props: {
   label: string
   kcal: number
   percent: number
-  field: EditableField
-  editingField: EditableField | null
-  draftValue: string
-  savingField: EditableField | null
-  fieldError: string | null
-  onStartEdit: (field: EditableField, value: string | number | undefined) => void
-  onDraftChange: (value: string) => void
-  onSave: (field: EditableField) => void
-  onCancel: () => void
-  onKeyDown: (event: KeyboardEvent<HTMLInputElement>, field: EditableField) => void
+  iconClass: string
 }) {
-  const isEditing = props.editingField === props.field
   return (
     <div className="meal-goal-row">
-      <span className="meal-square" aria-hidden="true" />
+      <span className={`meal-square ${props.iconClass}`} aria-hidden="true">
+        <Utensils size={18} />
+      </span>
       <strong>{props.label}</strong>
       <span className="meal-bar"><i style={{ width: `${Math.min(100, props.percent)}%` }} /></span>
-      {isEditing ? (
-        <span className="meal-edit">
-          <input autoFocus type="number" min="0" value={props.draftValue} onChange={(event) => props.onDraftChange(event.target.value)} onKeyDown={(event) => props.onKeyDown(event, props.field)} />
-          <button type="button" aria-label="Сохранить" disabled={props.savingField === props.field} onClick={() => props.onSave(props.field)}>{props.savingField === props.field ? '…' : '✓'}</button>
-          <button type="button" aria-label="Отмена" onClick={props.onCancel}>×</button>
-        </span>
-      ) : (
-        <>
-          <span>{props.kcal} ккал</span>
-          <small>{formatNumber(props.percent)}%</small>
-          <button type="button" aria-label={`Редактировать ${props.label}`} onClick={() => props.onStartEdit(props.field, props.percent)}>✎</button>
-        </>
-      )}
+      <span>{props.kcal} ккал</span>
+      <small>{formatNumber(props.percent)}%</small>
     </div>
   )
 }
@@ -744,16 +876,23 @@ function RangeSegmentedControl({ value, onChange }: { value: number; onChange: (
   )
 }
 
-function SystemActionRow({ icon, label, onClick, destructive = false }: { icon: string; label: string; onClick: () => void; destructive?: boolean }) {
+function SystemActionRow({ icon, label, onClick, destructive = false, isLoading = false }: {
+  icon: ReactNode
+  label: string
+  onClick: () => void
+  destructive?: boolean
+  isLoading?: boolean
+}) {
   return (
-    <button type="button" className={`system-action ${destructive ? 'destructive' : ''}`} onClick={onClick}>
+    <button type="button" className={`system-action ${destructive ? 'destructive' : ''}`} onClick={onClick} disabled={isLoading}>
       <span aria-hidden="true">{icon}</span>
-      {label}
+      <strong>{isLoading ? 'Выполняется...' : label}</strong>
+      <ChevronRight size={16} aria-hidden="true" />
     </button>
   )
 }
 
-function ConfirmDeleteAccountModal({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
+function ConfirmDeleteAccountModal({ onCancel, onConfirm, isSubmitting }: { onCancel: () => void; onConfirm: () => void; isSubmitting: boolean }) {
   const cancelRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -769,17 +908,17 @@ function ConfirmDeleteAccountModal({ onCancel, onConfirm }: { onCancel: () => vo
     <div className="modal-backdrop" role="presentation">
       <section className="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
         <h2 id="delete-title">Запросить удаление аккаунта?</h2>
-        <p>Мы отметим аккаунт на удаление. Это действие чувствительное.</p>
+        <p>Мы создадим запрос на удаление аккаунта. Это действие чувствительное.</p>
         <div>
-          <button type="button" className="secondary-action" ref={cancelRef} onClick={onCancel}>Отмена</button>
-          <button type="button" className="danger-action" onClick={onConfirm}>Запросить удаление</button>
+          <button type="button" className="secondary-action" ref={cancelRef} onClick={onCancel} disabled={isSubmitting}>Отмена</button>
+          <button type="button" className="danger-action" onClick={onConfirm} disabled={isSubmitting}>{isSubmitting ? 'Отправляем...' : 'Запросить удаление'}</button>
         </div>
       </section>
     </div>
   )
 }
 
-function TileHeader({ icon, title }: { icon: string; title: string }) {
+function TileHeader({ icon, title }: { icon: ReactNode; title: string }) {
   return (
     <div className="tile-header">
       <div className="tile-heading">
@@ -821,7 +960,7 @@ function normalizeGoal(goal: DailyGoal): DailyGoal {
 }
 
 function getInitials(profile: ProfileData | null): string {
-  const first = profile?.firstName?.[0] ?? 'N'
+  const first = profile?.firstName?.[0] ?? 'D'
   const second = profile?.secondName?.[0] ?? 'M'
   return `${first}${second}`.toUpperCase()
 }
@@ -832,5 +971,5 @@ function formatNumber(value: number): string {
 
 function shortDate(value: string, rangeDays: number): string {
   const date = new Date(`${value}T00:00:00`)
-  return new Intl.DateTimeFormat('ru-RU', rangeDays === 7 ? { weekday: 'short' } : { day: 'numeric', month: 'numeric' }).format(date)
+  return new Intl.DateTimeFormat('ru-RU', rangeDays === 7 ? { day: 'numeric', weekday: 'short' } : { day: 'numeric', month: 'numeric' }).format(date)
 }

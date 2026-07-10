@@ -123,6 +123,10 @@ public sealed record ProfileStatisticsDayDto(
     decimal ProteinGrams,
     decimal FatGrams,
     decimal CarbsGrams,
+    decimal BreakfastCalories,
+    decimal LunchCalories,
+    decimal DinnerCalories,
+    decimal SnackCalories,
     bool HasData);
 
 public sealed record ProfileStatisticsResponseDto(

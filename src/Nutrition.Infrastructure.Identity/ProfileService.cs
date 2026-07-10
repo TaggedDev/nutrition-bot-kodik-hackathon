@@ -130,11 +130,21 @@ public sealed class ProfileService : IProfileService
                 var date = startDate.AddDays(offset);
                 if (!entriesByDate.TryGetValue(date, out var dayEntries) || dayEntries.Length == 0)
                 {
-                    return new ProfileStatisticsDayDto(date, 0, 0, 0, 0, false);
+                    return new ProfileStatisticsDayDto(date, 0, 0, 0, 0, 0, 0, 0, 0, false);
                 }
 
                 var summary = Sum(dayEntries);
-                return new ProfileStatisticsDayDto(date, summary.Calories, summary.Protein, summary.Fat, summary.Carbs, true);
+                return new ProfileStatisticsDayDto(
+                    date,
+                    summary.Calories,
+                    summary.Protein,
+                    summary.Fat,
+                    summary.Carbs,
+                    SumMealCalories(dayEntries, MealType.Breakfast),
+                    SumMealCalories(dayEntries, MealType.Lunch),
+                    SumMealCalories(dayEntries, MealType.Dinner),
+                    SumMealCalories(dayEntries, MealType.Snack),
+                    true);
             })
             .ToArray();
 

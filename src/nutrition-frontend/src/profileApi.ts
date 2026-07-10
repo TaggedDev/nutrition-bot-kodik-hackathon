@@ -11,6 +11,10 @@ export type ProfileStatisticsDay = {
   proteinGrams: number
   fatGrams: number
   carbsGrams: number
+  breakfastCalories: number
+  lunchCalories: number
+  dinnerCalories: number
+  snackCalories: number
   hasData: boolean
 }
 
@@ -95,39 +99,53 @@ export const authApi = {
 export const chatApi = {
   getHistory: async (): Promise<ChatHistoryItemData[]> => [
     {
-      id: 'breakfast-balance',
-      title: 'Баланс завтрака',
-      preview: 'Овсянка, йогурт и ягоды',
+      id: 'weekly-plan',
+      title: 'План питания на неделю',
+      preview: 'Подбери план питания на неделю...',
       dateLabel: 'Сегодня',
-      timeLabel: '09:24',
+      timeLabel: '10:45',
     },
     {
-      id: 'protein-lunch',
-      title: 'Белок в обед',
-      preview: 'Курица, гречка, овощи',
-      dateLabel: 'Сегодня',
-      timeLabel: '13:12',
-    },
-    {
-      id: 'dinner-check',
-      title: 'Проверка ужина',
-      preview: 'Сравнили пасту и салат',
+      id: 'ration-analysis',
+      title: 'Анализ рациона',
+      preview: 'Проанализируй мой рацион за...',
       dateLabel: 'Вчера',
-      timeLabel: '20:18',
+      timeLabel: 'Вчера, 18:30',
     },
     {
-      id: 'weekly-goals',
-      title: 'Цели на неделю',
-      preview: 'Обновили калории и БЖУ',
+      id: 'protein-ration',
+      title: 'Белок в рационе',
+      preview: 'Сколько белка я получаю в день?',
+      dateLabel: 'Вчера',
+      timeLabel: 'Вчера, 09:15',
+    },
+    {
+      id: 'snack-selection',
+      title: 'Подбор перекусов',
+      preview: 'Какие перекусы лучше выбрать...',
       dateLabel: '23 мая',
-      timeLabel: '18:40',
+      timeLabel: '23 мая, 20:10',
     },
     {
-      id: 'snack-ideas',
-      title: 'Идеи перекусов',
-      preview: 'Творог, орехи, фрукты',
+      id: 'training-food',
+      title: 'Тренировки и питание',
+      preview: 'Как питание влияет на мои...',
+      dateLabel: '23 мая',
+      timeLabel: '23 мая, 14:22',
+    },
+    {
+      id: 'calorie-deficit',
+      title: 'Дефицит калорий',
+      preview: 'Создай план для дефицита калорий',
       dateLabel: '21 мая',
-      timeLabel: '11:05',
+      timeLabel: '21 мая, 11:05',
+    },
+    {
+      id: 'water-hydration',
+      title: 'Вода и гидратация',
+      preview: 'Сколько воды мне нужно пить?',
+      dateLabel: '21 мая',
+      timeLabel: '21 мая, 08:40',
     },
   ],
 }
