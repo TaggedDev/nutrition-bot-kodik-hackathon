@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, Dispatch, FormEvent, SetStateAction } from 'react'
+import { Sparkles } from 'lucide-react'
 import type {
   CurrentUser,
   DailyGoal,
@@ -316,28 +317,15 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
     setDay((current) => replaceEntryInDay(current, savedEntry, selectedDateOnly))
   }
 
-  function resetChat() {
-    setLines([])
-    setInput('')
-    setPortionMap({})
-    setError(null)
-  }
-
   return (
     <main className="nutri-page">
       <section className="chat-workspace" aria-label="Чат питания">
         <header className="chat-header">
           <div className="assistant-title">
-            <span className="ai-icon"><UtensilsIcon /></span>
+            <span className="ai-icon"><Sparkles aria-hidden="true" /></span>
             <div>
-              <h1>AI-ассистент <span>NutriMate AI</span></h1>
-              <p>Ваш помощник по питанию и КБЖУ</p>
+              <h1>NutriMate AI</h1>
             </div>
-          </div>
-          <div className="header-actions">
-            <button type="button" className="clear-btn" onClick={resetChat} aria-label="Очистить чат">
-              Очистить чат
-            </button>
           </div>
         </header>
 
@@ -358,7 +346,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
         <div className="conversation">
           {lines.length === 0 ? (
             <div className="empty-chat">
-              <span><UtensilsIcon /></span>
+              <span><Sparkles aria-hidden="true" /></span>
               <h2>Напишите, что вы съели</h2>
               <p>Я найду продукты через OpenFoodFacts, покажу КБЖУ и дам выбрать граммовку перед добавлением.</p>
             </div>
@@ -388,23 +376,22 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
 
         {error && <div className="chat-error">{error}</div>}
 
-        <form className="chat-input-bar" onSubmit={handleSubmit}>
+        <div className="chat-composer-dock">
+          <div className="input-notice">NutriMate AI может ошибаться. Проверяйте важную информацию.</div>
+          <form className="chat-input-bar" onSubmit={handleSubmit}>
           <div className="input-row">
             <label className="chat-input-shell">
               <span className="sr-only">Сообщение</span>
               <input
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="Напишите сообщение..."
+                placeholder="Я съел творог 150 грамм"
               />
             </label>
             <button type="submit" className="send-btn" aria-label="Отправить сообщение" disabled={loadingSearch}>›</button>
           </div>
-          <div className="input-helper">
-            <span>Например: Я съел творог 150 г</span>
-            <span>NutriMate AI может ошибаться. Проверяйте важную информацию.</span>
-          </div>
-        </form>
+          </form>
+        </div>
       </section>
 
       <MealContextPanel
