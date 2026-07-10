@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Nutrition.Infrastructure.Identity;
@@ -11,9 +12,11 @@ using Nutrition.Infrastructure.Identity;
 namespace Nutrition.Infrastructure.Identity.Migrations
 {
     [DbContext(typeof(NutritionIdentityDbContext))]
-    partial class NutritionIdentityDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260708130853_AddUserMealEntriesAndUserDailyGoals")]
+    partial class AddUserMealEntriesAndUserDailyGoals
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -158,22 +161,6 @@ namespace Nutrition.Infrastructure.Identity.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("BreakfastPercent")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
-
-                    b.Property<decimal>("DinnerPercent")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
-
-                    b.Property<decimal>("LunchPercent")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
-
-                    b.Property<decimal>("SnackPercent")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
-
                     b.Property<decimal>("TargetCalories")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
@@ -224,16 +211,8 @@ namespace Nutrition.Infrastructure.Identity.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
 
-                    b.Property<DateTimeOffset>("LoggedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("MealType")
                         .HasColumnType("integer");
-
-                    b.Property<string>("PortionLabel")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
@@ -243,20 +222,6 @@ namespace Nutrition.Infrastructure.Identity.Migrations
                     b.Property<decimal>("Protein")
                         .HasPrecision(10, 2)
                         .HasColumnType("numeric(10,2)");
-
-                    b.Property<decimal>("ServingGrams")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("numeric(10,2)");
-
-                    b.Property<string>("SourceReference")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<string>("SourceType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -269,8 +234,6 @@ namespace Nutrition.Infrastructure.Identity.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("UserId", "CreatedAtUtc");
-
-                    b.HasIndex("UserId", "LoggedAtUtc");
 
                     b.ToTable("UserMealEntries");
                 });

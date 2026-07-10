@@ -20,4 +20,10 @@
       <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Nutrition.Application\Nutrition.Application.csproj" />
+      <ProjectReference Include="..\Nutrition.Core\Nutrition.Core.csproj" />
+      <ProjectReference Include="..\Nutrition.Shared\Nutrition.Shared.csproj" />
+    </ItemGroup>
+
 </Project>

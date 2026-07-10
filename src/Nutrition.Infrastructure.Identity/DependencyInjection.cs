@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Nutrition.Application.Abstractions.Repositories;
+using Nutrition.Application.Abstractions.Services;
 
 namespace Nutrition.Infrastructure.Identity;
 
@@ -28,6 +30,10 @@ public static class DependencyInjection
             options.Password.RequireUppercase = false;
             options.Password.RequireNonAlphanumeric = false;
         }).AddEntityFrameworkStores<NutritionIdentityDbContext>().AddDefaultTokenProviders();
+
+        services.AddScoped<IUserMealEntryRepository, UserMealEntryRepository>();
+        services.AddScoped<IUserDailyGoalRepository, UserDailyGoalRepository>();
+        services.AddScoped<IProfileService, ProfileService>();
 
         return services;
     }

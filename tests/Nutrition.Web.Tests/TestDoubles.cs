@@ -163,6 +163,7 @@ internal sealed class FakeSignInManager : SignInManager<ApplicationUser>
     {
         PasswordSignInUser = user;
         PasswordSignInPassword = password;
+        IsPersistent = isPersistent;
         return Task.FromResult(PasswordSignInResult);
     }
 

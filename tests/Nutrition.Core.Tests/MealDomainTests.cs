@@ -53,4 +53,11 @@ public sealed class MealDomainTests
         Assert.True(goal.IsExceededBy(new NutritionFacts(2100, 100, 60, 200)));
         Assert.True(goal.IsExceededBy(new NutritionFacts(1800, 160, 60, 200)));
     }
+
+    [Fact]
+    public void UserDailyGoal_RejectsInvalidMealPercentTotal()
+    {
+        Assert.Throws<DomainValidationException>(()
+            => new UserDailyGoal(Guid.NewGuid(), 2000, 150, 70, 250, 25, 35, 30, 9));
+    }
 }
