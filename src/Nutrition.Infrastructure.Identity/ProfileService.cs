@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Text;
 using Nutrition.Application.Abstractions.Repositories;
 using Nutrition.Application.Abstractions.Services;
 using Nutrition.Core.Domain.Entities;
@@ -33,6 +35,21 @@ public sealed class ProfileService : IProfileService
         return user is null
             ? null
             : new ProfileResponseDto(user.Id, user.Email ?? string.Empty, user.FirstName, user.SecondName);
+    }
+
+    public async Task<ProfileResponseDto?> UpdateUserProfileAsync(Guid userId, UpdateProfileRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.Users.FirstOrDefaultAsync(item => item.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return null;
+        }
+
+        user.FirstName = string.IsNullOrWhiteSpace(request.FirstName) ? user.FirstName : request.FirstName.Trim();
+        user.SecondName = string.IsNullOrWhiteSpace(request.SecondName) ? user.SecondName : request.SecondName.Trim();
+
+        await _userManager.UpdateAsync(user);
+        return new ProfileResponseDto(user.Id, user.Email ?? string.Empty, user.FirstName, user.SecondName);
     }
 
     public async Task<ProfileHistoryResponseDto> GetUserHistoryAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -93,6 +110,65 @@ public sealed class ProfileService : IProfileService
             .ToArray();
 
         return new ProfileDayResponseDto(date, goal, meals, Sum(entries));
+    }
+
+    public async Task<ProfileStatisticsResponseDto> GetUserStatisticsAsync(Guid userId, int rangeDays, DateOnly endDate, CancellationToken cancellationToken = default)
+    {
+        var normalizedRange = rangeDays is 14 or 30 ? rangeDays : 7;
+        var startDate = endDate.AddDays(-(normalizedRange - 1));
+        var utcStart = new DateTimeOffset(startDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var utcEnd = new DateTimeOffset(endDate.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var entries = await _mealEntryRepository.GetByUserIdAndRangeAsync(userId, utcStart, utcEnd, cancellationToken);
+        var entriesByDate = entries
+            .GroupBy(entry => DateOnly.FromDateTime(entry.LoggedAtUtc.UtcDateTime.Date))
+            .ToDictionary(group => group.Key, group => group.ToArray());
+        var goal = await GetUserDailyGoalAsync(userId, cancellationToken);
+
+        var items = Enumerable.Range(0, normalizedRange)
+            .Select(offset =>
+            {
+                var date = startDate.AddDays(offset);
+                if (!entriesByDate.TryGetValue(date, out var dayEntries) || dayEntries.Length == 0)
+                {
+                    return new ProfileStatisticsDayDto(date, 0, 0, 0, 0, false);
+                }
+
+                var summary = Sum(dayEntries);
+                return new ProfileStatisticsDayDto(date, summary.Calories, summary.Protein, summary.Fat, summary.Carbs, true);
+            })
+            .ToArray();
+
+        return new ProfileStatisticsResponseDto(goal?.TargetCalories ?? 2100, items);
+    }
+
+    public async Task<string> ExportUserDailyCsvAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var entries = await _mealEntryRepository.GetByUserIdAsync(userId, cancellationToken);
+        var builder = new StringBuilder();
+        builder.AppendLine("date,totalCalories,proteinGrams,fatGrams,carbsGrams,breakfastCalories,lunchCalories,dinnerCalories,snackCalories");
+
+        foreach (var group in entries.GroupBy(entry => DateOnly.FromDateTime(entry.LoggedAtUtc.UtcDateTime.Date)).OrderBy(group => group.Key))
+        {
+            var dayEntries = group.ToArray();
+            var summary = Sum(dayEntries);
+            builder
+                .Append(group.Key.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(',')
+                .Append(ToCsvNumber(summary.Calories)).Append(',')
+                .Append(ToCsvNumber(summary.Protein)).Append(',')
+                .Append(ToCsvNumber(summary.Fat)).Append(',')
+                .Append(ToCsvNumber(summary.Carbs)).Append(',')
+                .Append(ToCsvNumber(SumMealCalories(dayEntries, MealType.Breakfast))).Append(',')
+                .Append(ToCsvNumber(SumMealCalories(dayEntries, MealType.Lunch))).Append(',')
+                .Append(ToCsvNumber(SumMealCalories(dayEntries, MealType.Dinner))).Append(',')
+                .Append(ToCsvNumber(SumMealCalories(dayEntries, MealType.Snack))).AppendLine();
+        }
+
+        return builder.ToString();
+    }
+
+    public Task<DeleteAccountRequestResponseDto> RequestUserAccountDeletionAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new DeleteAccountRequestResponseDto(true, DateTimeOffset.UtcNow));
     }
 
     public async Task<UserDailyGoalDto?> GetUserDailyGoalAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -293,6 +369,16 @@ public sealed class ProfileService : IProfileService
             entries.Sum(entry => entry.Protein),
             entries.Sum(entry => entry.Fat),
             entries.Sum(entry => entry.Carbs));
+    }
+
+    private static decimal SumMealCalories(IEnumerable<UserMealEntry> entries, MealType mealType)
+    {
+        return entries.Where(entry => entry.MealType == mealType).Sum(entry => entry.Calories);
+    }
+
+    private static string ToCsvNumber(decimal value)
+    {
+        return value.ToString("0.##", CultureInfo.InvariantCulture);
     }
 
     private static MealType ParseMealType(string value)

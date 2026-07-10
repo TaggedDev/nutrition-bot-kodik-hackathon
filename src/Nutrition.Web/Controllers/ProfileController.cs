@@ -37,6 +37,21 @@ public sealed class ProfileController : ControllerBase
         return profile is null ? Unauthorized() : Ok(profile);
     }
 
+    [HttpPatch("me")]
+    [ProducesResponseType(typeof(ProfileResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ProfileResponseDto>> UpdateMeAsync(UpdateProfileRequestDto request, CancellationToken cancellationToken)
+    {
+        var userId = await GetCurrentUserIdAsync();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var profile = await _profileService.UpdateUserProfileAsync(userId.Value, request, cancellationToken);
+        return profile is null ? Unauthorized() : Ok(profile);
+    }
+
     [HttpGet("history")]
     [ProducesResponseType(typeof(ProfileHistoryResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -109,6 +124,15 @@ public sealed class ProfileController : ControllerBase
         return goal is null ? NoContent() : Ok(goal);
     }
 
+    [HttpGet("goals")]
+    [ProducesResponseType(typeof(UserDailyGoalDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public Task<ActionResult<UserDailyGoalDto>> GoalsAsync(CancellationToken cancellationToken)
+    {
+        return GoalAsync(cancellationToken);
+    }
+
     [HttpPost("goal")]
     [ProducesResponseType(typeof(UserDailyGoalDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -135,6 +159,59 @@ public sealed class ProfileController : ControllerBase
         }
 
         return Ok(await _profileService.UpdateUserDailyGoalAsync(userId.Value, request, cancellationToken));
+    }
+
+    [HttpPatch("goals")]
+    [ProducesResponseType(typeof(UserDailyGoalDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public Task<ActionResult<UserDailyGoalDto>> UpdateGoalsAsync(UpdateDailyGoalRequestDto request, CancellationToken cancellationToken)
+    {
+        return UpdateGoalAsync(request, cancellationToken);
+    }
+
+    [HttpGet("statistics")]
+    [ProducesResponseType(typeof(ProfileStatisticsResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ProfileStatisticsResponseDto>> StatisticsAsync([FromQuery] int rangeDays = 7, [FromQuery] DateOnly? endDate = null, CancellationToken cancellationToken = default)
+    {
+        var userId = await GetCurrentUserIdAsync();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var date = endDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        return Ok(await _profileService.GetUserStatisticsAsync(userId.Value, rangeDays, date, cancellationToken));
+    }
+
+    [HttpGet("export/daily-csv")]
+    [Produces("text/csv")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK, "text/csv")]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ExportDailyCsvAsync(CancellationToken cancellationToken)
+    {
+        var userId = await GetCurrentUserIdAsync();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var csv = await _profileService.ExportUserDailyCsvAsync(userId.Value, cancellationToken);
+        return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv; charset=utf-8", "nutrimate-daily-export.csv");
+    }
+
+    [HttpPost("delete-request")]
+    [ProducesResponseType(typeof(DeleteAccountRequestResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<DeleteAccountRequestResponseDto>> DeleteRequestAsync(CancellationToken cancellationToken)
+    {
+        var userId = await GetCurrentUserIdAsync();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(await _profileService.RequestUserAccountDeletionAsync(userId.Value, cancellationToken));
     }
 
     [HttpPost("entry")]
