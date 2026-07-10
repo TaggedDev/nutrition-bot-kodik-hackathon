@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { AuthView } from './AuthView'
 import { ChatPage } from './ChatPage'
 import { ProfileView } from './ProfileView'
-import type { CurrentUser, MealEntryItem } from './types'
+import type { CurrentUser } from './types'
 import './App.css'
 
 function App() {
@@ -54,7 +54,7 @@ function App() {
     setRoute('chat')
   }, [])
 
-  const handleEditMeal = useCallback((_entry: MealEntryItem) => {
+  const handleEditMeal = useCallback(() => {
     navigate('chat')
   }, [navigate])
 

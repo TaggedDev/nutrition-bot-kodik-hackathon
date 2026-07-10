@@ -308,6 +308,7 @@ function ClarificationPanel({
   const isRefining = clarification.status === 'refining'
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedValue(clarification.selectedProduct?.productId ?? '')
     setManualQuery('')
   }, [clarification.id, clarification.selectedProduct?.productId, clarification.status, candidateKey])

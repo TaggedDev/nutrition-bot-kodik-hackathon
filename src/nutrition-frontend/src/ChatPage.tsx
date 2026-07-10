@@ -51,6 +51,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
   const [currentMealType, setCurrentMealType] = useState<MealType>(() => getCurrentMealType(new Date()))
   const [portionMap, setPortionMap] = useState<Record<string, PortionState>>({})
   const [editingGrams, setEditingGrams] = useState<Record<string, string>>({})
+  const [isCurrentMealExpanded, setIsCurrentMealExpanded] = useState(false)
 
   const selectedDateOnly = useMemo(() => toDateOnly(selectedDate), [selectedDate])
 
@@ -77,6 +78,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
   }, [onUnauthorized, selectedDateOnly])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadDay()
   }, [loadDay])
 
@@ -85,7 +87,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
     [currentMealType, day],
   )
 
-  const currentMealEntries = currentMeal?.entries ?? []
+  const currentMealEntries = useMemo(() => currentMeal?.entries ?? [], [currentMeal])
   const currentMealSummary = currentMeal?.summary ?? emptySummary
   const addedByProduct = useMemo(() => {
     const entries = new Map<string, MealEntryItem>()
@@ -230,6 +232,36 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
     setDay((current) => removeEntryFromDay(current, entryId, selectedDateOnly))
   }
 
+  async function handleClearMeal() {
+    if (currentMealEntries.length === 0 || loadingDay) return
+
+    setError(null)
+    for (const entry of currentMealEntries) {
+      const response = await fetch(`/api/v1/profile/entry/${entry.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+
+      if (response.status === 401) {
+        onUnauthorized()
+        return
+      }
+      if (!response.ok) {
+        setError(`Не удалось очистить приём пищи: ${response.status}`)
+        await loadDay()
+        return
+      }
+    }
+
+    setDay((current) => {
+      let next = current
+      for (const entry of currentMealEntries) {
+        next = removeEntryFromDay(next, entry.id, selectedDateOnly)
+      }
+      return next
+    })
+  }
+
   async function handleMealEntryGrams(entry: MealEntryItem, gramsValue: string) {
     const grams = Number(gramsValue)
     if (!Number.isFinite(grams) || grams <= 0 || entry.servingGrams <= 0) {
@@ -332,10 +364,24 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
           </div>
           <div className="header-actions">
             <button type="button" className="clear-btn" onClick={resetChat} aria-label="Очистить чат">
-              Очистить
+              Очистить чат
             </button>
           </div>
         </header>
+
+        <CurrentMealPanel
+          loading={loadingDay}
+          isExpanded={isCurrentMealExpanded}
+          mealType={currentMealType}
+          entries={currentMealEntries}
+          summary={currentMealSummary}
+          editingGrams={editingGrams}
+          onToggleExpanded={() => setIsCurrentMealExpanded((expanded) => !expanded)}
+          onClearMeal={handleClearMeal}
+          onEditingGramsChange={(id, value) => setEditingGrams((current) => ({ ...current, [id]: value }))}
+          onCommitGrams={handleMealEntryGrams}
+          onRemove={handleRemoveEntry}
+        />
 
         <div className="conversation">
           {lines.length === 0 ? (
@@ -391,18 +437,12 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
       </section>
 
       <MealContextPanel
-        loading={loadingDay}
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         currentMealType={currentMealType}
         onMealTypeChange={setCurrentMealType}
         day={day}
-        entries={currentMealEntries}
         summary={currentMealSummary}
-        editingGrams={editingGrams}
-        onEditingGramsChange={(id, value) => setEditingGrams((current) => ({ ...current, [id]: value }))}
-        onCommitGrams={handleMealEntryGrams}
-        onRemove={handleRemoveEntry}
       />
     </main>
   )
@@ -525,32 +565,203 @@ function FoodSearchResultCard({
   )
 }
 
-function MealContextPanel({
+function CurrentMealPanel({
   loading,
-  selectedDate,
-  onDateChange,
-  currentMealType,
-  onMealTypeChange,
-  day,
+  isExpanded,
+  mealType,
   entries,
   summary,
   editingGrams,
+  onToggleExpanded,
+  onClearMeal,
   onEditingGramsChange,
   onCommitGrams,
   onRemove,
 }: {
   loading: boolean
+  isExpanded: boolean
+  mealType: MealType
+  entries: MealEntryItem[]
+  summary: NutritionSummary
+  editingGrams: Record<string, string>
+  onToggleExpanded: () => void
+  onClearMeal: () => void
+  onEditingGramsChange: (id: string, value: string) => void
+  onCommitGrams: (entry: MealEntryItem, gramsValue: string) => void
+  onRemove: (id: string) => void
+}) {
+  const itemCount = entries.length
+  const summaryText = loading
+    ? 'Загружаю текущий приём'
+    : `${itemCount} ${pluralize(itemCount, 'позиция', 'позиции', 'позиций')} · ${formatNumber(summary.calories)} ккал · Б ${formatNumber(summary.protein)} г · Ж ${formatNumber(summary.fat)} г · У ${formatNumber(summary.carbs)} г`
+
+  return (
+    <section className={`current-meal-panel ${isExpanded ? 'expanded' : 'collapsed'}`} aria-label="Текущий приём пищи">
+      <div className="current-meal-toolbar">
+        <div className="current-meal-title">
+          <span className="meal-icon" aria-hidden="true">
+            <UtensilsIcon />
+          </span>
+          <div>
+            <strong>Текущий приём пищи</strong>
+            <span>
+              {loading
+                ? 'Загружаю данные'
+                : itemCount === 0 && !isExpanded
+                  ? 'В текущем приёме пищи пока ничего нет'
+                  : isExpanded
+                    ? `${itemCount} ${pluralize(itemCount, 'позиция', 'позиции', 'позиций')} · ${mealLabels[mealType]}`
+                    : summaryText}
+            </span>
+            {itemCount === 0 && !loading && !isExpanded && (
+              <small>Добавьте еду через чат · {formatNumber(summary.calories)} ккал · Б {formatNumber(summary.protein)} г · Ж {formatNumber(summary.fat)} г · У {formatNumber(summary.carbs)} г</small>
+            )}
+          </div>
+        </div>
+
+        <div className="current-meal-actions">
+          <button type="button" className="meal-clear-btn" onClick={onClearMeal} disabled={loading || itemCount === 0}>
+            Очистить приём
+          </button>
+          <button
+            type="button"
+            className="meal-toggle-btn"
+            onClick={onToggleExpanded}
+            aria-label={isExpanded ? 'Свернуть текущий приём пищи' : 'Раскрыть текущий приём пищи'}
+            aria-expanded={isExpanded}
+          >
+            {isExpanded ? '⌃' : '⌄'}
+          </button>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="current-meal-overlay-body">
+          <div className="current-meal-scroll">
+            {loading ? (
+              <div className="current-meal-empty">Загружаю текущий приём пищи...</div>
+            ) : entries.length === 0 ? (
+              <div className="current-meal-empty">
+                <span className="empty-meal-icon" aria-hidden="true">
+                  <UtensilsIcon />
+                </span>
+                <strong>В этом приёме пищи пока ничего нет</strong>
+                <p>Напишите в чат, например: «Я съел творог 150 г»</p>
+              </div>
+            ) : (
+              <div className="current-meal-list">
+                {entries.map((entry, index) => (
+                  <CurrentMealItemCard
+                    key={entry.id}
+                    entry={entry}
+                    index={index}
+                    editingValue={editingGrams[entry.id]}
+                    onEditingGramsChange={onEditingGramsChange}
+                    onCommitGrams={onCommitGrams}
+                    onRemove={onRemove}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <footer className="current-meal-footer">
+            <span>Итого в текущем приёме</span>
+            <strong>{formatNumber(summary.calories)} ккал</strong>
+            <small>Б {formatNumber(summary.protein)} г · Ж {formatNumber(summary.fat)} г · У {formatNumber(summary.carbs)} г</small>
+          </footer>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function CurrentMealItemCard({
+  entry,
+  index,
+  editingValue,
+  onEditingGramsChange,
+  onCommitGrams,
+  onRemove,
+}: {
+  entry: MealEntryItem
+  index: number
+  editingValue: string | undefined
+  onEditingGramsChange: (id: string, value: string) => void
+  onCommitGrams: (entry: MealEntryItem, gramsValue: string) => void
+  onRemove: (id: string) => void
+}) {
+  const gramsValue = editingValue ?? (entry.servingGrams > 0 ? formatNumber(entry.servingGrams) : '')
+
+  return (
+    <article className="current-meal-item">
+      <FoodThumb index={index} title={entry.productName} small />
+      <div className="current-meal-item-main">
+        <div className="current-meal-item-head">
+          <div>
+            <h3>{entry.productName}</h3>
+            <span>{formatEntrySource(entry)}</span>
+          </div>
+          <strong>{formatNumber(entry.calories)} ккал</strong>
+        </div>
+
+        <div className="current-meal-item-grid">
+          <span>Вы указали: <strong>{entry.portionLabel || 'Порция не указана'}</strong></span>
+          <label className="current-meal-grams">
+            <span>Будет записано:</span>
+            <input
+              type="number"
+              min={1}
+              disabled={entry.servingGrams <= 0}
+              value={gramsValue}
+              placeholder={entry.servingGrams > 0 ? undefined : '—'}
+              onChange={(event) => onEditingGramsChange(entry.id, event.target.value)}
+              onBlur={(event) => onCommitGrams(entry, event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.currentTarget.blur()
+                }
+              }}
+            />
+            <small>г</small>
+          </label>
+        </div>
+
+        <div className="current-meal-macros">
+          <span>Б {formatNumber(entry.protein)} г</span>
+          <span>Ж {formatNumber(entry.fat)} г</span>
+          <span>У {formatNumber(entry.carbs)} г</span>
+        </div>
+
+        <p className={`reference-basis ${entry.servingGrams > 0 ? '' : 'warning'}`}>{referenceBasisLabel(entry)}</p>
+      </div>
+
+      <div className="current-meal-item-actions">
+        <button type="button" className="edit-entry-btn" onClick={() => onEditingGramsChange(entry.id, gramsValue || formatNumber(entry.servingGrams || 100))}>
+          Изменить
+        </button>
+        <button type="button" className="delete-entry-btn" onClick={() => onRemove(entry.id)} aria-label={`Удалить ${entry.productName}`}>
+          Удалить
+        </button>
+      </div>
+    </article>
+  )
+}
+
+function MealContextPanel({
+  selectedDate,
+  onDateChange,
+  currentMealType,
+  onMealTypeChange,
+  day,
+  summary,
+}: {
   selectedDate: Date
   onDateChange: (date: Date) => void
   currentMealType: MealType
   onMealTypeChange: (mealType: MealType) => void
   day: ProfileDay | null
-  entries: MealEntryItem[]
   summary: NutritionSummary
-  editingGrams: Record<string, string>
-  onEditingGramsChange: (id: string, value: string) => void
-  onCommitGrams: (entry: MealEntryItem, gramsValue: string) => void
-  onRemove: (id: string) => void
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -619,47 +830,6 @@ function MealContextPanel({
           </div>
         </div>
       </header>
-
-      {loading ? (
-        <div className="meal-empty">Загружаю приём пищи...</div>
-      ) : entries.length === 0 ? (
-        <div className="meal-empty">
-          <strong>В этом приёме пищи пока ничего нет.</strong>
-          <span>Добавьте еду через чат.</span>
-        </div>
-      ) : (
-        <div className="basket-list">
-          {entries.map((entry, index) => (
-            <article key={entry.id} className="basket-item">
-              <FoodThumb index={index} title={entry.productName} small />
-              <div>
-                <h3>{entry.productName}</h3>
-                <span>{entry.portionLabel || 'Порция не указана'}</span>
-                <label className="basket-grams">
-                  <span className="sr-only">Граммы</span>
-                  <input
-                    type="number"
-                    min={1}
-                    disabled={entry.servingGrams <= 0}
-                    value={editingGrams[entry.id] ?? (entry.servingGrams > 0 ? formatNumber(entry.servingGrams) : '')}
-                    placeholder={entry.servingGrams > 0 ? undefined : '—'}
-                    onChange={(event) => onEditingGramsChange(entry.id, event.target.value)}
-                    onBlur={(event) => onCommitGrams(entry, event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.currentTarget.blur()
-                      }
-                    }}
-                  />
-                  <small>г</small>
-                </label>
-              </div>
-              <strong>{formatNumber(entry.calories)} ккал</strong>
-              <button type="button" onClick={() => onRemove(entry.id)} aria-label={`Удалить ${entry.productName}`}>×</button>
-            </article>
-          ))}
-        </div>
-      )}
 
       <section className="meal-total-card">
         <div className="total-head">
@@ -1084,6 +1254,41 @@ function mealPercent(value: number | null | undefined, fallback: number): number
 function formatSource(product: ProductNutrition): string {
   if (product.sourceType && product.sourceReference) return `${product.sourceType}: ${product.sourceReference}`
   return product.sourceReference || product.sourceType || 'OpenFoodFacts'
+}
+
+function formatEntrySource(entry: MealEntryItem): string {
+  if (entry.sourceType && entry.sourceReference) return `Источник: ${entry.sourceType} · ${entry.sourceReference}`
+  if (entry.sourceType) return `Источник: ${entry.sourceType}`
+  if (entry.sourceReference) return `Источник: ${entry.sourceReference}`
+  return 'Источник: ручной ввод или AI estimate'
+}
+
+function referenceBasisLabel(entry: MealEntryItem): string {
+  const sourceType = entry.sourceType.toLowerCase()
+  if (entry.servingGrams <= 0) {
+    return 'Основа расчёта не определена — проверьте граммовку'
+  }
+  if (sourceType.includes('manual')) {
+    return 'Основа расчёта: ручной ввод'
+  }
+  if (sourceType.includes('ai')) {
+    return 'Основа расчёта: AI-оценка на 100 г'
+  }
+  if (!entry.sourceType && !entry.sourceReference) {
+    return 'Основа расчёта: ручной ввод'
+  }
+  if (entry.servingGrams === 100) {
+    return 'Основа расчёта: на 100 г'
+  }
+  return `Основа расчёта: выбранная порция = ${formatNumber(entry.servingGrams)} г`
+}
+
+function pluralize(value: number, one: string, few: string, many: string): string {
+  const mod10 = value % 10
+  const mod100 = value % 100
+  if (mod10 === 1 && mod100 !== 11) return one
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few
+  return many
 }
 
 function formatTime(date: Date): string {
