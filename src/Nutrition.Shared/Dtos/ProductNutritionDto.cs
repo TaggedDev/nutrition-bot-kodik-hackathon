@@ -10,6 +10,12 @@ public sealed class ProductNutritionDto
 
     public NutritionFactsDto NutritionFacts { get; init; } = new();
 
+    public string NutritionValueBasis { get; init; } = "Per100Grams";
+
+    public decimal? ServingSize { get; init; } = 100m;
+
+    public string? ServingUnit { get; init; } = "g";
+
     public string SourceType { get; init; } = string.Empty;
 
     public string SourceReference { get; init; } = string.Empty;

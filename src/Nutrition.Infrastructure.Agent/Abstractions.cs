@@ -43,6 +43,15 @@ public record FoodUnit
     /// Опциональная информация о подготовке (напр. "вареное", "сырое")
     /// </summary>
     public string? Preparation { get; init; }
+
+    public FoodUnitKind Kind { get; init; } = FoodUnitKind.Unknown;
+}
+
+public enum FoodUnitKind
+{
+    Unknown = 0,
+    MassMarketProduct = 1,
+    PreparedFood = 2
 }
 
 /// <summary>

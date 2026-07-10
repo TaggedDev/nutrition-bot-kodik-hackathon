@@ -10,6 +10,9 @@ export type ProductNutrition = {
   productName: string
   brand: string | null
   nutritionFacts: NutritionFacts
+  nutritionValueBasis: string
+  servingSize: number | null
+  servingUnit: string | null
   sourceType: string
   sourceReference: string
   confidenceScore: number

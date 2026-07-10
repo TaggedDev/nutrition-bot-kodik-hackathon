@@ -124,7 +124,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
         for (const product of products) {
           const key = productKey(product)
           if (!next[key]) {
-            next[key] = { portion: '100', grams: 100 }
+            next[key] = defaultPortionState(product)
           }
         }
         return next
@@ -488,7 +488,7 @@ function MessageRow({
                   key={key}
                   product={product}
                   index={index}
-                  state={portionMap[key] ?? { portion: '100', grams: 100 }}
+                  state={portionMap[key] ?? defaultPortionState(product)}
                   added={addedByProduct.has(key)}
                   onPortionChange={onPortionChange}
                   onGramsChange={onGramsChange}
@@ -528,7 +528,8 @@ function FoodSearchResultCard({
       <div className="food-info">
         <h3>{product.productName}</h3>
         <p>{product.brand || 'Бренд не указан'}</p>
-        <span>Источник: {formatSource(product)} ⓘ</span>
+        <small>{formatNutritionBasis(product)}</small>
+        <SourceLink product={product} />
       </div>
       <div className="macro-block" aria-label="КБЖУ">
         <strong>{formatNumber(facts.calories)} ккал</strong>
@@ -700,7 +701,7 @@ function CurrentMealItemCard({
         <div className="current-meal-item-head">
           <div>
             <h3>{entry.productName}</h3>
-            <span>{formatEntrySource(entry)}</span>
+            <EntrySourceLink entry={entry} />
           </div>
           <strong>{formatNumber(entry.calories)} ккал</strong>
         </div>
@@ -1120,8 +1121,20 @@ function productKey(product: ProductNutrition): string {
   return product.sourceReference || product.productId || product.productName
 }
 
+function defaultPortionState(product: ProductNutrition): PortionState {
+  const servingSize = Number(product.servingSize)
+  if (isPerServing(product) && Number.isFinite(servingSize) && servingSize > 0) {
+    return { portion: 'custom', grams: servingSize }
+  }
+
+  return { portion: '100', grams: 100 }
+}
+
 function calculateFacts(product: ProductNutrition, grams: number): NutritionSummary {
-  const ratio = grams / 100
+  const denominator = isPerServing(product) && product.servingSize && product.servingSize > 0
+    ? product.servingSize
+    : 100
+  const ratio = grams / denominator
   return {
     calories: round((product.nutritionFacts?.calories ?? 0) * ratio),
     protein: round((product.nutritionFacts?.protein ?? 0) * ratio),
@@ -1139,7 +1152,7 @@ function setPortion(
     ...current,
     [productKey(product)]: {
       portion,
-      grams: portion === '100' ? 100 : portion === '50' ? 50 : current[productKey(product)]?.grams ?? 100,
+      grams: portion === '100' ? 100 : portion === '50' ? 50 : current[productKey(product)]?.grams ?? defaultPortionState(product).grams,
     },
   }))
 }
@@ -1251,9 +1264,58 @@ function mealPercent(value: number | null | undefined, fallback: number): number
   return Number.isFinite(value) && value !== null && value !== undefined ? value : fallback
 }
 
-function formatSource(product: ProductNutrition): string {
-  if (product.sourceType && product.sourceReference) return `${product.sourceType}: ${product.sourceReference}`
-  return product.sourceReference || product.sourceType || 'OpenFoodFacts'
+function SourceLink({ product }: { product: ProductNutrition }) {
+  const label = product.sourceType === 'WebSearch' ? 'Поиск в интернете' : product.sourceType || 'OpenFoodFacts'
+  const url = toHttpUrl(product.sourceReference)
+
+  if (!url) {
+    return <span>Источник: {label}</span>
+  }
+
+  return (
+    <span>
+      Источник:{' '}
+      <a href={url} target="_blank" rel="noreferrer">
+        {label}: {formatSourceHost(url)}
+      </a>
+    </span>
+  )
+}
+
+function formatNutritionBasis(product: ProductNutrition): string {
+  const size = product.servingSize && product.servingSize > 0 ? product.servingSize : null
+  const unit = product.servingUnit || 'г'
+
+  if (product.nutritionValueBasis === 'PerServing') {
+    return size ? `КБЖУ на порцию ${formatNumber(size)} ${unit}` : 'КБЖУ на порцию'
+  }
+
+  if (product.nutritionValueBasis === 'Per100Milliliters') {
+    return 'КБЖУ на 100 мл'
+  }
+
+  return 'КБЖУ на 100 г'
+}
+
+function isPerServing(product: ProductNutrition): boolean {
+  return product.nutritionValueBasis === 'PerServing'
+}
+
+function toHttpUrl(value: string): string | null {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
+function formatSourceHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
 }
 
 function formatEntrySource(entry: MealEntryItem): string {
@@ -1261,6 +1323,24 @@ function formatEntrySource(entry: MealEntryItem): string {
   if (entry.sourceType) return `Источник: ${entry.sourceType}`
   if (entry.sourceReference) return `Источник: ${entry.sourceReference}`
   return 'Источник: ручной ввод или AI estimate'
+}
+
+function EntrySourceLink({ entry }: { entry: MealEntryItem }) {
+  const label = entry.sourceType === 'WebSearch' ? 'Поиск в интернете' : entry.sourceType || 'OpenFoodFacts'
+  const url = toHttpUrl(entry.sourceReference)
+
+  if (!url) {
+    return <span>{formatEntrySource(entry)}</span>
+  }
+
+  return (
+    <span>
+      Источник:{' '}
+      <a href={url} target="_blank" rel="noreferrer">
+        {label}: {formatSourceHost(url)}
+      </a>
+    </span>
+  )
 }
 
 function referenceBasisLabel(entry: MealEntryItem): string {
