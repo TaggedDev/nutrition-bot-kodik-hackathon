@@ -2,19 +2,22 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import {
   BarChart3,
+  Apple,
   Check,
   ChevronRight,
   Crown,
+  Coffee,
   Download,
   LogOut,
+  MoonStar,
   Pencil,
   Plus,
   Shield,
   Sparkles,
+  Soup,
   Target,
   Trash2,
   User,
-  Utensils,
   X,
 } from 'lucide-react'
 import aiCrystalUrl from './assets/ai-crystal.svg'
@@ -65,6 +68,7 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [goal, setGoal] = useState<DailyGoal>(defaultGoal)
   const [statistics, setStatistics] = useState<ProfileStatistics | null>(null)
+  const [statisticsLoading, setStatisticsLoading] = useState(false)
   const [selectedRange, setSelectedRange] = useState(7)
   const [editingField, setEditingField] = useState<EditableField | null>(null)
   const [draftValue, setDraftValue] = useState('')
@@ -96,6 +100,7 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
   }, [onUnauthorized])
 
   const loadStatistics = useCallback(async (rangeDays: number, currentGoal: DailyGoal) => {
+    setStatisticsLoading(true)
     setStatsError(null)
     try {
       const payload = await profileApi.getStatistics(rangeDays, todayIso)
@@ -105,6 +110,8 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
       })
     } catch (error) {
       handleApiError(error, 'Не удалось загрузить статистику.', setStatsError)
+    } finally {
+      setStatisticsLoading(false)
     }
   }, [handleApiError])
 
@@ -320,6 +327,7 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
             goal={goal}
             rangeDays={selectedRange}
             error={statsError}
+            isLoading={statisticsLoading}
             onRangeChange={handleRangeChange}
           />
           <AiInsightsStubCard />
@@ -444,11 +452,12 @@ function DailyGoalsCard(props: {
   )
 }
 
-function NutritionDynamicsCard({ statistics, goal, rangeDays, error, onRangeChange }: {
+function NutritionDynamicsCard({ statistics, goal, rangeDays, error, isLoading, onRangeChange }: {
   statistics: ProfileStatistics | null
   goal: DailyGoal
   rangeDays: number
   error: string | null
+  isLoading: boolean
   onRangeChange: (rangeDays: number) => void
 }) {
   return (
@@ -466,6 +475,7 @@ function NutritionDynamicsCard({ statistics, goal, rangeDays, error, onRangeChan
         <RangeSegmentedControl value={rangeDays} onChange={onRangeChange} />
       </div>
       {error && <TileError text={error} />}
+      <div className={`statistics-visual ${isLoading ? 'is-loading' : ''}`} aria-busy={isLoading}>
       {statistics ? (
         <StackedMacroBarChart statistics={statistics} goal={goal} rangeDays={rangeDays} />
       ) : (
@@ -476,6 +486,8 @@ function NutritionDynamicsCard({ statistics, goal, rangeDays, error, onRangeChan
         <span><i className="fat" />Жиры (г)</span>
         <span><i className="carbs" />Углеводы (г)</span>
       </div>
+      {isLoading && <span className="statistics-loader" aria-label="Загрузка статистики" />}
+      </div>
     </article>
   )
 }
@@ -483,9 +495,9 @@ function NutritionDynamicsCard({ statistics, goal, rangeDays, error, onRangeChan
 function StackedMacroBarChart({ statistics, goal, rangeDays }: { statistics: ProfileStatistics; goal: DailyGoal; rangeDays: number }) {
   const rawMaxValue = Math.max(goal.targetCalories, ...statistics.items.map((item) => item.totalCalories), 1)
   const maxValue = Math.max(500, Math.ceil((rawMaxValue * 1.18) / 250) * 250)
-  const chartHeight = 250
-  const plotTop = 30
-  const plotBottom = 204
+  const chartHeight = 220
+  const plotTop = 14
+  const plotBottom = 190
   const plotHeight = plotBottom - plotTop
   const goalY = plotBottom - (goal.targetCalories / maxValue) * plotHeight
   const barStep = 704 / Math.max(statistics.items.length, 1)
@@ -520,7 +532,7 @@ function StackedMacroBarChart({ statistics, goal, rangeDays }: { statistics: Pro
                 <rect x={x} y={plotBottom - emptyHeight} width={barWidth} height={emptyHeight} rx="7" className="empty-bar" />
                 {showLabels && <text x={x + barWidth / 2} y={plotBottom - emptyHeight / 2 - 2} className="bar-empty-label">Нет</text>}
                 {showLabels && <text x={x + barWidth / 2} y={plotBottom - emptyHeight / 2 + 11} className="bar-empty-label">данных</text>}
-                {labelVisible && <text x={x + barWidth / 2} y="232" className="x-label">{shortDate(item.date, rangeDays)}</text>}
+                {labelVisible && <text x={x + barWidth / 2} y="210" className="x-label">{shortDate(item.date, rangeDays)}</text>}
               </g>
             )
           }
@@ -576,7 +588,7 @@ ${goalPercent}% от цели`
               {showLabels && proteinHeight > 22 && <text x={x + barWidth / 2} y={barTop + proteinHeight / 2 + 4} className="bar-percent">{proteinPct}%</text>}
               {showLabels && fatHeight > 22 && <text x={x + barWidth / 2} y={plotBottom - carbsHeight - fatHeight / 2 + 4} className="bar-percent">{fatPct}%</text>}
               {showLabels && carbsHeight > 22 && <text x={x + barWidth / 2} y={plotBottom - carbsHeight / 2 + 4} className="bar-percent">{carbsPct}%</text>}
-              {labelVisible && <text x={x + barWidth / 2} y="232" className="x-label">{shortDate(item.date, rangeDays)}</text>}
+              {labelVisible && <text x={x + barWidth / 2} y="210" className="x-label">{shortDate(item.date, rangeDays)}</text>}
             </g>
           )
         })}
@@ -746,7 +758,7 @@ function MealGoalRow(props: {
   return (
     <div className="meal-goal-row">
       <span className={`meal-square ${props.iconClass}`} aria-hidden="true">
-        <Utensils size={18} />
+        {props.iconClass === 'sun' ? <Coffee size={18} /> : props.iconClass === 'lunch' ? <Soup size={18} /> : props.iconClass === 'moon' ? <MoonStar size={18} /> : <Apple size={18} />}
       </span>
       <strong>{props.label}</strong>
       <span className="meal-bar"><i style={{ width: `${Math.min(100, props.percent)}%` }} /></span>

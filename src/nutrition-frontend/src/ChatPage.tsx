@@ -328,7 +328,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
       <section className="chat-workspace" aria-label="Чат питания">
         <header className="chat-header">
           <div className="assistant-title">
-            <span className="ai-icon">AI</span>
+            <span className="ai-icon"><UtensilsIcon /></span>
             <div>
               <h1>AI-ассистент <span>NutriMate AI</span></h1>
               <p>Ваш помощник по питанию и КБЖУ</p>
@@ -358,7 +358,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
         <div className="conversation">
           {lines.length === 0 ? (
             <div className="empty-chat">
-              <span>AI</span>
+              <span><UtensilsIcon /></span>
               <h2>Напишите, что вы съели</h2>
               <p>Я найду продукты через OpenFoodFacts, покажу КБЖУ и дам выбрать граммовку перед добавлением.</p>
             </div>
@@ -898,7 +898,7 @@ function ProgressRow({
 
   return (
     <button type="button" className={`progress-row ${active ? 'active' : ''}`} onClick={onSelect}>
-      <span className="meal-progress-icon" aria-hidden="true" />
+      <span className={`meal-progress-icon ${mealIconClass(label)}`} aria-hidden="true"><MealTypeIcon label={label} /></span>
       <div className="meal-progress-content">
         <div className="meal-progress-head">
           <span>{label}</span>
@@ -910,6 +910,17 @@ function ProgressRow({
       </div>
     </button>
   )
+}
+
+function MealTypeIcon({ label }: { label: string }) {
+  if (label === 'Завтрак') return <svg viewBox="0 0 24 24"><path d="M5 11h12v3a6 6 0 0 1-12 0v-3Zm12 1h2a2 2 0 0 1 0 4h-2M8 8V5m4 3V4m4 4V5" /></svg>
+  if (label === 'Обед') return <svg viewBox="0 0 24 24"><path d="M4 13h16a8 8 0 0 1-16 0Zm8-7v4m-5 0a5 5 0 0 1 10 0" /></svg>
+  if (label === 'Ужин') return <svg viewBox="0 0 24 24"><path d="M19 15.5A8 8 0 0 1 8.5 5 8 8 0 1 0 19 15.5Z" /></svg>
+  return <svg viewBox="0 0 24 24"><path d="M12 7c-4-4-9 0-7 6 2 7 7 7 7 7s5 0 7-7c2-6-3-10-7-6Zm0 0c0-3 2-5 5-5" /></svg>
+}
+
+function mealIconClass(label: string): string {
+  return label === 'Завтрак' ? 'breakfast' : label === 'Обед' ? 'lunch' : label === 'Ужин' ? 'dinner' : 'snack'
 }
 
 export function Donut({ value }: { value: number }) {

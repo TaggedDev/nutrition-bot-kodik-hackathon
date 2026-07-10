@@ -488,11 +488,13 @@ input:focus-visible {
   justify-items: stretch;
   text-align: center;
   gap: 10px;
+  padding: 18px;
 }
 
 .system-tile {
   grid-area: system;
   gap: 10px;
+  padding: 18px;
 }
 
 .tile-header {
@@ -878,8 +880,8 @@ input:focus-visible {
 }
 
 .goals-tile {
-  grid-template-rows: 30px 82px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-rows: 30px 60px minmax(0, 1fr);
+  gap: 8px;
   padding: 18px;
 }
 
@@ -895,7 +897,7 @@ input:focus-visible {
 .goal-summary-panel {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  height: 82px;
+  height: 60px;
   min-height: 0;
   overflow: hidden;
   border: 1px solid var(--profile-border);
@@ -908,10 +910,10 @@ input:focus-visible {
   display: grid;
   grid-template-rows: 16px minmax(0, 1fr);
   align-content: stretch;
-  gap: 6px;
+  gap: 2px;
   min-width: 0;
   min-height: 0;
-  padding: 12px 10px 10px 12px;
+  padding: 7px 7px 6px 9px;
   border-right: 1px solid #eee8fb;
   box-sizing: border-box;
 }
@@ -964,7 +966,7 @@ input:focus-visible {
 
 .metric-value strong {
   color: var(--profile-text);
-  font-size: 22px;
+  font-size: 19px;
   line-height: 1;
   font-weight: 800;
   letter-spacing: 0;
@@ -1046,9 +1048,9 @@ input:focus-visible {
 
 .meal-distribution {
   display: grid;
-  grid-template-rows: 18px repeat(4, 36px);
+  grid-template-rows: 16px repeat(4, 28px);
   align-content: start;
-  gap: 8px;
+  gap: 4px;
   min-height: 0;
   overflow: hidden;
 }
@@ -1066,7 +1068,7 @@ input:focus-visible {
   grid-template-columns: 32px 88px minmax(150px, 1fr) 76px 44px;
   align-items: center;
   gap: 8px;
-  height: 36px;
+  height: 28px;
   min-height: 0;
   border: 0;
   background: transparent;
@@ -1074,8 +1076,8 @@ input:focus-visible {
 }
 
 .meal-square {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 10px;
   background: #f4efff;
   color: var(--profile-purple);
@@ -1193,8 +1195,38 @@ input:focus-visible {
 }
 
 .chart-wrap {
-  min-height: 220px;
+  min-height: 190px;
   overflow: hidden;
+}
+
+.statistics-visual {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 5px;
+  min-height: 0;
+  transition: filter 0.1s ease, opacity 0.1s ease;
+}
+
+.statistics-visual.is-loading > :not(.statistics-loader) {
+  filter: blur(5px);
+  opacity: 0.55;
+}
+
+.statistics-loader {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border: 3px solid rgba(124, 58, 237, 0.18);
+  border-top-color: var(--profile-purple);
+  border-radius: 50%;
+  animation: statistics-spin 0.6s linear infinite;
+}
+
+@keyframes statistics-spin {
+  to { transform: rotate(360deg); }
 }
 
 .chart-wrap svg {

@@ -1194,6 +1194,13 @@ input:focus-visible {
   text-rendering: geometricPrecision;
 }
 
+.ai-icon svg,
+.empty-chat > span svg {
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
+}
+
 .date-picker-anchor {
   width: 100%;
 }
@@ -1655,6 +1662,23 @@ input:focus-visible {
     radial-gradient(circle at 70% 66%, rgba(255, 255, 255, 0.72), transparent 16%),
     linear-gradient(135deg, #ddd6fe, #f5d0fe 55%, #ccfbf1);
 }
+
+.meal-progress-icon svg {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.meal-progress-icon.breakfast { color: #f59e0b; }
+.meal-progress-icon.lunch { color: #0ea5e9; }
+.meal-progress-icon.dinner { color: #7c3aed; }
+.meal-progress-icon.snack { color: #ef4444; }
 
 .meal-progress-icon::before,
 .meal-progress-icon::after {
