@@ -21,7 +21,7 @@
 
 .profile-page {
   display: grid;
-  grid-template-columns: 308px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   width: 100vw;
   height: 100vh;
   overflow: hidden;
@@ -372,7 +372,8 @@ button {
   font-weight: 800;
 }
 
-.date-range-button {
+.date-range-button,
+.new-chat-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -386,6 +387,20 @@ button {
   color: var(--profile-text);
   cursor: pointer;
   font-weight: 900;
+}
+
+.new-chat-action {
+  gap: 9px;
+  border: 0;
+  background: linear-gradient(135deg, #8b5cf6 0%, #5b21d8 100%);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 900;
+  box-shadow: 0 12px 25px rgba(89, 42, 210, 0.22);
+}
+
+.new-chat-action:hover {
+  filter: brightness(1.06);
 }
 
 .date-range-button svg {
@@ -1640,7 +1655,7 @@ input:focus-visible {
 
 @media (max-width: 1320px) {
   .profile-page {
-    grid-template-columns: 286px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .profile-main {
@@ -1678,7 +1693,7 @@ input:focus-visible {
 
 @media (max-width: 1180px) {
   .profile-page {
-    grid-template-columns: 250px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .profile-dashboard {
@@ -1700,10 +1715,6 @@ input:focus-visible {
     overflow: visible;
   }
 
-  .profile-sidebar {
-    display: none;
-  }
-
   .profile-main {
     min-height: 100vh;
     overflow: visible;
@@ -1717,7 +1728,8 @@ input:focus-visible {
     flex-direction: column;
   }
 
-  .date-range-button {
+  .date-range-button,
+  .new-chat-action {
     min-width: 0;
     width: 100%;
   }

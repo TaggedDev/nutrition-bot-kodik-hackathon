@@ -325,34 +325,6 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
 
   return (
     <main className="nutri-page">
-      <aside className="nutri-sidebar" aria-label="Навигация">
-        <div className="brand-block">
-          <div className="brand-icon" aria-hidden="true">
-            <UtensilsIcon />
-          </div>
-          <div>
-            <strong>NutriMate AI</strong>
-            <span>AI-трекер питания</span>
-          </div>
-        </div>
-
-        <button type="button" className="new-chat-btn active" onClick={resetChat}>
-          <span className="nav-icon" aria-hidden="true">+</span>
-          Новый чат
-        </button>
-
-        <div className="sidebar-spacer" />
-
-        <button type="button" className="user-card" onClick={onOpenProfile} aria-label="Открыть личный кабинет">
-          <span className="avatar">{initials(currentUser)}</span>
-          <span>
-            <strong>{currentUser.firstName} {currentUser.secondName}</strong>
-            <small>Личный кабинет</small>
-          </span>
-          <span className="chevron">›</span>
-        </button>
-      </aside>
-
       <section className="chat-workspace" aria-label="Чат питания">
         <header className="chat-header">
           <div className="assistant-title">
@@ -418,7 +390,6 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
 
         <form className="chat-input-bar" onSubmit={handleSubmit}>
           <div className="input-row">
-            <button type="button" className="attach-btn" aria-label="Прикрепить файл">+</button>
             <label className="chat-input-shell">
               <span className="sr-only">Сообщение</span>
               <input
@@ -443,6 +414,8 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
         onMealTypeChange={setCurrentMealType}
         day={day}
         summary={currentMealSummary}
+        currentUser={currentUser}
+        onOpenProfile={onOpenProfile}
       />
     </main>
   )
@@ -756,6 +729,8 @@ function MealContextPanel({
   onMealTypeChange,
   day,
   summary,
+  currentUser,
+  onOpenProfile,
 }: {
   selectedDate: Date
   onDateChange: (date: Date) => void
@@ -763,72 +738,34 @@ function MealContextPanel({
   onMealTypeChange: (mealType: MealType) => void
   day: ProfileDay | null
   summary: NutritionSummary
+  currentUser: CurrentUser
+  onOpenProfile: () => void
 }) {
-  const [menuOpen, setMenuOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
-  const totalSummary = day?.totalSummary ?? emptySummary
-  const goal = day?.goal ?? null
 
   return (
     <aside className="meal-panel meal-context-panel" aria-label="Текущий приём пищи">
       <header className="meal-panel-header">
-        <div className="meal-title">
-          <span className="meal-icon" aria-hidden="true">
-            <UtensilsIcon />
-          </span>
-          <strong>{formatPanelDate(selectedDate)}</strong>
-        </div>
-        <div className="meal-header-actions">
-          <div className="meal-switcher">
-            <button
-              type="button"
-              className="meal-switcher-button"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((open) => !open)}
-            >
-              {mealLabels[currentMealType]}
-              <span aria-hidden="true">⌄</span>
-            </button>
-            {menuOpen && (
-              <div className="meal-switcher-menu" role="menu">
-                {mealOrder.map((mealType) => (
-                  <button
-                    key={mealType}
-                    type="button"
-                    role="menuitem"
-                    className={mealType === currentMealType ? 'active' : ''}
-                    onClick={() => {
-                      onMealTypeChange(mealType)
-                      setMenuOpen(false)
-                    }}
-                  >
-                    {mealLabels[mealType]}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="calendar-anchor">
-            <button
-              type="button"
-              className="calendar-button"
-              aria-label="Открыть календарь"
-              aria-expanded={calendarOpen}
-              onClick={() => setCalendarOpen((open) => !open)}
-            >
-              <CalendarIcon />
-            </button>
-            {calendarOpen && (
-              <CalendarPopover
-                selectedDate={selectedDate}
-                onDateChange={(nextDate) => {
-                  onDateChange(nextDate)
-                  setCalendarOpen(false)
-                }}
-              />
-            )}
-          </div>
+        <div className="calendar-anchor date-picker-anchor">
+          <button
+            type="button"
+            className="panel-date-button"
+            aria-label={`Выбрать дату, сейчас ${formatPanelDate(selectedDate)}`}
+            aria-expanded={calendarOpen}
+            onClick={() => setCalendarOpen((open) => !open)}
+          >
+            <CalendarIcon />
+            <strong>{formatPanelDate(selectedDate)}</strong>
+          </button>
+          {calendarOpen && (
+            <CalendarPopover
+              selectedDate={selectedDate}
+              onDateChange={(nextDate) => {
+                onDateChange(nextDate)
+                setCalendarOpen(false)
+              }}
+            />
+          )}
         </div>
       </header>
 
@@ -864,41 +801,15 @@ function MealContextPanel({
         })}
       </section>
 
-      <RecommendationCard goal={goal} totalSummary={totalSummary} />
+      <button type="button" className="profile-shortcut" onClick={onOpenProfile} aria-label="Открыть личный кабинет">
+        <span className="avatar">{initials(currentUser)}</span>
+        <span className="profile-shortcut-copy">
+          <strong>{currentUser.firstName} {currentUser.secondName}</strong>
+          <small>Личный кабинет</small>
+        </span>
+        <span className="chevron" aria-hidden="true">›</span>
+      </button>
     </aside>
-  )
-}
-
-function RecommendationCard({ goal, totalSummary }: { goal: DailyGoal | null; totalSummary: NutritionSummary }) {
-  const fallbackGoal: DailyGoal = goal ?? {
-    targetCalories: 2300,
-    targetProtein: 150,
-    targetFat: 77,
-    targetCarbs: 288,
-  }
-  const remainingCalories = Math.max(0, fallbackGoal.targetCalories - totalSummary.calories)
-  const dayProgress = Math.min(100, Math.round((totalSummary.calories / Math.max(fallbackGoal.targetCalories, 1)) * 100))
-
-  return (
-    <section className="recommendation-card" aria-label="Рекомендации">
-      <div className="recommendation-top">
-        <div>
-          <span>Рекомендации</span>
-          <p>Осталось калорий</p>
-          <strong>{formatNumber(remainingCalories)} ккал</strong>
-          <small>из {formatNumber(fallbackGoal.targetCalories)} ккал</small>
-        </div>
-        <div className="recommendation-donut">
-          <Donut value={dayProgress} />
-          <span>{dayProgress}% дня</span>
-        </div>
-      </div>
-      <div className="recommendation-macros">
-        <MacroProgress label="Белки" value={totalSummary.protein} max={fallbackGoal.targetProtein} />
-        <MacroProgress label="Жиры" value={totalSummary.fat} max={fallbackGoal.targetFat} />
-        <MacroProgress label="Углеводы" value={totalSummary.carbs} max={fallbackGoal.targetCarbs} />
-      </div>
-    </section>
   )
 }
 
@@ -1001,7 +912,7 @@ function ProgressRow({
   )
 }
 
-function Donut({ value }: { value: number }) {
+export function Donut({ value }: { value: number }) {
   return (
     <div className="donut" style={{ '--donut-value': `${value * 3.6}deg` } as CSSProperties}>
       <span>{value}%</span>
@@ -1009,7 +920,7 @@ function Donut({ value }: { value: number }) {
   )
 }
 
-function MacroProgress({ label, value, max }: { label: string; value: number; max: number }) {
+export function MacroProgress({ label, value, max }: { label: string; value: number; max: number }) {
   return (
     <div className="macro-progress">
       <div>

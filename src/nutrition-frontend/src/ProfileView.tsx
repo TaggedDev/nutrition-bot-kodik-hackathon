@@ -1,20 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import {
   BarChart3,
-  Calendar,
   Check,
-  ChevronDown,
   ChevronRight,
   Crown,
   Download,
   LogOut,
-  MessageCircle,
   Pencil,
   Plus,
-  Search,
   Shield,
-  SlidersHorizontal,
   Sparkles,
   Target,
   Trash2,
@@ -23,8 +18,8 @@ import {
   X,
 } from 'lucide-react'
 import aiCrystalUrl from './assets/ai-crystal.svg'
-import { authApi, chatApi, profileApi } from './profileApi'
-import type { ChatHistoryItemData, ProfileStatistics } from './profileApi'
+import { authApi, profileApi } from './profileApi'
+import type { ProfileStatistics } from './profileApi'
 import type { DailyGoal, MealEntryItem, ProfileData } from './types'
 import './ProfileView.css'
 
@@ -70,9 +65,7 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [goal, setGoal] = useState<DailyGoal>(defaultGoal)
   const [statistics, setStatistics] = useState<ProfileStatistics | null>(null)
-  const [chatHistory, setChatHistory] = useState<ChatHistoryItemData[]>([])
   const [selectedRange, setSelectedRange] = useState(7)
-  const [chatQuery, setChatQuery] = useState('')
   const [editingField, setEditingField] = useState<EditableField | null>(null)
   const [draftValue, setDraftValue] = useState('')
   const [savingField, setSavingField] = useState<EditableField | null>(null)
@@ -122,15 +115,13 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
     setStatsError(null)
 
     try {
-      const [profilePayload, goalPayload, chatsPayload] = await Promise.all([
+      const [profilePayload, goalPayload] = await Promise.all([
         profileApi.getMe(),
         profileApi.getGoals(),
-        chatApi.getHistory(),
       ])
       const nextGoal = goalPayload ?? defaultGoal
       setProfile(profilePayload)
       setGoal(nextGoal)
-      setChatHistory(chatsPayload)
       await loadStatistics(7, nextGoal)
     } catch (error) {
       handleApiError(error, 'Не удалось загрузить личный кабинет.', setProfileError)
@@ -140,29 +131,9 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
   }, [handleApiError, loadStatistics])
 
   useEffect(() => {
-    loadProfilePage()
+    const timeoutId = window.setTimeout(() => void loadProfilePage(), 0)
+    return () => window.clearTimeout(timeoutId)
   }, [loadProfilePage])
-
-  const filteredChats = useMemo(() => {
-    const query = chatQuery.trim().toLowerCase()
-    if (!query) return chatHistory
-    return chatHistory.filter((item) => `${item.title} ${item.preview}`.toLowerCase().includes(query))
-  }, [chatHistory, chatQuery])
-
-  const chatGroups = useMemo(() => {
-    return filteredChats.reduce<Record<string, ChatHistoryItemData[]>>((groups, item) => {
-      groups[item.dateLabel] = [...(groups[item.dateLabel] ?? []), item]
-      return groups
-    }, {})
-  }, [filteredChats])
-
-  const dateRangeLabel = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' })
-    const end = new Date(`${todayIso}T00:00:00`)
-    const start = new Date(end)
-    start.setDate(end.getDate() - selectedRange + 1)
-    return `${formatter.format(start)} - ${formatter.format(end)}`
-  }, [selectedRange])
 
   const displayName = profile ? `${profile.firstName} ${profile.secondName}`.trim() : 'Профиль'
 
@@ -297,14 +268,6 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
 
   return (
     <main className="profile-page">
-      <ProfileSidebar
-        profile={profile}
-        chatGroups={chatGroups}
-        chatQuery={chatQuery}
-        onChatQueryChange={setChatQuery}
-        onBackToChat={onBackToChat}
-      />
-
       <section className="profile-main" aria-label="Личный кабинет">
         <header className="profile-topbar">
           <div className="profile-title-group">
@@ -316,10 +279,9 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
               <p>Профиль, цели и статистика</p>
             </div>
           </div>
-          <button type="button" className="date-range-button" aria-label="Выбранный период">
-            <Calendar size={18} />
-            <span>{dateRangeLabel}</span>
-            <ChevronDown size={18} />
+          <button type="button" className="new-chat-action" onClick={onBackToChat}>
+            <Plus size={19} aria-hidden="true" />
+            <span>Новый чат</span>
           </button>
         </header>
 
@@ -382,76 +344,6 @@ export function ProfileView({ onBackToChat, onUnauthorized }: Props) {
         />
       )}
     </main>
-  )
-}
-
-function ProfileSidebar({
-  profile,
-  chatGroups,
-  chatQuery,
-  onChatQueryChange,
-  onBackToChat,
-}: {
-  profile: ProfileData | null
-  chatGroups: Record<string, ChatHistoryItemData[]>
-  chatQuery: string
-  onChatQueryChange: (value: string) => void
-  onBackToChat: () => void
-}) {
-  const initials = getInitials(profile)
-  return (
-    <aside className="profile-sidebar" aria-label="История чатов">
-      <div className="sidebar-brand">
-        <span className="brand-mark" aria-hidden="true">
-          <Sparkles size={38} fill="currentColor" strokeWidth={1.8} />
-        </span>
-        <span>
-          <strong>NutriMate AI</strong>
-          <small>AI-трекер питания</small>
-        </span>
-      </div>
-      <div className="sidebar-actions">
-        <button type="button" className="primary-action" onClick={onBackToChat}>
-          <Plus size={22} />
-          Новый чат
-        </button>
-        <button type="button" className="sidebar-tool-button" aria-label="Фильтры истории">
-          <SlidersHorizontal size={18} />
-        </button>
-      </div>
-      <label className="chat-search">
-        <Search size={20} aria-hidden="true" />
-        <span className="sr-only">Поиск по чатам</span>
-        <input value={chatQuery} onChange={(event) => onChatQueryChange(event.target.value)} placeholder="Поиск по чатам" />
-      </label>
-      <div className="chat-history-list">
-        {Object.entries(chatGroups).map(([label, items]) => (
-          <section key={label} className="chat-history-group">
-            <h2>{label}</h2>
-            {items.map((item, index) => (
-              <button key={item.id} type="button" className={`chat-history-item ${index === 0 && label === 'Сегодня' ? 'selected' : ''}`} onClick={onBackToChat}>
-                <MessageCircle size={22} className="chat-row-icon" aria-hidden="true" />
-                <span className="chat-copy">
-                  <span className="chat-title-row">
-                    <strong>{item.title}</strong>
-                    <time>{item.timeLabel}</time>
-                  </span>
-                  <small>{item.preview}</small>
-                </span>
-              </button>
-            ))}
-          </section>
-        ))}
-      </div>
-      <button type="button" className="sidebar-user-card" aria-label="Открыть меню пользователя">
-        <span className="avatar">{initials}</span>
-        <span>
-          <strong>{profile ? `${profile.firstName} ${profile.secondName}` : 'Пользователь'}</strong>
-          <small>Премиум</small>
-        </span>
-        <ChevronDown size={20} aria-hidden="true" />
-      </button>
-    </aside>
   )
 }
 
@@ -936,7 +828,6 @@ function TileError({ text }: { text: string }) {
 function ProfileSkeleton() {
   return (
     <main className="profile-page skeleton-page">
-      <aside className="profile-sidebar skeleton-block" />
       <section className="profile-main">
         <div className="profile-topbar skeleton-line" />
         <div className="profile-dashboard">

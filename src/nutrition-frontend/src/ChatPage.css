@@ -67,7 +67,7 @@ input:focus-visible {
 
 .nutri-page {
   display: grid;
-  grid-template-columns: 250px minmax(520px, 1fr) 414px;
+  grid-template-columns: minmax(520px, 1fr) 414px;
   gap: 20px;
   height: 100vh;
   min-height: 100vh;
@@ -75,6 +75,57 @@ input:focus-visible {
   color: var(--text);
   font-family: "Manrope", Inter, system-ui, sans-serif;
   overflow: hidden;
+}
+
+.profile-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 68px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--text);
+  text-align: left;
+  box-shadow: var(--shadow-card);
+}
+
+.profile-shortcut:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-soft);
+}
+
+.profile-shortcut .avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+}
+
+.profile-shortcut-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-shortcut-copy strong,
+.profile-shortcut-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-shortcut-copy small {
+  color: var(--text-muted);
+}
+
+.profile-shortcut .chevron {
+  color: var(--accent);
+  font-size: 25px;
 }
 
 .nutri-sidebar {
@@ -1117,6 +1168,8 @@ input:focus-visible {
 
 .meal-panel,
 .meal-context-panel {
+  display: flex;
+  flex-direction: column;
   width: 390px;
   height: calc(100vh - 24px);
   margin: 12px 12px 12px 0;
@@ -1139,6 +1192,41 @@ input:focus-visible {
   background: linear-gradient(180deg, #ffffff 76%, rgba(255, 255, 255, 0));
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
+}
+
+.date-picker-anchor {
+  width: 100%;
+}
+
+.panel-date-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: #f2edff;
+  color: var(--accent);
+  text-align: left;
+  transition: 160ms ease;
+}
+
+.panel-date-button:hover {
+  border-color: var(--border-strong);
+  background: #ece3ff;
+}
+
+.panel-date-button svg {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.panel-date-button strong {
+  font-size: 18px;
+  font-weight: 850;
 }
 
 .meal-title,
@@ -1481,8 +1569,17 @@ input:focus-visible {
 
 .total-head strong {
   color: var(--text);
-  font-size: 24px;
-  font-weight: 900;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.total-head span {
+  font-weight: 700;
+}
+
+.profile-shortcut {
+  margin-top: auto;
+  flex: 0 0 auto;
 }
 
 .macro-total-row {
@@ -1869,7 +1966,7 @@ input:focus-visible {
 
 @media (max-width: 1279px) {
   .nutri-page {
-    grid-template-columns: 220px minmax(440px, 1fr) minmax(330px, 360px);
+    grid-template-columns: minmax(440px, 1fr) minmax(330px, 360px);
     gap: 14px;
   }
 
@@ -1909,12 +2006,12 @@ input:focus-visible {
 
 @media (max-width: 1023px) {
   .nutri-page {
-    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     overflow: auto;
   }
 
   .meal-panel {
-    grid-column: 2;
+    grid-column: 1;
     height: auto;
     margin: 0 12px 12px 0;
   }
@@ -1926,39 +2023,6 @@ input:focus-visible {
     flex-direction: column;
     gap: 12px;
     overflow: auto;
-  }
-
-  .nutri-sidebar {
-    min-height: auto;
-    border-radius: 0 0 22px 22px;
-    padding: 14px;
-  }
-
-  .brand-block,
-  .premium-card,
-  .user-card {
-    display: none;
-  }
-
-  .sidebar-nav {
-    grid-template-columns: repeat(6, minmax(52px, 1fr));
-    gap: 4px;
-  }
-
-  .new-chat-btn {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .sidebar-nav button {
-    justify-content: center;
-    min-height: 48px;
-    padding: 0;
-    font-size: 0;
-  }
-
-  .nav-icon {
-    font-size: 12px;
   }
 
   .chat-workspace,
