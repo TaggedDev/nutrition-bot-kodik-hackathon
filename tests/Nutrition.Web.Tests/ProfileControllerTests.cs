@@ -114,6 +114,9 @@ public sealed class ProfileControllerTests
         public Task<ProfileResponseDto?> GetUserProfileAsync(Guid userId, CancellationToken cancellationToken = default)
             => Task.FromResult<ProfileResponseDto?>(new ProfileResponseDto(userId, "alice@example.com", "Alice", "Smith"));
 
+        public Task<ProfileResponseDto?> UpdateUserProfileAsync(Guid userId, UpdateProfileRequestDto request, CancellationToken cancellationToken = default)
+            => Task.FromResult<ProfileResponseDto?>(new ProfileResponseDto(userId, "alice@example.com", request.FirstName, request.SecondName));
+
         public Task<ProfileHistoryResponseDto> GetUserHistoryAsync(Guid userId, CancellationToken cancellationToken = default)
             => Task.FromResult(new ProfileHistoryResponseDto(Array.Empty<UserMealEntryDto>(), EmptySummary()));
 
@@ -137,6 +140,15 @@ public sealed class ProfileControllerTests
             };
             return Task.FromResult(new ProfileDayResponseDto(date, DefaultGoal(), meals, EmptySummary()));
         }
+
+        public Task<ProfileStatisticsResponseDto> GetUserStatisticsAsync(Guid userId, int rangeDays, DateOnly endDate, CancellationToken cancellationToken = default)
+            => Task.FromResult(new ProfileStatisticsResponseDto(2300, Array.Empty<ProfileStatisticsDayDto>()));
+
+        public Task<string> ExportUserDailyCsvAsync(Guid userId, CancellationToken cancellationToken = default)
+            => Task.FromResult("date,totalCalories,proteinGrams,fatGrams,carbsGrams,breakfastCalories,lunchCalories,dinnerCalories,snackCalories\n");
+
+        public Task<DeleteAccountRequestResponseDto> RequestUserAccountDeletionAsync(Guid userId, CancellationToken cancellationToken = default)
+            => Task.FromResult(new DeleteAccountRequestResponseDto(true, DateTimeOffset.UtcNow));
 
         public Task<UserDailyGoalDto?> GetUserDailyGoalAsync(Guid userId, CancellationToken cancellationToken = default)
             => Task.FromResult<UserDailyGoalDto?>(DefaultGoal());

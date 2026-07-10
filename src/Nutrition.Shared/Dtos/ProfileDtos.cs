@@ -112,3 +112,27 @@ public sealed record ProfileDayResponseDto(
     UserDailyGoalDto? Goal,
     IReadOnlyCollection<MealEntriesByTypeDto> Meals,
     NutritionSummaryDto TotalSummary);
+
+public sealed record UpdateProfileRequestDto(
+    string FirstName,
+    string SecondName);
+
+public sealed record ProfileStatisticsDayDto(
+    DateOnly Date,
+    decimal TotalCalories,
+    decimal ProteinGrams,
+    decimal FatGrams,
+    decimal CarbsGrams,
+    decimal BreakfastCalories,
+    decimal LunchCalories,
+    decimal DinnerCalories,
+    decimal SnackCalories,
+    bool HasData);
+
+public sealed record ProfileStatisticsResponseDto(
+    decimal DailyCaloriesTarget,
+    IReadOnlyCollection<ProfileStatisticsDayDto> Items);
+
+public sealed record DeleteAccountRequestResponseDto(
+    bool Accepted,
+    DateTimeOffset RequestedAtUtc);
