@@ -13,12 +13,22 @@ public sealed class MafFoodInputParser : IFoodInputParser
 
                                         Rules:
                                         - Split compound meals into separate searchable food products.
-                                        - Return generic product names suitable for Open Food Facts text search.
+                                        - Return product names suitable for nutrition lookup.
                                         - Preserve brand only when the user explicitly mentions it.
+                                        - Put supermarket, manufacturer, cafe, restaurant, delivery service, or private-label names into brand when mentioned.
+                                        - Classify each item as:
+                                          MassMarketProduct: packaged or raw grocery product that can be bought in mass market stores.
+                                          PreparedFood: ready-to-eat dish from a cafe, restaurant, delivery service, or store culinary/private label.
+                                          Unknown: ambiguous item.
                                         - If quantity is unknown, use 1.
                                         - If unit is unknown, use "serving".
                                         - Do not calculate nutrition.
                                         - Do not include explanations, markdown, or extra fields.
+                                        - Examples:
+                                          "макароны вермишель макфа" -> productName "макароны вермишель", brand "макфа", kind "MassMarketProduct".
+                                          "курица грудка 120 грамм петелинка и макароны makfa" -> two items, both MassMarketProduct, preserve brands.
+                                          "гаспачо creative kitchen самокат" -> productName "гаспачо", brand "creative kitchen самокат", kind "PreparedFood".
+                                          "суши ролл с крабом prime cafe" -> productName "суши ролл с крабом", brand "prime cafe", kind "PreparedFood".
 
                                         Return this exact JSON shape:
                                         {
@@ -28,7 +38,8 @@ public sealed class MafFoodInputParser : IFoodInputParser
                                               "quantity": 1,
                                               "unit": "serving",
                                               "brand": null,
-                                              "preparation": null
+                                              "preparation": null,
+                                              "kind": "MassMarketProduct"
                                             }
                                           ]
                                         }
@@ -38,6 +49,11 @@ public sealed class MafFoodInputParser : IFoodInputParser
     {
         PropertyNameCaseInsensitive = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
+
+    static MafFoodInputParser()
+    {
+        JsonOptions.Converters.Add(new JsonStringEnumConverter());
+    }
 
     private readonly ChatClientAgent _agent;
 
@@ -82,7 +98,8 @@ public sealed class MafFoodInputParser : IFoodInputParser
             Quantity = item.Quantity <= 0 ? 1 : item.Quantity,
             Unit = string.IsNullOrWhiteSpace(item.Unit) ? "serving" : item.Unit.Trim(),
             Brand = string.IsNullOrWhiteSpace(item.Brand) ? null : item.Brand.Trim(),
-            Preparation = string.IsNullOrWhiteSpace(item.Preparation) ? null : item.Preparation.Trim()
+            Preparation = string.IsNullOrWhiteSpace(item.Preparation) ? null : item.Preparation.Trim(),
+            Kind = item.Kind
         }).ToArray();
     }
 
@@ -102,5 +119,7 @@ public sealed class MafFoodInputParser : IFoodInputParser
         public string? Brand { get; init; }
 
         public string? Preparation { get; init; }
+
+        public FoodUnitKind Kind { get; init; } = FoodUnitKind.Unknown;
     }
 }

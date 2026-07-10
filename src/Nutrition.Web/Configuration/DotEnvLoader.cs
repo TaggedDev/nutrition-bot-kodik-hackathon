@@ -38,7 +38,7 @@ public static class DotEnvLoader
             var key = line[..separatorIndex].Trim();
             var value = line[(separatorIndex + 1)..].Trim().Trim('"');
 
-            if (Environment.GetEnvironmentVariable(key) is null)
+            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(key)))
             {
                 Environment.SetEnvironmentVariable(key, value);
             }

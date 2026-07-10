@@ -4,7 +4,9 @@ using Microsoft.Extensions.Options;
 using Nutrition.Application.Abstractions.Services;
 using Nutrition.Infrastructure.Agent.DeepSeek;
 using Nutrition.Infrastructure.Agent.Matching;
+using Nutrition.Infrastructure.Agent.NutritionLookup;
 using Nutrition.Infrastructure.Agent.Parsing;
+using Nutrition.Infrastructure.Agent.WebSearch;
 
 namespace Nutrition.Infrastructure.Agent;
 
@@ -28,6 +30,20 @@ public static class DependencyInjection
             }
         });
 
+        services.Configure<TavilyOptions>(options =>
+        {
+            configuration.GetSection(TavilyOptions.SectionName).Bind(options);
+            options.ApiKey = FirstNonEmpty(configuration["TAVILY_API_KEY"], configuration["Tavily:ApiKey"],
+                options.ApiKey);
+            options.BaseUrl = FirstNonEmpty(configuration["TAVILY_BASE_URL"], configuration["Tavily:BaseUrl"],
+                options.BaseUrl);
+
+            if (int.TryParse(configuration["TAVILY_TIMEOUT_SECONDS"], out var timeoutSeconds))
+            {
+                options.TimeoutSeconds = timeoutSeconds;
+            }
+        });
+
         services.AddHttpClient<DeepSeekChatClient>((serviceProvider, client) =>
         {
             var options = serviceProvider.GetRequiredService<IOptions<DeepSeekOptions>>().Value;
@@ -40,6 +56,20 @@ public static class DependencyInjection
 
         services.AddScoped<IFoodInputParser, MafFoodInputParser>();
         services.AddScoped<IFoodMatcher, OpenFoodFactsFoodMatcher>();
+        services.AddScoped<IOpenFoodFactsCandidateJudge, MafOpenFoodFactsCandidateJudge>();
+        services.AddScoped<INutritionEvidenceExtractor, MafNutritionEvidenceExtractor>();
+        services.AddSingleton<ITavilyQueryBuilder, TavilyQueryBuilder>();
+        services.AddHttpClient<IWebSearchService, TavilyWebSearchService>((serviceProvider, client) =>
+        {
+            var options = serviceProvider.GetRequiredService<IOptions<TavilyOptions>>().Value;
+            client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+            client.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds, 5, 60));
+            if (!string.IsNullOrWhiteSpace(options.ApiKey))
+            {
+                client.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", options.ApiKey);
+            }
+        });
         services.AddScoped<INutritionChatQueryService, NutritionChatQueryService>();
 
         return services;
