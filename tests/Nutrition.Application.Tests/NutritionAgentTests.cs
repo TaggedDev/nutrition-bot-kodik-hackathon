@@ -166,6 +166,109 @@ public sealed class NutritionAgentTests
     }
 
     [Fact]
+    public async Task MafNutritionEvidenceExtractor_FallsBackToStructuredSnippet_WhenLlmReturnsNoCandidates()
+    {
+        const string responseJson = """{ "candidates": [] }""";
+        var extractor = new MafNutritionEvidenceExtractor(new FakeChatClient(responseJson));
+        var foodUnit = new FoodUnit
+        {
+            ProductName = "аригато сет",
+            Brand = "тануки",
+            Quantity = 1,
+            Unit = "serving",
+            Kind = FoodUnitKind.PreparedFood
+        };
+        var sources = new[]
+        {
+            new WebSearchResult(
+                "Калории и Пищевая Информация Тануки Аригато Сет - Fatsecret.ru",
+                new Uri("https://www.fatsecret.ru/search?q=tanuki-arigato-set"),
+                "в 1 порция (910г) - Калории: 2310ккал | Жир: 107,00г | Углев: 264,00г | Белк: 73,00г. Похожие · Ролл Аригато (Тануки).",
+                0.87m)
+        };
+
+        var result = await extractor.ExtractAsync(foodUnit, sources, CancellationToken.None);
+
+        var candidate = Assert.Single(result);
+        Assert.Equal("WebSearch", candidate.SourceType);
+        Assert.Equal("PerServing", candidate.NutritionValueBasis);
+        Assert.Equal(910, candidate.ServingSize);
+        Assert.Equal("g", candidate.ServingUnit);
+        Assert.Equal(2310, candidate.NutritionFacts.Calories);
+        Assert.Equal(73, candidate.NutritionFacts.Protein);
+        Assert.Equal(107, candidate.NutritionFacts.Fat);
+        Assert.Equal(264, candidate.NutritionFacts.Carbs);
+    }
+
+    [Fact]
+    public async Task MafNutritionEvidenceExtractor_FallsBackToCompactFatSecretSnippet_WhenLlmReturnsNoCandidates()
+    {
+        const string responseJson = """{ "candidates": [] }""";
+        var extractor = new MafNutritionEvidenceExtractor(new FakeChatClient(responseJson));
+        var foodUnit = new FoodUnit
+        {
+            ProductName = "аригато сет",
+            Brand = "тануки",
+            Quantity = 1,
+            Unit = "serving",
+            Kind = FoodUnitKind.PreparedFood
+        };
+        var sources = new[]
+        {
+            new WebSearchResult(
+                "Тануки Аригато Сет Калории и Пищевая Ценность",
+                new Uri("https://www.fatsecret.ru/calories-nutrition/tanuki/arigato-set/1-serving"),
+                "Тануки Аригато Сет. Тануки. Аригато Сет. Кал. 2310. Жир. 107 г. Углев. 264 г. Белк. 73 г. 1 порция (910 г) содержит 2310 калорий. Источник · fatsecret Platform",
+                0.87m)
+        };
+
+        var result = await extractor.ExtractAsync(foodUnit, sources, CancellationToken.None);
+
+        var candidate = Assert.Single(result);
+        Assert.Equal("WebSearch", candidate.SourceType);
+        Assert.Equal("PerServing", candidate.NutritionValueBasis);
+        Assert.Equal(910, candidate.ServingSize);
+        Assert.Equal("g", candidate.ServingUnit);
+        Assert.Equal(2310, candidate.NutritionFacts.Calories);
+        Assert.Equal(73, candidate.NutritionFacts.Protein);
+        Assert.Equal(107, candidate.NutritionFacts.Fat);
+        Assert.Equal(264, candidate.NutritionFacts.Carbs);
+    }
+
+    [Fact]
+    public async Task MafNutritionEvidenceExtractor_FallsBackToOfficialTanukiSnippet_WhenBrandIsInUrl()
+    {
+        const string responseJson = """{ "candidates": [] }""";
+        var extractor = new MafNutritionEvidenceExtractor(new FakeChatClient(responseJson));
+        var foodUnit = new FoodUnit
+        {
+            ProductName = "аригато сет",
+            Brand = "тануки",
+            Quantity = 1,
+            Unit = "serving",
+            Kind = FoodUnitKind.PreparedFood
+        };
+        var sources = new[]
+        {
+            new WebSearchResult(
+                "Аригато сет заказать с доставкой домой и в офис из ...",
+                new Uri("https://tanukifamily.ru/tanuki/product/arigato-set"),
+                "и имбирь (2 шт.). 30 роллов для вечера под сериал. Пищевая ценность на 910 г. белки. 73 г. жиры. 107 г. Углеводы. 264 г. Энерг. ценн. 2310 ккал. Входит в заказ.Read more",
+                0.88m)
+        };
+
+        var result = await extractor.ExtractAsync(foodUnit, sources, CancellationToken.None);
+
+        var candidate = Assert.Single(result);
+        Assert.Equal("https://tanukifamily.ru/tanuki/product/arigato-set", candidate.SourceReference);
+        Assert.Equal(910, candidate.ServingSize);
+        Assert.Equal(2310, candidate.NutritionFacts.Calories);
+        Assert.Equal(73, candidate.NutritionFacts.Protein);
+        Assert.Equal(107, candidate.NutritionFacts.Fat);
+        Assert.Equal(264, candidate.NutritionFacts.Carbs);
+    }
+
+    [Fact]
     public async Task NutritionChatQueryService_ReturnsClarificationForEachParsedFoodUnit()
     {
         var parser = new FakeFoodInputParser(new[]

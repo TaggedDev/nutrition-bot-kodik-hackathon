@@ -24,10 +24,21 @@ public sealed class TavilyWebSearchService : IWebSearchService
 
     public async Task<WebSearchResponse> SearchAsync(WebSearchRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Query) || string.IsNullOrWhiteSpace(_options.ApiKey))
+        var apiKey = FirstNonEmpty(_options.ApiKey, Environment.GetEnvironmentVariable("TAVILY_API_KEY"));
+
+        if (string.IsNullOrWhiteSpace(request.Query))
         {
             return new WebSearchResponse(Array.Empty<WebSearchResult>(), null, null);
         }
+
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            _logger.LogWarning("Tavily API key is not configured. Web search will return no results.");
+            return new WebSearchResponse(Array.Empty<WebSearchResult>(), null, null);
+        }
+
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
 
         var payload = new TavilySearchRequest
         {
@@ -89,6 +100,19 @@ public sealed class TavilyWebSearchService : IWebSearchService
             uri,
             item.Content ?? string.Empty,
             item.Score);
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return string.Empty;
     }
 
     private sealed class TavilySearchRequest

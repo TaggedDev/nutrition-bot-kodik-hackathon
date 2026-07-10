@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Nutrition.Infrastructure.Agent.WebSearch;
@@ -42,12 +43,17 @@ public sealed class TavilyQueryBuilder : ITavilyQueryBuilder
         }
 
         parts.Add(foodUnit.ProductName.Trim());
-        parts.Add("nutrition calories protein fat carbs carbohydrates serving weight");
-        parts.Add("КБЖУ калории белки жиры углеводы вес порции");
+        var productQuery = string.Join(' ', parts);
+        if (foodUnit.Kind == FoodUnitKind.PreparedFood || ContainsCyrillic(productQuery))
+        {
+            return $"{productQuery} кбжу калории калорийность белки жиры углеводы вес порции";
+        }
 
-        return string.Join(' ', parts);
+        return $"{productQuery} nutrition calories protein fat carbs carbohydrates serving weight";
     }
 
+    private static bool ContainsCyrillic(string value)
+        => value.Any(ch => ch is >= '\u0400' and <= '\u04FF');
 }
 
 public sealed class MafOpenFoodFactsCandidateJudge : IOpenFoodFactsCandidateJudge
@@ -200,7 +206,13 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
         var response = await _agent.RunAsync<ExtractionResponse>(prompt, session: null, serializerOptions: JsonOptions,
             options: options, cancellationToken: cancellationToken);
 
-        return ValidateAndMap(response.Result, foodUnit, sourceList);
+        var llmCandidates = ValidateAndMap(response.Result, foodUnit, sourceList);
+        if (llmCandidates.Count > 0)
+        {
+            return llmCandidates;
+        }
+
+        return DeterministicNutritionSnippetExtractor.Extract(foodUnit, sourceList);
     }
 
     private static string BuildPrompt(FoodUnit foodUnit, IReadOnlyCollection<NumberedSource> sources)
@@ -299,6 +311,156 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
         => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).Substring(0, 16);
 
     private sealed record NumberedSource(string Id, WebSearchResult Result);
+
+    private static class DeterministicNutritionSnippetExtractor
+    {
+        private static readonly Regex RussianServingRegex = new(
+            @"(?:в\s*)?1\s*порц(?:ия|ии|ию)\s*\((?<size>[\d\s.,]+)\s*г\)\s*-\s*Калории:\s*(?<calories>[\d\s.,]+)\s*ккал\s*\|\s*Жир:\s*(?<fat>[\d\s.,]+)\s*г\s*\|\s*Углев:\s*(?<carbs>[\d\s.,]+)\s*г\s*\|\s*Белк:\s*(?<protein>[\d\s.,]+)\s*г",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private static readonly Regex EnglishServingRegex = new(
+            @"(?:1\s*serving|per\s*serving)[^\.|:]*?(?:\((?<size>[\d\s.,]+)\s*g\))?.*?Calories:\s*(?<calories>[\d\s.,]+).*?(?:Total\s*)?Fat:\s*(?<fat>[\d\s.,]+)\s*g.*?(?:Carbohydrates|Carbs):\s*(?<carbs>[\d\s.,]+)\s*g.*?Protein:\s*(?<protein>[\d\s.,]+)\s*g",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private static readonly Regex RussianCompactServingRegex = new(
+            @"Кал\.\s*(?<calories>[\d\s.,]+)\.?\s*Жир\.\s*(?<fat>[\d\s.,]+)\s*г\.?\s*Углев\.\s*(?<carbs>[\d\s.,]+)\s*г\.?\s*Белк\.\s*(?<protein>[\d\s.,]+)\s*г\.?.*?1\s*порц(?:ия|ии|ию)\s*\((?<size>[\d\s.,]+)\s*г\)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+
+        private static readonly Regex RussianNutritionValueRegex = new(
+            @"Пищевая\s+ценность\s+на\s+(?<size>[\d\s.,]+)\s*г\.?\s*белки\.\s*(?<protein>[\d\s.,]+)\s*г\.?\s*жиры\.\s*(?<fat>[\d\s.,]+)\s*г\.?\s*Углеводы\.\s*(?<carbs>[\d\s.,]+)\s*г\.?\s*Энерг\.\s*ценн\.\s*(?<calories>[\d\s.,]+)\s*ккал",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+
+        public static IReadOnlyCollection<ProductNutritionDto> Extract(
+            FoodUnit foodUnit,
+            IReadOnlyCollection<NumberedSource> sources)
+        {
+            var result = new List<ProductNutritionDto>();
+
+            foreach (var source in sources)
+            {
+                if (!LooksLikeRequestedProduct(foodUnit, source.Result))
+                {
+                    continue;
+                }
+
+                var content = source.Result.Content ?? string.Empty;
+                var match = RussianServingRegex.Match(content);
+                if (!match.Success)
+                {
+                    match = EnglishServingRegex.Match(content);
+                }
+                if (!match.Success)
+                {
+                    match = RussianCompactServingRegex.Match(content);
+                }
+                if (!match.Success)
+                {
+                    match = RussianNutritionValueRegex.Match(content);
+                }
+
+                if (!match.Success ||
+                    !TryReadDecimal(match, "calories", out var calories) ||
+                    !TryReadDecimal(match, "protein", out var protein) ||
+                    !TryReadDecimal(match, "fat", out var fat) ||
+                    !TryReadDecimal(match, "carbs", out var carbs))
+                {
+                    continue;
+                }
+
+                var servingSize = TryReadDecimal(match, "size", out var parsedServingSize)
+                    ? parsedServingSize
+                    : (decimal?)null;
+
+                result.Add(new ProductNutritionDto
+                {
+                    ProductId = $"WEB:{Hash($"{source.Result.Url}|{foodUnit.ProductName}|{foodUnit.Brand}")}",
+                    ProductName = ToTitleCase(foodUnit.ProductName),
+                    Brand = foodUnit.Brand,
+                    NutritionFacts = new NutritionFactsDto
+                    {
+                        Calories = calories,
+                        Protein = protein,
+                        Fat = fat,
+                        Carbs = carbs
+                    },
+                    NutritionValueBasis = NutritionValueBasis.PerServing.ToString(),
+                    ServingSize = servingSize,
+                    ServingUnit = servingSize.HasValue ? "g" : null,
+                    SourceType = "WebSearch",
+                    SourceReference = source.Result.Url.ToString(),
+                    ConfidenceScore = Math.Max(0.75m, Math.Min(0.95m, source.Result.RelevanceScore))
+                });
+            }
+
+            return result
+                .OrderByDescending(candidate => candidate.ConfidenceScore)
+                .Take(3)
+                .ToArray();
+        }
+
+        private static bool LooksLikeRequestedProduct(FoodUnit foodUnit, WebSearchResult source)
+        {
+            var haystack = Normalize($"{source.Title} {source.Content} {source.Url}");
+            if (!string.IsNullOrWhiteSpace(foodUnit.Brand) &&
+                !ContainsAllTokens(haystack, foodUnit.Brand) &&
+                !ContainsKnownBrandTransliteration(source, foodUnit.Brand))
+            {
+                return false;
+            }
+
+            return ContainsAllTokens(haystack, foodUnit.ProductName);
+        }
+
+        private static bool ContainsKnownBrandTransliteration(WebSearchResult source, string brand)
+        {
+            var normalizedBrand = Normalize(brand);
+            var normalizedUrl = Normalize(source.Url.ToString());
+
+            return (normalizedBrand.Contains("тануки", StringComparison.OrdinalIgnoreCase) &&
+                    normalizedUrl.Contains("tanuki", StringComparison.OrdinalIgnoreCase)) ||
+                   (normalizedBrand.Contains("самокат", StringComparison.OrdinalIgnoreCase) &&
+                    normalizedUrl.Contains("samokat", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool ContainsAllTokens(string haystack, string value)
+            => Tokenize(value).All(token => haystack.Contains(token, StringComparison.OrdinalIgnoreCase));
+
+        private static IEnumerable<string> Tokenize(string value)
+            => Normalize(value)
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(token => token.Length > 1);
+
+        private static string Normalize(string value)
+        {
+            var builder = new StringBuilder(value.Length);
+            foreach (var ch in value.ToLowerInvariant().Replace('ё', 'е'))
+            {
+                builder.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
+            }
+
+            return Regex.Replace(builder.ToString(), @"\s+", " ").Trim();
+        }
+
+        private static bool TryReadDecimal(Match match, string groupName, out decimal value)
+        {
+            value = default;
+            var raw = match.Groups[groupName].Value;
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return false;
+            }
+
+            var normalized = raw.Replace(" ", string.Empty).Replace(',', '.');
+            return decimal.TryParse(normalized, System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture, out value);
+        }
+
+        private static string ToTitleCase(string value)
+        {
+            var words = value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return string.Join(' ', words.Select(word => char.ToUpperInvariant(word[0]) + word[1..]));
+        }
+    }
 
     public sealed class ExtractionResponse
     {

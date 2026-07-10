@@ -175,6 +175,8 @@ public sealed class NutritionChatQueryServiceTests
         Assert.Single(webSearch.Queries);
         Assert.Contains("тануки", webSearch.Queries.Single(), StringComparison.Ordinal);
         Assert.Contains("сет аригато", webSearch.Queries.Single(), StringComparison.Ordinal);
+        Assert.Contains("кбжу", webSearch.Queries.Single(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("nutrition calories", webSearch.Queries.Single(), StringComparison.OrdinalIgnoreCase);
     }
 
     private static NutritionChatQueryService CreateService(
