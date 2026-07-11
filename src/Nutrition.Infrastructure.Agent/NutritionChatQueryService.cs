@@ -37,18 +37,15 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
         if (string.IsNullOrWhiteSpace(userInput))
             return new NutritionChatSearchResponseDto { Query = userInput };
 
-        var foodUnits = await _foodInputParser.ParseAsync(userInput, cancellationToken);
-        var normalizedUnits = foodUnits.Where(unit => !string.IsNullOrWhiteSpace(unit.ProductName))
-            .Select(FoodUnitNormalizer.Normalize).DistinctBy(BuildDeduplicationKey, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        IReadOnlyCollection<FoodUnit> foodUnits = await _foodInputParser.ParseAsync(userInput, cancellationToken);
 
-        if (normalizedUnits.Length == 0)
+        if (foodUnits.Count == 0)
             return new NutritionChatSearchResponseDto { Query = userInput.Trim() };
 
         var clarifications = new List<NutritionClarificationDto>();
-        var serviceUnavailable = false;
+        bool serviceUnavailable = false;
 
-        foreach (var foodUnit in normalizedUnits)
+        foreach (var foodUnit in foodUnits)
         {
             var matches = await FindCandidatesAsync(foodUnit, cancellationToken);
             if (matches.Count == 0)
