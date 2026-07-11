@@ -7,3 +7,6 @@ riderModule.iml
 .env
 .env.*
 !.env.example
+src/nutrition-frontend/node_modules/
+src/nutrition-frontend/playwright-report/
+src/nutrition-frontend/test-results/

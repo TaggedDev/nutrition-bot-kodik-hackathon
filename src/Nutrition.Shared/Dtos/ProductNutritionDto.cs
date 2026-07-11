@@ -22,14 +22,3 @@ public sealed class ProductNutritionDto
 
     public decimal ConfidenceScore { get; init; }
 }
-
-public sealed class NutritionFactsDto
-{
-    public decimal Calories { get; init; }
-
-    public decimal Protein { get; init; }
-
-    public decimal Fat { get; init; }
-
-    public decimal Carbs { get; init; }
-}

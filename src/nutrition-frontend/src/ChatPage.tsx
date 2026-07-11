@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, Dispatch, FormEvent, SetStateAction } from 'react'
+import { Sparkles } from 'lucide-react'
 import type {
   CurrentUser,
   DailyGoal,
@@ -26,10 +27,12 @@ type PortionState = {
   grams: number
 }
 
+type ProductResultGroup = { label: string; products: ProductNutrition[] }
+
 type ChatLine =
   | { id: string; role: 'user'; text: string; time: string }
   | { id: string; role: 'assistant'; kind: 'text'; text: string }
-  | { id: string; role: 'assistant'; kind: 'results'; text: string; products: ProductNutrition[] }
+  | { id: string; role: 'assistant'; kind: 'results'; text: string; groups: ProductResultGroup[] }
 
 const emptySummary: NutritionSummary = { calories: 0, protein: 0, fat: 0, carbs: 0 }
 const mealOrder: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snack']
@@ -118,7 +121,8 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
       }
 
       const payload = (await response.json()) as NutritionChatSearchResponse
-      const products = extractProducts(payload).slice(0, 3)
+      const groups = extractProductGroups(payload)
+      const products = groups.flatMap((group) => group.products)
       setPortionMap((current) => {
         const next = { ...current }
         for (const product of products) {
@@ -137,13 +141,13 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
               role: 'assistant',
               kind: 'results',
               text: 'Нашел подходящие варианты. Выберите продукт и граммовку:',
-              products,
+              groups,
             }
           : {
               id: crypto.randomUUID(),
               role: 'assistant',
               kind: 'text',
-              text: 'Ничего не нашел. Попробуйте уточнить название, бренд или вес продукта.',
+              text: 'Ничего не найдено. Попробуйте уточнить название, бренд или вес продукта.',
             },
       ])
     } catch (err) {
@@ -316,56 +320,15 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
     setDay((current) => replaceEntryInDay(current, savedEntry, selectedDateOnly))
   }
 
-  function resetChat() {
-    setLines([])
-    setInput('')
-    setPortionMap({})
-    setError(null)
-  }
-
   return (
     <main className="nutri-page">
-      <aside className="nutri-sidebar" aria-label="Навигация">
-        <div className="brand-block">
-          <div className="brand-icon" aria-hidden="true">
-            <UtensilsIcon />
-          </div>
-          <div>
-            <strong>NutriMate AI</strong>
-            <span>AI-трекер питания</span>
-          </div>
-        </div>
-
-        <button type="button" className="new-chat-btn active" onClick={resetChat}>
-          <span className="nav-icon" aria-hidden="true">+</span>
-          Новый чат
-        </button>
-
-        <div className="sidebar-spacer" />
-
-        <button type="button" className="user-card" onClick={onOpenProfile} aria-label="Открыть личный кабинет">
-          <span className="avatar">{initials(currentUser)}</span>
-          <span>
-            <strong>{currentUser.firstName} {currentUser.secondName}</strong>
-            <small>Личный кабинет</small>
-          </span>
-          <span className="chevron">›</span>
-        </button>
-      </aside>
-
       <section className="chat-workspace" aria-label="Чат питания">
         <header className="chat-header">
           <div className="assistant-title">
-            <span className="ai-icon">AI</span>
+            <span className="ai-icon"><Sparkles aria-hidden="true" /></span>
             <div>
-              <h1>AI-ассистент <span>NutriMate AI</span></h1>
-              <p>Ваш помощник по питанию и КБЖУ</p>
+              <h1>NutriMate AI</h1>
             </div>
-          </div>
-          <div className="header-actions">
-            <button type="button" className="clear-btn" onClick={resetChat} aria-label="Очистить чат">
-              Очистить чат
-            </button>
           </div>
         </header>
 
@@ -386,7 +349,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
         <div className="conversation">
           {lines.length === 0 ? (
             <div className="empty-chat">
-              <span>AI</span>
+              <span><Sparkles aria-hidden="true" /></span>
               <h2>Напишите, что вы съели</h2>
               <p>Я найду продукты через OpenFoodFacts, покажу КБЖУ и дам выбрать граммовку перед добавлением.</p>
             </div>
@@ -416,24 +379,22 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
 
         {error && <div className="chat-error">{error}</div>}
 
-        <form className="chat-input-bar" onSubmit={handleSubmit}>
+        <div className="chat-composer-dock">
+          <div className="input-notice">NutriMate AI может ошибаться. Проверяйте важную информацию.</div>
+          <form className="chat-input-bar" onSubmit={handleSubmit}>
           <div className="input-row">
-            <button type="button" className="attach-btn" aria-label="Прикрепить файл">+</button>
             <label className="chat-input-shell">
               <span className="sr-only">Сообщение</span>
               <input
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="Напишите сообщение..."
+                placeholder="Я съел творог 150 грамм"
               />
             </label>
             <button type="submit" className="send-btn" aria-label="Отправить сообщение" disabled={loadingSearch}>›</button>
           </div>
-          <div className="input-helper">
-            <span>Например: Я съел творог 150 г</span>
-            <span>NutriMate AI может ошибаться. Проверяйте важную информацию.</span>
-          </div>
-        </form>
+          </form>
+        </div>
       </section>
 
       <MealContextPanel
@@ -443,6 +404,8 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
         onMealTypeChange={setCurrentMealType}
         day={day}
         summary={currentMealSummary}
+        currentUser={currentUser}
+        onOpenProfile={onOpenProfile}
       />
     </main>
   )
@@ -480,22 +443,29 @@ function MessageRow({
       <div className="assistant-content">
         <p>{line.text}</p>
         {line.kind === 'results' && (
-          <div className="search-results-group">
-            {line.products.map((product, index) => {
-              const key = productKey(product)
-              return (
-                <FoodSearchResultCard
-                  key={key}
-                  product={product}
-                  index={index}
-                  state={portionMap[key] ?? defaultPortionState(product)}
-                  added={addedByProduct.has(key)}
-                  onPortionChange={onPortionChange}
-                  onGramsChange={onGramsChange}
-                  onAdd={onAdd}
-                />
-              )
-            })}
+          <div className="search-result-groups">
+            {line.groups.map((group) => (
+              <section className="search-result-section" data-testid="product-result-group" key={group.label}>
+                <h2>{group.label}</h2>
+                <div className="search-results-group">
+                  {group.products.map((product, index) => {
+                    const key = productKey(product)
+                    return (
+                      <FoodSearchResultCard
+                        key={key}
+                        product={product}
+                        index={index}
+                        state={portionMap[key] ?? defaultPortionState(product)}
+                        added={addedByProduct.has(key)}
+                        onPortionChange={onPortionChange}
+                        onGramsChange={onGramsChange}
+                        onAdd={onAdd}
+                      />
+                    )
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         )}
       </div>
@@ -756,6 +726,8 @@ function MealContextPanel({
   onMealTypeChange,
   day,
   summary,
+  currentUser,
+  onOpenProfile,
 }: {
   selectedDate: Date
   onDateChange: (date: Date) => void
@@ -763,72 +735,34 @@ function MealContextPanel({
   onMealTypeChange: (mealType: MealType) => void
   day: ProfileDay | null
   summary: NutritionSummary
+  currentUser: CurrentUser
+  onOpenProfile: () => void
 }) {
-  const [menuOpen, setMenuOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
-  const totalSummary = day?.totalSummary ?? emptySummary
-  const goal = day?.goal ?? null
 
   return (
     <aside className="meal-panel meal-context-panel" aria-label="Текущий приём пищи">
       <header className="meal-panel-header">
-        <div className="meal-title">
-          <span className="meal-icon" aria-hidden="true">
-            <UtensilsIcon />
-          </span>
-          <strong>{formatPanelDate(selectedDate)}</strong>
-        </div>
-        <div className="meal-header-actions">
-          <div className="meal-switcher">
-            <button
-              type="button"
-              className="meal-switcher-button"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((open) => !open)}
-            >
-              {mealLabels[currentMealType]}
-              <span aria-hidden="true">⌄</span>
-            </button>
-            {menuOpen && (
-              <div className="meal-switcher-menu" role="menu">
-                {mealOrder.map((mealType) => (
-                  <button
-                    key={mealType}
-                    type="button"
-                    role="menuitem"
-                    className={mealType === currentMealType ? 'active' : ''}
-                    onClick={() => {
-                      onMealTypeChange(mealType)
-                      setMenuOpen(false)
-                    }}
-                  >
-                    {mealLabels[mealType]}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="calendar-anchor">
-            <button
-              type="button"
-              className="calendar-button"
-              aria-label="Открыть календарь"
-              aria-expanded={calendarOpen}
-              onClick={() => setCalendarOpen((open) => !open)}
-            >
-              <CalendarIcon />
-            </button>
-            {calendarOpen && (
-              <CalendarPopover
-                selectedDate={selectedDate}
-                onDateChange={(nextDate) => {
-                  onDateChange(nextDate)
-                  setCalendarOpen(false)
-                }}
-              />
-            )}
-          </div>
+        <div className="calendar-anchor date-picker-anchor">
+          <button
+            type="button"
+            className="panel-date-button"
+            aria-label={`Выбрать дату, сейчас ${formatPanelDate(selectedDate)}`}
+            aria-expanded={calendarOpen}
+            onClick={() => setCalendarOpen((open) => !open)}
+          >
+            <CalendarIcon />
+            <strong>{formatPanelDate(selectedDate)}</strong>
+          </button>
+          {calendarOpen && (
+            <CalendarPopover
+              selectedDate={selectedDate}
+              onDateChange={(nextDate) => {
+                onDateChange(nextDate)
+                setCalendarOpen(false)
+              }}
+            />
+          )}
         </div>
       </header>
 
@@ -864,41 +798,15 @@ function MealContextPanel({
         })}
       </section>
 
-      <RecommendationCard goal={goal} totalSummary={totalSummary} />
+      <button type="button" className="profile-shortcut" onClick={onOpenProfile} aria-label="Открыть личный кабинет">
+        <span className="avatar">{initials(currentUser)}</span>
+        <span className="profile-shortcut-copy">
+          <strong>{currentUser.firstName} {currentUser.secondName}</strong>
+          <small>Личный кабинет</small>
+        </span>
+        <span className="chevron" aria-hidden="true">›</span>
+      </button>
     </aside>
-  )
-}
-
-function RecommendationCard({ goal, totalSummary }: { goal: DailyGoal | null; totalSummary: NutritionSummary }) {
-  const fallbackGoal: DailyGoal = goal ?? {
-    targetCalories: 2300,
-    targetProtein: 150,
-    targetFat: 77,
-    targetCarbs: 288,
-  }
-  const remainingCalories = Math.max(0, fallbackGoal.targetCalories - totalSummary.calories)
-  const dayProgress = Math.min(100, Math.round((totalSummary.calories / Math.max(fallbackGoal.targetCalories, 1)) * 100))
-
-  return (
-    <section className="recommendation-card" aria-label="Рекомендации">
-      <div className="recommendation-top">
-        <div>
-          <span>Рекомендации</span>
-          <p>Осталось калорий</p>
-          <strong>{formatNumber(remainingCalories)} ккал</strong>
-          <small>из {formatNumber(fallbackGoal.targetCalories)} ккал</small>
-        </div>
-        <div className="recommendation-donut">
-          <Donut value={dayProgress} />
-          <span>{dayProgress}% дня</span>
-        </div>
-      </div>
-      <div className="recommendation-macros">
-        <MacroProgress label="Белки" value={totalSummary.protein} max={fallbackGoal.targetProtein} />
-        <MacroProgress label="Жиры" value={totalSummary.fat} max={fallbackGoal.targetFat} />
-        <MacroProgress label="Углеводы" value={totalSummary.carbs} max={fallbackGoal.targetCarbs} />
-      </div>
-    </section>
   )
 }
 
@@ -987,7 +895,7 @@ function ProgressRow({
 
   return (
     <button type="button" className={`progress-row ${active ? 'active' : ''}`} onClick={onSelect}>
-      <span className="meal-progress-icon" aria-hidden="true" />
+      <span className={`meal-progress-icon ${mealIconClass(label)}`} aria-hidden="true"><MealTypeIcon label={label} /></span>
       <div className="meal-progress-content">
         <div className="meal-progress-head">
           <span>{label}</span>
@@ -1001,7 +909,18 @@ function ProgressRow({
   )
 }
 
-function Donut({ value }: { value: number }) {
+function MealTypeIcon({ label }: { label: string }) {
+  if (label === 'Завтрак') return <svg viewBox="0 0 24 24"><path d="M5 11h12v3a6 6 0 0 1-12 0v-3Zm12 1h2a2 2 0 0 1 0 4h-2M8 8V5m4 3V4m4 4V5" /></svg>
+  if (label === 'Обед') return <svg viewBox="0 0 24 24"><path d="M4 13h16a8 8 0 0 1-16 0Zm8-7v4m-5 0a5 5 0 0 1 10 0" /></svg>
+  if (label === 'Ужин') return <svg viewBox="0 0 24 24"><path d="M19 15.5A8 8 0 0 1 8.5 5 8 8 0 1 0 19 15.5Z" /></svg>
+  return <svg viewBox="0 0 24 24"><path d="M12 7c-4-4-9 0-7 6 2 7 7 7 7 7s5 0 7-7c2-6-3-10-7-6Zm0 0c0-3 2-5 5-5" /></svg>
+}
+
+function mealIconClass(label: string): string {
+  return label === 'Завтрак' ? 'breakfast' : label === 'Обед' ? 'lunch' : label === 'Ужин' ? 'dinner' : 'snack'
+}
+
+export function Donut({ value }: { value: number }) {
   return (
     <div className="donut" style={{ '--donut-value': `${value * 3.6}deg` } as CSSProperties}>
       <span>{value}%</span>
@@ -1009,7 +928,7 @@ function Donut({ value }: { value: number }) {
   )
 }
 
-function MacroProgress({ label, value, max }: { label: string; value: number; max: number }) {
+export function MacroProgress({ label, value, max }: { label: string; value: number; max: number }) {
   return (
     <div className="macro-progress">
       <div>
@@ -1104,16 +1023,22 @@ function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
-function extractProducts(payload: NutritionChatSearchResponse): ProductNutrition[] {
+function extractProductGroups(payload: NutritionChatSearchResponse): ProductResultGroup[] {
+  const groups = (payload.clarifications ?? [])
+    .map((clarification) => ({
+      label: clarification.parsedProductName,
+      products: deduplicateProducts(clarification.candidates ?? []).slice(0, 3),
+    }))
+    .filter((group) => group.products.length > 0)
+
+  if (groups.length > 0) return groups
+  const items = deduplicateProducts(payload.items ?? []).slice(0, 3)
+  return items.length > 0 ? [{ label: payload.query, products: items }] : []
+}
+
+function deduplicateProducts(products: ProductNutrition[]): ProductNutrition[] {
   const byKey = new Map<string, ProductNutrition>()
-  for (const item of payload.items ?? []) {
-    byKey.set(productKey(item), item)
-  }
-  for (const clarification of payload.clarifications ?? []) {
-    for (const candidate of clarification.candidates ?? []) {
-      byKey.set(productKey(candidate), candidate)
-    }
-  }
+  for (const product of products) byKey.set(productKey(product), product)
   return [...byKey.values()]
 }
 

@@ -19,23 +19,22 @@ public sealed class UserMealEntryRepository : IUserMealEntryRepository
         return await _context.UserMealEntries.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAsync(Guid userId,
+        CancellationToken cancellationToken = default)
     {
-        return await _context.UserMealEntries
-            .Where(e => e.UserId == userId)
-            .OrderByDescending(e => e.LoggedAtUtc)
+        return await _context.UserMealEntries.Where(e => e.UserId == userId).OrderByDescending(e => e.LoggedAtUtc)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAndMealTypeAsync(Guid userId, MealType mealType, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAndMealTypeAsync(Guid userId, MealType mealType,
+        CancellationToken cancellationToken = default)
     {
-        return await _context.UserMealEntries
-            .Where(e => e.UserId == userId && e.MealType == mealType)
-            .OrderByDescending(e => e.LoggedAtUtc)
-            .ToListAsync(cancellationToken);
+        return await _context.UserMealEntries.Where(e => e.UserId == userId && e.MealType == mealType)
+            .OrderByDescending(e => e.LoggedAtUtc).ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAndDateAsync(Guid userId, DateTimeOffset date, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAndDateAsync(Guid userId, DateTimeOffset date,
+        CancellationToken cancellationToken = default)
     {
         var startOfDay = new DateTimeOffset(date.Date, TimeSpan.Zero);
         var endOfDay = startOfDay.AddDays(1);
@@ -43,12 +42,12 @@ public sealed class UserMealEntryRepository : IUserMealEntryRepository
         return await GetByUserIdAndRangeAsync(userId, startOfDay, endOfDay, cancellationToken);
     }
 
-    public async Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAndRangeAsync(Guid userId, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<UserMealEntry>> GetByUserIdAndRangeAsync(Guid userId, DateTimeOffset startUtc,
+        DateTimeOffset endUtc, CancellationToken cancellationToken = default)
     {
         return await _context.UserMealEntries
             .Where(e => e.UserId == userId && e.LoggedAtUtc >= startUtc && e.LoggedAtUtc < endUtc)
-            .OrderByDescending(e => e.LoggedAtUtc)
-            .ToListAsync(cancellationToken);
+            .OrderByDescending(e => e.LoggedAtUtc).ToListAsync(cancellationToken);
     }
 
     public async Task AddAsync(UserMealEntry entry, CancellationToken cancellationToken = default)

@@ -1,0 +1,38 @@
+services:
+  e2e-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nutrition_e2e
+      POSTGRES_USER: nutrition
+      POSTGRES_PASSWORD: nutrition
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nutrition -d nutrition_e2e"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  e2e-backend:
+    build:
+      context: .
+      dockerfile: src/Nutrition.Web/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__IdentityDb: Host=e2e-postgres;Port=5432;Database=nutrition_e2e;Username=nutrition;Password=nutrition
+      DEEPSEEK_API_KEY: ""
+      TAVILY_API_KEY: ""
+    ports: ["5109:8080"]
+    depends_on:
+      e2e-postgres:
+        condition: service_healthy
+
+  e2e-frontend:
+    build:
+      context: src/nutrition-frontend
+      dockerfile: Dockerfile
+    environment:
+      NUTRITION_BACKEND_URL: http://e2e-backend:8080
+    ports: ["5174:5173"]
+    depends_on:
+      e2e-backend:
+        condition: service_started

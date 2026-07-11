@@ -63,19 +63,8 @@ public sealed class ProfileControllerTests
         };
         var service = new FakeProfileService();
         var controller = CreateController(user, service);
-        var request = new CreateUserMealEntryRequestDto(
-            "Творог",
-            "Домик",
-            180,
-            20,
-            8,
-            10,
-            "Breakfast",
-            150,
-            "150 г",
-            "OpenFoodFacts",
-            "off:123",
-            new DateTimeOffset(2026, 7, 8, 7, 30, 0, TimeSpan.Zero));
+        var request = new CreateUserMealEntryRequestDto("Творог", "Домик", 180, 20, 8, 10, "Breakfast", 150, "150 г",
+            "OpenFoodFacts", "off:123", new DateTimeOffset(2026, 7, 8, 7, 30, 0, TimeSpan.Zero));
 
         var result = await controller.CreateEntryAsync(request, CancellationToken.None);
 
@@ -93,9 +82,12 @@ public sealed class ProfileControllerTests
             {
                 HttpContext = new DefaultHttpContext
                 {
-                    User = new ClaimsPrincipal(
-                        new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, user?.Id.ToString() ?? Guid.NewGuid().ToString()) },
-                            "Test"))
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                        new[]
+                        {
+                            new Claim(ClaimTypes.NameIdentifier,
+                                user?.Id.ToString() ?? Guid.NewGuid().ToString())
+                        }, "Test"))
                 }
             }
         };
@@ -112,21 +104,29 @@ public sealed class ProfileControllerTests
         public CreateUserMealEntryRequestDto? CreateEntryRequest { get; private set; }
 
         public Task<ProfileResponseDto?> GetUserProfileAsync(Guid userId, CancellationToken cancellationToken = default)
-            => Task.FromResult<ProfileResponseDto?>(new ProfileResponseDto(userId, "alice@example.com", "Alice", "Smith"));
+            => Task.FromResult<ProfileResponseDto?>(new ProfileResponseDto(userId, "alice@example.com", "Alice",
+                "Smith"));
 
-        public Task<ProfileResponseDto?> UpdateUserProfileAsync(Guid userId, UpdateProfileRequestDto request, CancellationToken cancellationToken = default)
-            => Task.FromResult<ProfileResponseDto?>(new ProfileResponseDto(userId, "alice@example.com", request.FirstName, request.SecondName));
+        public Task<ProfileResponseDto?> UpdateUserProfileAsync(Guid userId, UpdateProfileRequestDto request,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult<ProfileResponseDto?>(new ProfileResponseDto(userId, "alice@example.com",
+                request.FirstName, request.SecondName));
 
-        public Task<ProfileHistoryResponseDto> GetUserHistoryAsync(Guid userId, CancellationToken cancellationToken = default)
+        public Task<ProfileHistoryResponseDto> GetUserHistoryAsync(Guid userId,
+            CancellationToken cancellationToken = default)
             => Task.FromResult(new ProfileHistoryResponseDto(Array.Empty<UserMealEntryDto>(), EmptySummary()));
 
-        public Task<NutritionSummaryDto> GetUserDailySummaryAsync(Guid userId, CancellationToken cancellationToken = default)
+        public Task<NutritionSummaryDto> GetUserDailySummaryAsync(Guid userId,
+            CancellationToken cancellationToken = default)
             => Task.FromResult(EmptySummary());
 
-        public Task<ProfileSummaryByTypeResponseDto> GetUserSummaryByMealTypeAsync(Guid userId, CancellationToken cancellationToken = default)
-            => Task.FromResult(new ProfileSummaryByTypeResponseDto(Array.Empty<MealEntrySummaryByTypeDto>(), EmptySummary()));
+        public Task<ProfileSummaryByTypeResponseDto> GetUserSummaryByMealTypeAsync(Guid userId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(
+                new ProfileSummaryByTypeResponseDto(Array.Empty<MealEntrySummaryByTypeDto>(), EmptySummary()));
 
-        public Task<ProfileDayResponseDto> GetUserDayAsync(Guid userId, DateOnly date, int utcOffsetMinutes = 0, CancellationToken cancellationToken = default)
+        public Task<ProfileDayResponseDto> GetUserDayAsync(Guid userId, DateOnly date, int utcOffsetMinutes = 0,
+            CancellationToken cancellationToken = default)
         {
             DayUserId = userId;
             DayDate = date;
@@ -141,33 +141,44 @@ public sealed class ProfileControllerTests
             return Task.FromResult(new ProfileDayResponseDto(date, DefaultGoal(), meals, EmptySummary()));
         }
 
-        public Task<ProfileStatisticsResponseDto> GetUserStatisticsAsync(Guid userId, int rangeDays, DateOnly endDate, CancellationToken cancellationToken = default)
+        public Task<ProfileStatisticsResponseDto> GetUserStatisticsAsync(Guid userId, int rangeDays, DateOnly endDate,
+            CancellationToken cancellationToken = default)
             => Task.FromResult(new ProfileStatisticsResponseDto(2300, Array.Empty<ProfileStatisticsDayDto>()));
 
         public Task<string> ExportUserDailyCsvAsync(Guid userId, CancellationToken cancellationToken = default)
-            => Task.FromResult("date,totalCalories,proteinGrams,fatGrams,carbsGrams,breakfastCalories,lunchCalories,dinnerCalories,snackCalories\n");
+            => Task.FromResult(
+                "date,totalCalories,proteinGrams,fatGrams,carbsGrams,breakfastCalories,lunchCalories,dinnerCalories,snackCalories\n");
 
-        public Task<DeleteAccountRequestResponseDto> RequestUserAccountDeletionAsync(Guid userId, CancellationToken cancellationToken = default)
+        public Task<DeleteAccountRequestResponseDto> RequestUserAccountDeletionAsync(Guid userId,
+            CancellationToken cancellationToken = default)
             => Task.FromResult(new DeleteAccountRequestResponseDto(true, DateTimeOffset.UtcNow));
 
         public Task<UserDailyGoalDto?> GetUserDailyGoalAsync(Guid userId, CancellationToken cancellationToken = default)
             => Task.FromResult<UserDailyGoalDto?>(DefaultGoal());
 
-        public Task<UserDailyGoalDto> CreateUserDailyGoalAsync(Guid userId, CreateDailyGoalRequestDto request, CancellationToken cancellationToken = default)
+        public Task<UserDailyGoalDto> CreateUserDailyGoalAsync(Guid userId, CreateDailyGoalRequestDto request,
+            CancellationToken cancellationToken = default)
             => Task.FromResult(ToGoal(request));
 
-        public Task<UserDailyGoalDto> UpdateUserDailyGoalAsync(Guid userId, UpdateDailyGoalRequestDto request, CancellationToken cancellationToken = default)
+        public Task<UserDailyGoalDto> UpdateUserDailyGoalAsync(Guid userId, UpdateDailyGoalRequestDto request,
+            CancellationToken cancellationToken = default)
             => Task.FromResult(ToGoal(request));
 
-        public Task<UserMealEntryDto> CreateUserMealEntryAsync(Guid userId, CreateUserMealEntryRequestDto request, CancellationToken cancellationToken = default)
+        public Task<UserMealEntryDto> CreateUserMealEntryAsync(Guid userId, CreateUserMealEntryRequestDto request,
+            CancellationToken cancellationToken = default)
         {
             CreateEntryUserId = userId;
             CreateEntryRequest = request;
             return Task.FromResult(ToEntry(request));
         }
 
-        public Task<UserMealEntryDto?> UpdateUserMealEntryAsync(Guid userId, Guid entryId, UpdateUserMealEntryRequestDto request, CancellationToken cancellationToken = default)
-            => Task.FromResult<UserMealEntryDto?>(new UserMealEntryDto(entryId, request.ProductName, request.Brand ?? string.Empty, request.Calories, request.Protein, request.Fat, request.Carbs, request.MealType, request.ServingGrams, request.PortionLabel ?? string.Empty, request.SourceType ?? string.Empty, request.SourceReference ?? string.Empty, request.LoggedAtUtc ?? DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
+        public Task<UserMealEntryDto?> UpdateUserMealEntryAsync(Guid userId, Guid entryId,
+            UpdateUserMealEntryRequestDto request, CancellationToken cancellationToken = default)
+            => Task.FromResult<UserMealEntryDto?>(new UserMealEntryDto(entryId, request.ProductName,
+                request.Brand ?? string.Empty, request.Calories, request.Protein, request.Fat, request.Carbs,
+                request.MealType, request.ServingGrams, request.PortionLabel ?? string.Empty,
+                request.SourceType ?? string.Empty, request.SourceReference ?? string.Empty,
+                request.LoggedAtUtc ?? DateTimeOffset.UtcNow, DateTimeOffset.UtcNow));
 
         public Task DeleteUserMealEntryAsync(Guid userId, Guid entryId, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
@@ -176,35 +187,26 @@ public sealed class ProfileControllerTests
             => Task.CompletedTask;
 
         private static UserMealEntryDto ToEntry(CreateUserMealEntryRequestDto request)
-            => new(Guid.NewGuid(), request.ProductName, request.Brand ?? string.Empty, request.Calories, request.Protein,
-                request.Fat, request.Carbs, request.MealType, request.ServingGrams, request.PortionLabel ?? string.Empty,
-                request.SourceType ?? string.Empty, request.SourceReference ?? string.Empty,
-                request.LoggedAtUtc ?? DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
+            => new(Guid.NewGuid(), request.ProductName, request.Brand ?? string.Empty, request.Calories,
+                request.Protein, request.Fat, request.Carbs, request.MealType, request.ServingGrams,
+                request.PortionLabel ?? string.Empty, request.SourceType ?? string.Empty,
+                request.SourceReference ?? string.Empty, request.LoggedAtUtc ?? DateTimeOffset.UtcNow,
+                DateTimeOffset.UtcNow);
 
-        private static NutritionSummaryDto EmptySummary() => new(0, 0, 0, 0);
+        private static NutritionSummaryDto EmptySummary()
+            => new(0, 0, 0, 0);
 
-        private static UserDailyGoalDto DefaultGoal() => new(2300, 150, 77, 288, 25, 35, 30, 10);
+        private static UserDailyGoalDto DefaultGoal()
+            => new(2300, 150, 77, 288, 25, 35, 30, 10);
 
         private static UserDailyGoalDto ToGoal(CreateDailyGoalRequestDto request)
-            => new(
-                request.TargetCalories,
-                request.TargetProtein,
-                request.TargetFat,
-                request.TargetCarbs,
-                request.BreakfastPercent ?? 25,
-                request.LunchPercent ?? 35,
-                request.DinnerPercent ?? 30,
+            => new(request.TargetCalories, request.TargetProtein, request.TargetFat, request.TargetCarbs,
+                request.BreakfastPercent ?? 25, request.LunchPercent ?? 35, request.DinnerPercent ?? 30,
                 request.SnackPercent ?? 10);
 
         private static UserDailyGoalDto ToGoal(UpdateDailyGoalRequestDto request)
-            => new(
-                request.TargetCalories,
-                request.TargetProtein,
-                request.TargetFat,
-                request.TargetCarbs,
-                request.BreakfastPercent ?? 25,
-                request.LunchPercent ?? 35,
-                request.DinnerPercent ?? 30,
+            => new(request.TargetCalories, request.TargetProtein, request.TargetFat, request.TargetCarbs,
+                request.BreakfastPercent ?? 25, request.LunchPercent ?? 35, request.DinnerPercent ?? 30,
                 request.SnackPercent ?? 10);
     }
 }

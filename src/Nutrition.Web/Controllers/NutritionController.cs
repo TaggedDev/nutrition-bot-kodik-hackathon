@@ -15,10 +15,7 @@ public sealed class NutritionController : ControllerBase
     public async Task<ActionResult<NutritionChatSearchResponseDto>> SearchNutritionFactsAsync([FromQuery] string query,
         [FromServices] INutritionChatQueryService chatQueryService, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            return BadRequest("Query must not be empty.");
-        }
+        if (string.IsNullOrWhiteSpace(query)) return BadRequest("Query must not be empty.");
 
         var response = await chatQueryService.SearchAsync(query, cancellationToken);
         return Ok(response);

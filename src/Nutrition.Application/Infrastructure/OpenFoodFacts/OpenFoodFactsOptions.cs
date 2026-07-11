@@ -16,5 +16,5 @@ public sealed class OpenFoodFactsOptions
 
     public int HttpTimeoutSeconds { get; set; } = 20;
 
-    public bool EnableLegacyCgiFallback { get; set; }
+    public bool EnableLegacyCgiFallback { get; set; } = true;
 }

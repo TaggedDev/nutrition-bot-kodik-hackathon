@@ -9,18 +9,13 @@ public sealed class UserDailyGoal
     public const decimal DefaultDinnerPercent = 30;
     public const decimal DefaultSnackPercent = 10;
 
-    public UserDailyGoal(
-        Guid userId,
-        decimal targetCalories,
-        decimal targetProtein,
-        decimal targetFat,
-        decimal targetCarbs,
-        decimal breakfastPercent = DefaultBreakfastPercent,
-        decimal lunchPercent = DefaultLunchPercent,
-        decimal dinnerPercent = DefaultDinnerPercent,
+    public UserDailyGoal(Guid userId, decimal targetCalories, decimal targetProtein, decimal targetFat,
+        decimal targetCarbs, decimal breakfastPercent = DefaultBreakfastPercent,
+        decimal lunchPercent = DefaultLunchPercent, decimal dinnerPercent = DefaultDinnerPercent,
         decimal snackPercent = DefaultSnackPercent)
     {
-        Validate(userId, targetCalories, targetProtein, targetFat, targetCarbs, breakfastPercent, lunchPercent, dinnerPercent, snackPercent);
+        Validate(userId, targetCalories, targetProtein, targetFat, targetCarbs, breakfastPercent, lunchPercent,
+            dinnerPercent, snackPercent);
 
         UserId = userId;
         TargetCalories = targetCalories;
@@ -54,17 +49,11 @@ public sealed class UserDailyGoal
 
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
-    public void Update(
-        decimal targetCalories,
-        decimal targetProtein,
-        decimal targetFat,
-        decimal targetCarbs,
-        decimal breakfastPercent,
-        decimal lunchPercent,
-        decimal dinnerPercent,
-        decimal snackPercent)
+    public void Update(decimal targetCalories, decimal targetProtein, decimal targetFat, decimal targetCarbs,
+        decimal breakfastPercent, decimal lunchPercent, decimal dinnerPercent, decimal snackPercent)
     {
-        Validate(UserId, targetCalories, targetProtein, targetFat, targetCarbs, breakfastPercent, lunchPercent, dinnerPercent, snackPercent);
+        Validate(UserId, targetCalories, targetProtein, targetFat, targetCarbs, breakfastPercent, lunchPercent,
+            dinnerPercent, snackPercent);
 
         TargetCalories = targetCalories;
         TargetProtein = targetProtein;
@@ -79,25 +68,15 @@ public sealed class UserDailyGoal
 
     public bool IsExceeded(decimal currentCalories, decimal currentProtein, decimal currentFat, decimal currentCarbs)
     {
-        return currentCalories > TargetCalories || 
-               currentProtein > TargetProtein || 
-               currentFat > TargetFat || 
+        return currentCalories > TargetCalories || currentProtein > TargetProtein || currentFat > TargetFat ||
                currentCarbs > TargetCarbs;
     }
 
-    private static void Validate(
-        Guid userId,
-        decimal targetCalories,
-        decimal targetProtein,
-        decimal targetFat,
-        decimal targetCarbs,
-        decimal breakfastPercent,
-        decimal lunchPercent,
-        decimal dinnerPercent,
+    private static void Validate(Guid userId, decimal targetCalories, decimal targetProtein, decimal targetFat,
+        decimal targetCarbs, decimal breakfastPercent, decimal lunchPercent, decimal dinnerPercent,
         decimal snackPercent)
     {
-        if (userId == Guid.Empty)
-            throw new DomainValidationException("User id is required.");
+        if (userId == Guid.Empty) throw new DomainValidationException("User id is required.");
         if (targetCalories < 0 || targetProtein < 0 || targetFat < 0 || targetCarbs < 0)
             throw new DomainValidationException("Target nutrition values cannot be negative.");
         if (breakfastPercent < 0 || lunchPercent < 0 || dinnerPercent < 0 || snackPercent < 0)

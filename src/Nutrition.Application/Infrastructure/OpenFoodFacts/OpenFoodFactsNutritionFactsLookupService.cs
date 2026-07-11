@@ -185,7 +185,7 @@ public sealed class OpenFoodFactsNutritionFactsLookupService : INutritionFactsLo
     {
         var escapedQuery = Uri.EscapeDataString(query);
         var requestUri =
-            $"/cgi/search.pl?search_terms={escapedQuery}&search_simple=1&action=process&json=1&page_size={_options.SearchPageSize}";
+            $"/cgi/search.pl?search_terms={escapedQuery}&search_simple=1&action=process&json=1&page_size={_options.SearchPageSize}&fields={ProductFields}";
 
         try
         {
