@@ -12,9 +12,7 @@ public sealed class TavilyWebSearchService : IWebSearchService
     private readonly ILogger<TavilyWebSearchService> _logger;
     private readonly TavilyOptions _options;
 
-    public TavilyWebSearchService(
-        HttpClient httpClient,
-        ILogger<TavilyWebSearchService> logger,
+    public TavilyWebSearchService(HttpClient httpClient, ILogger<TavilyWebSearchService> logger,
         IOptions<TavilyOptions> options)
     {
         _httpClient = httpClient;
@@ -69,13 +67,11 @@ public sealed class TavilyWebSearchService : IWebSearchService
                 return new WebSearchResponse(Array.Empty<WebSearchResult>(), null, null);
             }
 
-            var result = await response.Content.ReadFromJsonAsync<TavilySearchResponse>(
-                cancellationToken: cancellationToken);
+            var result =
+                await response.Content.ReadFromJsonAsync<TavilySearchResponse>(cancellationToken: cancellationToken);
 
-            var mapped = result?.Results?
-                .Select(MapResult)
-                .OfType<WebSearchResult>()
-                .ToArray() ?? Array.Empty<WebSearchResult>();
+            var mapped = result?.Results?.Select(MapResult).OfType<WebSearchResult>().ToArray() ??
+                         Array.Empty<WebSearchResult>();
 
             return new WebSearchResponse(mapped, result?.RequestId, result?.Usage?.Credits);
         }
@@ -88,18 +84,13 @@ public sealed class TavilyWebSearchService : IWebSearchService
 
     private static WebSearchResult? MapResult(TavilySearchResult item)
     {
-        if (string.IsNullOrWhiteSpace(item.Url) ||
-            !Uri.TryCreate(item.Url, UriKind.Absolute, out var uri) ||
+        if (string.IsNullOrWhiteSpace(item.Url) || !Uri.TryCreate(item.Url, UriKind.Absolute, out var uri) ||
             uri.Scheme is not ("http" or "https"))
         {
             return null;
         }
 
-        return new WebSearchResult(
-            item.Title ?? string.Empty,
-            uri,
-            item.Content ?? string.Empty,
-            item.Score);
+        return new WebSearchResult(item.Title ?? string.Empty, uri, item.Content ?? string.Empty, item.Score);
     }
 
     private static string FirstNonEmpty(params string?[] values)
@@ -127,7 +118,8 @@ public sealed class TavilyWebSearchService : IWebSearchService
 
         [JsonPropertyName("include_answer")] public bool IncludeAnswer { get; init; }
 
-        [JsonPropertyName("include_raw_content")] public bool IncludeRawContent { get; init; }
+        [JsonPropertyName("include_raw_content")]
+        public bool IncludeRawContent { get; init; }
 
         [JsonPropertyName("include_images")] public bool IncludeImages { get; init; }
 

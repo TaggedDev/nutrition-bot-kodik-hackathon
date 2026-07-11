@@ -69,8 +69,8 @@ public sealed class AuthController : ControllerBase
             return Unauthorized();
         }
 
-        var result = await _signInManager.PasswordSignInAsync(
-            user, request.Password, isPersistent: request.RememberMe, lockoutOnFailure: false);
+        var result = await _signInManager.PasswordSignInAsync(user, request.Password, isPersistent: request.RememberMe,
+            lockoutOnFailure: false);
 
         if (!result.Succeeded)
         {

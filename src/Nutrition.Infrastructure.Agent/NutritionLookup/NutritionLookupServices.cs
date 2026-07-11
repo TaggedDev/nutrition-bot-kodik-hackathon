@@ -12,18 +12,14 @@ namespace Nutrition.Infrastructure.Agent.NutritionLookup;
 
 public interface IOpenFoodFactsCandidateJudge
 {
-    Task<IReadOnlyCollection<ProductNutritionDto>> SelectAcceptableAsync(
-        FoodUnit foodUnit,
-        IReadOnlyCollection<ProductNutritionDto> candidates,
-        CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<ProductNutritionDto>> SelectAcceptableAsync(FoodUnit foodUnit,
+        IReadOnlyCollection<ProductNutritionDto> candidates, CancellationToken cancellationToken);
 }
 
 public interface INutritionEvidenceExtractor
 {
-    Task<IReadOnlyCollection<ProductNutritionDto>> ExtractAsync(
-        FoodUnit foodUnit,
-        IReadOnlyCollection<WebSearchResult> sources,
-        CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<ProductNutritionDto>> ExtractAsync(FoodUnit foodUnit,
+        IReadOnlyCollection<WebSearchResult> sources, CancellationToken cancellationToken);
 }
 
 public interface ITavilyQueryBuilder
@@ -46,7 +42,8 @@ public sealed class TavilyQueryBuilder : ITavilyQueryBuilder
         var productQuery = string.Join(' ', parts);
         if (IsBeverage(productQuery))
         {
-            return $"{productQuery} кбжу пищевая ценность на 100 мл или порцию точные значения ккал белки жиры углеводы объем";
+            return
+                $"{productQuery} кбжу пищевая ценность на 100 мл или порцию точные значения ккал белки жиры углеводы объем";
         }
 
         if (foodUnit.Kind == FoodUnitKind.PreparedFood || ContainsCyrillic(productQuery))
@@ -63,8 +60,8 @@ public sealed class TavilyQueryBuilder : ITavilyQueryBuilder
     private static bool IsBeverage(string value)
     {
         var normalized = value.ToLowerInvariant();
-        return new[] { "кофе", "латте", "капучино", "американо", "эспрессо", "чай", "напиток", "сок", "смузи" }
-            .Any(normalized.Contains);
+        return new[] { "кофе", "латте", "капучино", "американо", "эспрессо", "чай", "напиток", "сок", "смузи" }.Any(
+            normalized.Contains);
     }
 }
 
@@ -80,8 +77,7 @@ public sealed class MafOpenFoodFactsCandidateJudge : IOpenFoodFactsCandidateJudg
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
-        PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        PropertyNameCaseInsensitive = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
     static MafOpenFoodFactsCandidateJudge()
@@ -97,10 +93,8 @@ public sealed class MafOpenFoodFactsCandidateJudge : IOpenFoodFactsCandidateJudg
             description: "Checks whether OpenFoodFacts candidates match a requested food object.");
     }
 
-    public async Task<IReadOnlyCollection<ProductNutritionDto>> SelectAcceptableAsync(
-        FoodUnit foodUnit,
-        IReadOnlyCollection<ProductNutritionDto> candidates,
-        CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<ProductNutritionDto>> SelectAcceptableAsync(FoodUnit foodUnit,
+        IReadOnlyCollection<ProductNutritionDto> candidates, CancellationToken cancellationToken)
     {
         if (candidates.Count == 0)
         {
@@ -122,9 +116,10 @@ public sealed class MafOpenFoodFactsCandidateJudge : IOpenFoodFactsCandidateJudg
         {
             var response = await _agent.RunAsync<JudgeResponse>(prompt, session: null, serializerOptions: JsonOptions,
                 options: options, cancellationToken: cancellationToken);
-            acceptedIds = response.Result?.AcceptedProductIds?
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            acceptedIds =
+                response.Result?.AcceptedProductIds?.Where(id => !string.IsNullOrWhiteSpace(id))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase) ??
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
         catch (JsonException)
         {
@@ -184,8 +179,7 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
-        PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        PropertyNameCaseInsensitive = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
     static MafNutritionEvidenceExtractor()
@@ -201,17 +195,16 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
             description: "Extracts structured nutrition values from Tavily snippets.");
     }
 
-    public async Task<IReadOnlyCollection<ProductNutritionDto>> ExtractAsync(
-        FoodUnit foodUnit,
-        IReadOnlyCollection<WebSearchResult> sources,
-        CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<ProductNutritionDto>> ExtractAsync(FoodUnit foodUnit,
+        IReadOnlyCollection<WebSearchResult> sources, CancellationToken cancellationToken)
     {
         if (sources.Count == 0)
         {
             return Array.Empty<ProductNutritionDto>();
         }
 
-        var sourceList = sources.Take(5).Select((source, index) => new NumberedSource($"S{index + 1}", source)).ToArray();
+        var sourceList = sources.Take(5).Select((source, index) => new NumberedSource($"S{index + 1}", source))
+            .ToArray();
         var prompt = BuildPrompt(foodUnit, sourceList);
         var options = new ChatClientAgentRunOptions(new ChatOptions
         {
@@ -233,6 +226,7 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
         {
             llmCandidates = Array.Empty<ProductNutritionDto>();
         }
+
         if (llmCandidates.Count > 0)
         {
             return llmCandidates;
@@ -264,10 +258,8 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
         return builder.ToString();
     }
 
-    private static IReadOnlyCollection<ProductNutritionDto> ValidateAndMap(
-        ExtractionResponse? response,
-        FoodUnit foodUnit,
-        IReadOnlyCollection<NumberedSource> sources)
+    private static IReadOnlyCollection<ProductNutritionDto> ValidateAndMap(ExtractionResponse? response,
+        FoodUnit foodUnit, IReadOnlyCollection<NumberedSource> sources)
     {
         if (response?.Candidates is null || response.Candidates.Count == 0)
         {
@@ -279,13 +271,9 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
 
         foreach (var candidate in response.Candidates)
         {
-            if (!IsComplete(candidate) ||
-                !candidate.IsExactProductMatch ||
-                !candidate.ValuesExplicitlyStated ||
-                string.IsNullOrWhiteSpace(candidate.SourceUrl) ||
-                !urls.Contains(candidate.SourceUrl) ||
-                candidate.ValueBasis is NutritionValueBasis.Unknown ||
-                !HasRequiredBasisMetadata(candidate))
+            if (!IsComplete(candidate) || !candidate.IsExactProductMatch || !candidate.ValuesExplicitlyStated ||
+                string.IsNullOrWhiteSpace(candidate.SourceUrl) || !urls.Contains(candidate.SourceUrl) ||
+                candidate.ValueBasis is NutritionValueBasis.Unknown || !HasRequiredBasisMetadata(candidate))
             {
                 continue;
             }
@@ -293,20 +281,22 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
             result.Add(new ProductNutritionDto
             {
                 ProductId = $"WEB:{Hash($"{candidate.SourceUrl}|{candidate.ProductName}|{candidate.Brand}")}",
-                ProductName = string.IsNullOrWhiteSpace(candidate.ProductName)
-                    ? foodUnit.ProductName
-                    : candidate.ProductName.Trim(),
+                ProductName =
+                    string.IsNullOrWhiteSpace(candidate.ProductName) ? foodUnit.ProductName
+                        : candidate.ProductName.Trim(),
                 Brand = string.IsNullOrWhiteSpace(candidate.Brand) ? foodUnit.Brand : candidate.Brand.Trim(),
-                NutritionFacts = new NutritionFactsDto
-                {
-                    Calories = candidate.Calories!.Value,
-                    Protein = candidate.Protein!.Value,
-                    Fat = candidate.Fat!.Value,
-                    Carbs = candidate.Carbs!.Value
-                },
+                NutritionFacts =
+                    new NutritionFactsDto
+                    {
+                        Calories = candidate.Calories!.Value,
+                        Protein = candidate.Protein!.Value,
+                        Fat = candidate.Fat!.Value,
+                        Carbs = candidate.Carbs!.Value
+                    },
                 NutritionValueBasis = candidate.ValueBasis.ToString(),
                 ServingSize = candidate.ServingSize,
-                ServingUnit = string.IsNullOrWhiteSpace(candidate.ServingUnit) ? null : candidate.ServingUnit.Trim(),
+                ServingUnit =
+                    string.IsNullOrWhiteSpace(candidate.ServingUnit) ? null : candidate.ServingUnit.Trim(),
                 SourceType = "WebSearch",
                 SourceReference = candidate.SourceUrl.Trim(),
                 ConfidenceScore = Math.Clamp(candidate.Confidence, 0m, 1m)
@@ -317,16 +307,13 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
     }
 
     private static bool IsComplete(NutritionEvidenceCandidate candidate)
-        => candidate.Calories.HasValue &&
-           candidate.Protein.HasValue &&
-           candidate.Fat.HasValue &&
+        => candidate.Calories.HasValue && candidate.Protein.HasValue && candidate.Fat.HasValue &&
            candidate.Carbs.HasValue;
 
     private static bool HasRequiredBasisMetadata(NutritionEvidenceCandidate candidate)
         => candidate.ValueBasis switch
         {
-            NutritionValueBasis.PerServing => candidate.ServingSize.HasValue &&
-                                              candidate.ServingSize.Value > 0 &&
+            NutritionValueBasis.PerServing => candidate.ServingSize.HasValue && candidate.ServingSize.Value > 0 &&
                                               !string.IsNullOrWhiteSpace(candidate.ServingUnit),
             NutritionValueBasis.Per100Grams => true,
             NutritionValueBasis.Per100Milliliters => true,
@@ -372,8 +359,7 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
             @"Пищевая\s+ценность\s+на\s+(?<size>[\d\s.,]+)\s*г\.?\s*белки\.\s*(?<protein>[\d\s.,]+)\s*г\.?\s*жиры\.\s*(?<fat>[\d\s.,]+)\s*г\.?\s*Углеводы\.\s*(?<carbs>[\d\s.,]+)\s*г\.?\s*Энерг\.\s*ценн\.\s*(?<calories>[\d\s.,]+)\s*ккал",
             RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
 
-        public static IReadOnlyCollection<ProductNutritionDto> Extract(
-            FoodUnit foodUnit,
+        public static IReadOnlyCollection<ProductNutritionDto> Extract(FoodUnit foodUnit,
             IReadOnlyCollection<NumberedSource> sources)
         {
             var result = new List<ProductNutritionDto>();
@@ -391,42 +377,45 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
                 {
                     match = EnglishServingRegex.Match(content);
                 }
+
                 if (!match.Success)
                 {
                     match = RussianCompactServingRegex.Match(content);
                 }
+
                 if (!match.Success)
                 {
                     match = RussianNutritionValueRegex.Match(content);
                 }
+
                 if (!match.Success)
                 {
                     match = RussianPer100GramsMacrosFirstRegex.Match(content);
                 }
+
                 if (!match.Success)
                 {
                     match = RussianPer100GramsTableRegex.Match(content);
                 }
+
                 if (!match.Success)
                 {
                     match = RussianCaloriesFirstRegex.Match(content);
                 }
+
                 if (!match.Success)
                 {
                     match = RussianLabeledPer100GramsRegex.Match(content);
                 }
 
-                if (!match.Success ||
-                    !TryReadDecimal(match, "calories", out var calories) ||
-                    !TryReadDecimal(match, "protein", out var protein) ||
-                    !TryReadDecimal(match, "fat", out var fat) ||
+                if (!match.Success || !TryReadDecimal(match, "calories", out var calories) ||
+                    !TryReadDecimal(match, "protein", out var protein) || !TryReadDecimal(match, "fat", out var fat) ||
                     !TryReadDecimal(match, "carbs", out var carbs))
                 {
                     continue;
                 }
 
-                var servingSize = TryReadDecimal(match, "size", out var parsedServingSize)
-                    ? parsedServingSize
+                var servingSize = TryReadDecimal(match, "size", out var parsedServingSize) ? parsedServingSize
                     : (decimal?)null;
                 var isPer100Grams = servingSize == 100 || ContainsPer100Grams(content);
                 if (isPer100Grams)
@@ -439,16 +428,11 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
                     ProductId = $"WEB:{Hash($"{source.Result.Url}|{foodUnit.ProductName}|{foodUnit.Brand}")}",
                     ProductName = ToTitleCase(foodUnit.ProductName),
                     Brand = foodUnit.Brand,
-                    NutritionFacts = new NutritionFactsDto
-                    {
-                        Calories = calories,
-                        Protein = protein,
-                        Fat = fat,
-                        Carbs = carbs
-                    },
-                    NutritionValueBasis = isPer100Grams
-                        ? NutritionValueBasis.Per100Grams.ToString()
-                        : NutritionValueBasis.PerServing.ToString(),
+                    NutritionFacts =
+                        new NutritionFactsDto { Calories = calories, Protein = protein, Fat = fat, Carbs = carbs },
+                    NutritionValueBasis =
+                        isPer100Grams ? NutritionValueBasis.Per100Grams.ToString()
+                            : NutritionValueBasis.PerServing.ToString(),
                     ServingSize = servingSize,
                     ServingUnit = servingSize.HasValue ? "g" : null,
                     SourceType = "WebSearch",
@@ -457,17 +441,13 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
                 });
             }
 
-            return result
-                .OrderByDescending(candidate => candidate.ConfidenceScore)
-                .Take(3)
-                .ToArray();
+            return result.OrderByDescending(candidate => candidate.ConfidenceScore).Take(3).ToArray();
         }
 
         private static bool LooksLikeRequestedProduct(FoodUnit foodUnit, WebSearchResult source)
         {
             var haystack = Normalize($"{source.Title} {source.Content} {source.Url}");
-            if (!string.IsNullOrWhiteSpace(foodUnit.Brand) &&
-                !ContainsAllTokens(haystack, foodUnit.Brand) &&
+            if (!string.IsNullOrWhiteSpace(foodUnit.Brand) && !ContainsAllTokens(haystack, foodUnit.Brand) &&
                 !ContainsKnownBrandTransliteration(source, foodUnit.Brand))
             {
                 return false;
@@ -495,8 +475,7 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         private static IEnumerable<string> Tokenize(string value)
-            => Normalize(value)
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            => Normalize(value).Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Where(token => token.Length > 1);
 
         private static string Normalize(string value)

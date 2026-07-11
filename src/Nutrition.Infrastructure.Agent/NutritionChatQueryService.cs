@@ -18,13 +18,9 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
     private readonly INutritionEvidenceExtractor _evidenceExtractor;
     private readonly ILogger<NutritionChatQueryService> _logger;
 
-    public NutritionChatQueryService(
-        IFoodInputParser foodInputParser,
-        INutritionFactsLookupService lookupService,
-        IOpenFoodFactsCandidateJudge candidateJudge,
-        IWebSearchService webSearchService,
-        ITavilyQueryBuilder tavilyQueryBuilder,
-        INutritionEvidenceExtractor evidenceExtractor,
+    public NutritionChatQueryService(IFoodInputParser foodInputParser, INutritionFactsLookupService lookupService,
+        IOpenFoodFactsCandidateJudge candidateJudge, IWebSearchService webSearchService,
+        ITavilyQueryBuilder tavilyQueryBuilder, INutritionEvidenceExtractor evidenceExtractor,
         ILogger<NutritionChatQueryService> logger)
     {
         _foodInputParser = foodInputParser;
@@ -45,8 +41,7 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
 
         var foodUnits = await _foodInputParser.ParseAsync(userInput, cancellationToken);
         var normalizedUnits = foodUnits.Where(unit => !string.IsNullOrWhiteSpace(unit.ProductName))
-            .Select(FoodUnitNormalizer.Normalize)
-            .DistinctBy(BuildDeduplicationKey, StringComparer.OrdinalIgnoreCase)
+            .Select(FoodUnitNormalizer.Normalize).DistinctBy(BuildDeduplicationKey, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
         if (normalizedUnits.Length == 0)
@@ -85,18 +80,14 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
         };
     }
 
-    private async Task<IReadOnlyCollection<ProductNutritionDto>> FindCandidatesAsync(
-        FoodUnit foodUnit,
+    private async Task<IReadOnlyCollection<ProductNutritionDto>> FindCandidatesAsync(FoodUnit foodUnit,
         CancellationToken cancellationToken)
     {
         var openFoodFactsCandidates = await _lookupService.SearchAsync(BuildOpenFoodFactsQuery(foodUnit),
             cancellationToken);
         _logger.LogInformation(
             "Nutrition lookup OFF returned {Count} candidates for product '{ProductName}', brand '{Brand}', kind {Kind}",
-            openFoodFactsCandidates.Count,
-            foodUnit.ProductName,
-            foodUnit.Brand,
-            foodUnit.Kind);
+            openFoodFactsCandidates.Count, foodUnit.ProductName, foodUnit.Brand, foodUnit.Kind);
 
         if (foodUnit.Kind == FoodUnitKind.MassMarketProduct && openFoodFactsCandidates.Count > 0)
         {
@@ -109,23 +100,19 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
         if (acceptedOpenFoodFacts.Count > 0)
         {
             _logger.LogInformation("Nutrition lookup OFF judge accepted {Count} candidates for '{ProductName}'",
-                acceptedOpenFoodFacts.Count,
-                foodUnit.ProductName);
+                acceptedOpenFoodFacts.Count, foodUnit.ProductName);
             return acceptedOpenFoodFacts.Take(ResultsPerFoodUnit).ToArray();
         }
 
         var tavilyQuery = _tavilyQueryBuilder.Build(foodUnit);
         var webSearch = await _webSearchService.SearchAsync(
-            new WebSearchRequest(tavilyQuery, MaxResults: 5, Depth: WebSearchDepth.Advanced),
-            cancellationToken);
+            new WebSearchRequest(tavilyQuery, MaxResults: 5, Depth: WebSearchDepth.Advanced), cancellationToken);
         _logger.LogInformation("Nutrition lookup Tavily returned {Count} sources for query: {Query}",
-            webSearch.Results.Count,
-            tavilyQuery);
+            webSearch.Results.Count, tavilyQuery);
 
         var extracted = await _evidenceExtractor.ExtractAsync(foodUnit, webSearch.Results, cancellationToken);
         _logger.LogInformation("Nutrition lookup extractor returned {Count} candidates for '{ProductName}'",
-            extracted.Count,
-            foodUnit.ProductName);
+            extracted.Count, foodUnit.ProductName);
 
         return extracted;
     }
@@ -144,9 +131,6 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
     }
 
     private static string BuildDeduplicationKey(FoodUnit foodUnit)
-        => string.Join('|',
-            foodUnit.ProductName.Trim(),
-            foodUnit.Brand?.Trim() ?? string.Empty,
-            foodUnit.Preparation?.Trim() ?? string.Empty,
-            foodUnit.Kind.ToString());
+        => string.Join('|', foodUnit.ProductName.Trim(), foodUnit.Brand?.Trim() ?? string.Empty,
+            foodUnit.Preparation?.Trim() ?? string.Empty, foodUnit.Kind.ToString());
 }

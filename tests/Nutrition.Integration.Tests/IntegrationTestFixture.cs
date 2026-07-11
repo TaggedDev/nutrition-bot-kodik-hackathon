@@ -16,12 +16,8 @@ public sealed class IntegrationTestCollection : ICollectionFixture<IntegrationTe
 
 public sealed class IntegrationTestFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .WithDatabase("nutrition_tests")
-        .WithUsername("nutrition")
-        .WithPassword("nutrition")
-        .Build();
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder().WithImage("postgres:16-alpine")
+        .WithDatabase("nutrition_tests").WithUsername("nutrition").WithPassword("nutrition").Build();
 
     public WireMockServer ExternalApis { get; private set; } = null!;
     public NutritionWebApplicationFactory Factory { get; private set; } = null!;
@@ -44,14 +40,9 @@ public sealed class IntegrationTestFixture : IAsyncLifetime
     }
 }
 
-public sealed class NutritionWebApplicationFactory(
-    string connectionString,
-    string externalApiUrl,
-    string? deepSeekUrl = null,
-    string? tavilyUrl = null,
-    string deepSeekApiKey = "integration-test-key",
-    string tavilyApiKey = "integration-test-key")
-    : WebApplicationFactory<Program>
+public sealed class NutritionWebApplicationFactory(string connectionString, string externalApiUrl,
+    string? deepSeekUrl = null, string? tavilyUrl = null, string deepSeekApiKey = "integration-test-key",
+    string tavilyApiKey = "integration-test-key") : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -62,7 +53,7 @@ public sealed class NutritionWebApplicationFactory(
                 ["ConnectionStrings:IdentityDb"] = connectionString,
                 ["OpenFoodFacts:BaseUrl"] = externalApiUrl + "/",
                 ["OpenFoodFacts:SearchBaseUrl"] = externalApiUrl + "/",
-                ["OpenFoodFacts:EnableLegacyCgiFallback"] = "false",
+                ["OpenFoodFacts:EnableLegacyCgiFallback"] = "true",
                 ["DeepSeek:ApiKey"] = deepSeekApiKey,
                 ["DeepSeek:BaseUrl"] = deepSeekUrl ?? externalApiUrl,
                 ["Tavily:ApiKey"] = tavilyApiKey,

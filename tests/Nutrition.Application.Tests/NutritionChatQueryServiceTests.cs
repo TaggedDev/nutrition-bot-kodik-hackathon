@@ -28,10 +28,22 @@ public sealed class NutritionChatQueryServiceTests
     {
         var parser = new FakeFoodInputParser(new[]
         {
-            new FoodUnit { ProductName = "pasta", Quantity = 1, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct },
-            new FoodUnit { ProductName = " pasta ", Quantity = 2, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct },
-            new FoodUnit { ProductName = "chicken", Quantity = 1, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct },
-            new FoodUnit { ProductName = " ", Quantity = 1, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct }
+            new FoodUnit
+            {
+                ProductName = "pasta", Quantity = 1, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct
+            },
+            new FoodUnit
+            {
+                ProductName = " pasta ", Quantity = 2, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct
+            },
+            new FoodUnit
+            {
+                ProductName = "chicken", Quantity = 1, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct
+            },
+            new FoodUnit
+            {
+                ProductName = " ", Quantity = 1, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct
+            }
         });
         var lookup = new FakeNutritionFactsLookupService();
         var service = CreateService(parser, lookup);
@@ -184,9 +196,7 @@ public sealed class NutritionChatQueryServiceTests
     {
         var query = new TavilyQueryBuilder().Build(new FoodUnit
         {
-            ProductName = "кофе латте",
-            Unit = "serving",
-            Kind = FoodUnitKind.PreparedFood
+            ProductName = "кофе латте", Unit = "serving", Kind = FoodUnitKind.PreparedFood
         });
 
         Assert.Contains("100 мл", query, StringComparison.OrdinalIgnoreCase);
@@ -237,19 +247,11 @@ public sealed class NutritionChatQueryServiceTests
         Assert.Empty(result.Clarifications);
     }
 
-    private static NutritionChatQueryService CreateService(
-        IFoodInputParser parser,
-        FakeNutritionFactsLookupService lookup,
-        FakeOpenFoodFactsCandidateJudge? judge = null,
-        FakeWebSearchService? webSearch = null,
-        FakeEvidenceExtractor? extractor = null)
-        => new(
-            parser,
-            lookup,
-            judge ?? new FakeOpenFoodFactsCandidateJudge(),
-            webSearch ?? new FakeWebSearchService(),
-            new TavilyQueryBuilder(),
-            extractor ?? new FakeEvidenceExtractor(),
+    private static NutritionChatQueryService CreateService(IFoodInputParser parser,
+        FakeNutritionFactsLookupService lookup, FakeOpenFoodFactsCandidateJudge? judge = null,
+        FakeWebSearchService? webSearch = null, FakeEvidenceExtractor? extractor = null)
+        => new(parser, lookup, judge ?? new FakeOpenFoodFactsCandidateJudge(), webSearch ?? new FakeWebSearchService(),
+            new TavilyQueryBuilder(), extractor ?? new FakeEvidenceExtractor(),
             NullLogger<NutritionChatQueryService>.Instance);
 
     private sealed class FakeFoodInputParser : IFoodInputParser
@@ -302,10 +304,8 @@ public sealed class NutritionChatQueryServiceTests
         public IReadOnlyCollection<ProductNutritionDto> AcceptedCandidates { get; init; } =
             Array.Empty<ProductNutritionDto>();
 
-        public Task<IReadOnlyCollection<ProductNutritionDto>> SelectAcceptableAsync(
-            FoodUnit foodUnit,
-            IReadOnlyCollection<ProductNutritionDto> candidates,
-            CancellationToken cancellationToken)
+        public Task<IReadOnlyCollection<ProductNutritionDto>> SelectAcceptableAsync(FoodUnit foodUnit,
+            IReadOnlyCollection<ProductNutritionDto> candidates, CancellationToken cancellationToken)
             => Task.FromResult(AcceptedCandidates);
     }
 
@@ -331,10 +331,8 @@ public sealed class NutritionChatQueryServiceTests
     {
         public IReadOnlyCollection<ProductNutritionDto> Candidates { get; init; } = Array.Empty<ProductNutritionDto>();
 
-        public Task<IReadOnlyCollection<ProductNutritionDto>> ExtractAsync(
-            FoodUnit foodUnit,
-            IReadOnlyCollection<WebSearchResult> sources,
-            CancellationToken cancellationToken)
+        public Task<IReadOnlyCollection<ProductNutritionDto>> ExtractAsync(FoodUnit foodUnit,
+            IReadOnlyCollection<WebSearchResult> sources, CancellationToken cancellationToken)
             => Task.FromResult(Candidates);
     }
 }

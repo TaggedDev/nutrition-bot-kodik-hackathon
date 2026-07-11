@@ -27,10 +27,9 @@ public sealed class OpenFoodFactsNutritionFactsLookupServiceTests
         const string payload = """
                                { "products": [{ "code": "12345678", "product_name": "Milk", "nutriments": { "energy-kcal_100g": 42, "proteins_100g": 3.4, "fat_100g": 1, "carbohydrates_100g": 5 } }] }
                                """;
-        var handler = new StubHttpMessageHandler(request =>
-            request.RequestUri!.Host == "search.openfoodfacts.org"
-                ? new HttpResponseMessage(HttpStatusCode.BadGateway)
-                : new HttpResponseMessage(HttpStatusCode.OK)
+        var handler = new StubHttpMessageHandler(request
+            => request.RequestUri!.Host == "search.openfoodfacts.org"
+                ? new HttpResponseMessage(HttpStatusCode.BadGateway) : new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new StringContent(payload, Encoding.UTF8, "application/json")
                 });

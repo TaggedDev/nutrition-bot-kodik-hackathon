@@ -27,17 +27,15 @@ public sealed class NutritionAgentTests
 
         var result = await parser.ParseAsync("pasta with chicken", CancellationToken.None);
 
-        Assert.Collection(result,
-            item =>
-            {
-                Assert.Equal("pasta", item.ProductName);
-                Assert.Equal(FoodUnitKind.MassMarketProduct, item.Kind);
-            },
-            item =>
-            {
-                Assert.Equal("chicken", item.ProductName);
-                Assert.Equal(FoodUnitKind.MassMarketProduct, item.Kind);
-            });
+        Assert.Collection(result, item =>
+        {
+            Assert.Equal("pasta", item.ProductName);
+            Assert.Equal(FoodUnitKind.MassMarketProduct, item.Kind);
+        }, item =>
+        {
+            Assert.Equal("chicken", item.ProductName);
+            Assert.Equal(FoodUnitKind.MassMarketProduct, item.Kind);
+        });
     }
 
     [Fact]
@@ -103,10 +101,7 @@ public sealed class NutritionAgentTests
             Unit = "serving",
             Kind = FoodUnitKind.PreparedFood
         };
-        var sources = new[]
-        {
-            new WebSearchResult("Гаспачо", new Uri("https://example.com/gazpacho"), "КБЖУ", 0.9m)
-        };
+        var sources = new[] { new WebSearchResult("Гаспачо", new Uri("https://example.com/gazpacho"), "КБЖУ", 0.9m) };
 
         var result = await extractor.ExtractAsync(foodUnit, sources, CancellationToken.None);
 
@@ -155,10 +150,7 @@ public sealed class NutritionAgentTests
             Unit = "serving",
             Kind = FoodUnitKind.PreparedFood
         };
-        var sources = new[]
-        {
-            new WebSearchResult("Гаспачо", new Uri("https://example.com/gazpacho"), "КБЖУ", 0.9m)
-        };
+        var sources = new[] { new WebSearchResult("Гаспачо", new Uri("https://example.com/gazpacho"), "КБЖУ", 0.9m) };
 
         var result = await extractor.ExtractAsync(foodUnit, sources, CancellationToken.None);
 
@@ -180,8 +172,7 @@ public sealed class NutritionAgentTests
         };
         var sources = new[]
         {
-            new WebSearchResult(
-                "Калории и Пищевая Информация Тануки Аригато Сет - Fatsecret.ru",
+            new WebSearchResult("Калории и Пищевая Информация Тануки Аригато Сет - Fatsecret.ru",
                 new Uri("https://www.fatsecret.ru/search?q=tanuki-arigato-set"),
                 "в 1 порция (910г) - Калории: 2310ккал | Жир: 107,00г | Углев: 264,00г | Белк: 73,00г. Похожие · Ролл Аригато (Тануки).",
                 0.87m)
@@ -215,8 +206,7 @@ public sealed class NutritionAgentTests
         };
         var sources = new[]
         {
-            new WebSearchResult(
-                "Тануки Аригато Сет Калории и Пищевая Ценность",
+            new WebSearchResult("Тануки Аригато Сет Калории и Пищевая Ценность",
                 new Uri("https://www.fatsecret.ru/calories-nutrition/tanuki/arigato-set/1-serving"),
                 "Тануки Аригато Сет. Тануки. Аригато Сет. Кал. 2310. Жир. 107 г. Углев. 264 г. Белк. 73 г. 1 порция (910 г) содержит 2310 калорий. Источник · fatsecret Platform",
                 0.87m)
@@ -245,8 +235,8 @@ public sealed class NutritionAgentTests
         };
 
         var result = await judge.SelectAcceptableAsync(
-            new FoodUnit { ProductName = "кофе латте", Unit = "serving", Kind = FoodUnitKind.PreparedFood },
-            candidates, CancellationToken.None);
+            new FoodUnit { ProductName = "кофе латте", Unit = "serving", Kind = FoodUnitKind.PreparedFood }, candidates,
+            CancellationToken.None);
 
         Assert.Empty(result);
     }
@@ -260,7 +250,8 @@ public sealed class NutritionAgentTests
         var sources = new[]
         {
             new WebSearchResult("Манная каша КБЖУ", new Uri("https://example.com/semolina"),
-                "Манная каша на молоке, содержание БЖУ на 100 г - 3.0 г белка, 3.2 г жиров, 15.3 г углеводов, 98 ккал.", 0.9m)
+                "Манная каша на молоке, содержание БЖУ на 100 г - 3.0 г белка, 3.2 г жиров, 15.3 г углеводов, 98 ккал.",
+                0.9m)
         };
 
         var candidate = Assert.Single(await extractor.ExtractAsync(foodUnit, sources, CancellationToken.None));
@@ -305,8 +296,8 @@ public sealed class NutritionAgentTests
                 "Калорийность: 121 ккал/100 г Белки: 16,7 г Жиры: 5 г Углеводы: 2,8 г", 0.9m)
         };
 
-        var candidate = Assert.Single(await extractor.ExtractAsync(
-            new FoodUnit { ProductName = "творог", Unit = "g" }, sources, CancellationToken.None));
+        var candidate = Assert.Single(await extractor.ExtractAsync(new FoodUnit { ProductName = "творог", Unit = "g" },
+            sources, CancellationToken.None));
 
         Assert.Equal("Per100Grams", candidate.NutritionValueBasis);
         Assert.Equal(121, candidate.NutritionFacts.Calories);
@@ -323,12 +314,13 @@ public sealed class NutritionAgentTests
         var sources = new[]
         {
             new WebSearchResult("Кофе Латте большой 400 мл", new Uri("https://example.com/latte"),
-                "На 100 г продукта; Белков, 7.45 г, 11%; Жиров, 4.66 г, 6%; Углеводов, 10.45 г, 3%; Калорийность, 114.00 ккал, 5%", 0.9m)
+                "На 100 г продукта; Белков, 7.45 г, 11%; Жиров, 4.66 г, 6%; Углеводов, 10.45 г, 3%; Калорийность, 114.00 ккал, 5%",
+                0.9m)
         };
 
         var candidate = Assert.Single(await extractor.ExtractAsync(
-            new FoodUnit { ProductName = "кофе латте", Unit = "serving", Kind = FoodUnitKind.PreparedFood },
-            sources, CancellationToken.None));
+            new FoodUnit { ProductName = "кофе латте", Unit = "serving", Kind = FoodUnitKind.PreparedFood }, sources,
+            CancellationToken.None));
 
         Assert.Equal("Per100Grams", candidate.NutritionValueBasis);
         Assert.Equal(114, candidate.NutritionFacts.Calories);
@@ -352,8 +344,7 @@ public sealed class NutritionAgentTests
         };
         var sources = new[]
         {
-            new WebSearchResult(
-                "Аригато сет заказать с доставкой домой и в офис из ...",
+            new WebSearchResult("Аригато сет заказать с доставкой домой и в офис из ...",
                 new Uri("https://tanukifamily.ru/tanuki/product/arigato-set"),
                 "и имбирь (2 шт.). 30 роллов для вечера под сериал. Пищевая ценность на 910 г. белки. 73 г. жиры. 107 г. Углеводы. 264 г. Энерг. ценн. 2310 ккал. Входит в заказ.Read more",
                 0.88m)
@@ -375,17 +366,18 @@ public sealed class NutritionAgentTests
     {
         var parser = new FakeFoodInputParser(new[]
         {
-            new FoodUnit { ProductName = "pasta", Quantity = 1, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct },
-            new FoodUnit { ProductName = "chicken", Quantity = 1, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct }
+            new FoodUnit
+            {
+                ProductName = "pasta", Quantity = 1, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct
+            },
+            new FoodUnit
+            {
+                ProductName = "chicken", Quantity = 1, Unit = "serving", Kind = FoodUnitKind.MassMarketProduct
+            }
         });
         var lookup = new FakeNutritionFactsLookupService();
-        var service = new NutritionChatQueryService(
-            parser,
-            lookup,
-            new FakeOpenFoodFactsCandidateJudge(),
-            new FakeWebSearchService(),
-            new TavilyQueryBuilder(),
-            new FakeEvidenceExtractor(),
+        var service = new NutritionChatQueryService(parser, lookup, new FakeOpenFoodFactsCandidateJudge(),
+            new FakeWebSearchService(), new TavilyQueryBuilder(), new FakeEvidenceExtractor(),
             NullLogger<NutritionChatQueryService>.Instance);
 
         var result = await service.SearchAsync("pasta with chicken", CancellationToken.None);
@@ -473,10 +465,8 @@ public sealed class NutritionAgentTests
 
     private sealed class FakeOpenFoodFactsCandidateJudge : IOpenFoodFactsCandidateJudge
     {
-        public Task<IReadOnlyCollection<ProductNutritionDto>> SelectAcceptableAsync(
-            FoodUnit foodUnit,
-            IReadOnlyCollection<ProductNutritionDto> candidates,
-            CancellationToken cancellationToken)
+        public Task<IReadOnlyCollection<ProductNutritionDto>> SelectAcceptableAsync(FoodUnit foodUnit,
+            IReadOnlyCollection<ProductNutritionDto> candidates, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyCollection<ProductNutritionDto>>(Array.Empty<ProductNutritionDto>());
     }
 
@@ -489,10 +479,8 @@ public sealed class NutritionAgentTests
 
     private sealed class FakeEvidenceExtractor : INutritionEvidenceExtractor
     {
-        public Task<IReadOnlyCollection<ProductNutritionDto>> ExtractAsync(
-            FoodUnit foodUnit,
-            IReadOnlyCollection<WebSearchResult> sources,
-            CancellationToken cancellationToken)
+        public Task<IReadOnlyCollection<ProductNutritionDto>> ExtractAsync(FoodUnit foodUnit,
+            IReadOnlyCollection<WebSearchResult> sources, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyCollection<ProductNutritionDto>>(Array.Empty<ProductNutritionDto>());
     }
 }

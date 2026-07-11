@@ -63,8 +63,11 @@ test('switches meal context and persists entries in breakfast and lunch', async 
 
   await page.reload()
   await page.getByRole('button', { name: 'Завтрак' }).click()
+  await page.getByRole('button', { name: 'Раскрыть текущий приём пищи' }).click()
   await expect(page.getByText('манная каша', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Свернуть текущий приём пищи' }).click()
   await page.getByRole('button', { name: 'Обед' }).click()
+  await page.getByRole('button', { name: 'Раскрыть текущий приём пищи' }).click()
   await expect(page.getByText('творог', { exact: true })).toBeVisible()
 })
 

@@ -30,7 +30,22 @@ jobs:
         run: dotnet build Nutrition.Web.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test Nutrition.Web.sln --configuration Release --no-build --collect "XPlat Code Coverage"
+        run: >-
+          dotnet test Nutrition.Web.sln
+          --configuration Release
+          --no-build
+          --filter "Category!=LiveSmoke"
+          --collect "XPlat Code Coverage"
+          --logger trx
+          --results-directory artifacts/test-results
+
+      - name: Upload .NET test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-test-results
+          path: artifacts/test-results
+          if-no-files-found: error
 
       - name: Setup Node
         uses: actions/setup-node@v4

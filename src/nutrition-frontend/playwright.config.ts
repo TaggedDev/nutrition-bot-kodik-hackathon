@@ -15,7 +15,7 @@ export default defineConfig({
   webServer: process.env.E2E_EXTERNAL_SERVER
     ? undefined
     : {
-        command: 'docker compose -f ../../compose.e2e.yml up --build --wait',
+        command: 'docker compose -f ../../compose.e2e.yml up --build',
         url: 'http://localhost:5174',
         reuseExistingServer: !process.env.CI,
         timeout: 180_000,

@@ -23,13 +23,10 @@ public sealed class LivePipelineSmokeTests(IntegrationTestFixture fixture)
         fixture.ExternalApis.Reset();
         fixture.ExternalApis.Given(Request.Create().WithPath("/search").UsingGet())
             .RespondWith(Response.Create().WithSuccess().WithBodyAsJson(new { hits = Array.Empty<object>() }));
-        await using var factory = new NutritionWebApplicationFactory(
-            fixture.ConnectionString,
+        await using var factory = new NutritionWebApplicationFactory(fixture.ConnectionString,
             fixture.ExternalApis.Url!,
             Environment.GetEnvironmentVariable("DEEPSEEK_BASE_URL") ?? "https://api.deepseek.com",
-            Environment.GetEnvironmentVariable("TAVILY_BASE_URL") ?? "https://api.tavily.com/",
-            deepSeekKey,
-            tavilyKey);
+            Environment.GetEnvironmentVariable("TAVILY_BASE_URL") ?? "https://api.tavily.com/", deepSeekKey, tavilyKey);
         using var client = factory.CreateClient();
 
         var result = await client.GetFromJsonAsync<NutritionChatSearchResponseDto>(
@@ -37,9 +34,9 @@ public sealed class LivePipelineSmokeTests(IntegrationTestFixture fixture)
         var candidates = result!.Clarifications.SelectMany(item => item.Candidates).ToArray();
 
         Assert.NotEmpty(candidates);
-        Assert.Contains(candidates, candidate =>
-            Uri.TryCreate(candidate.SourceReference, UriKind.Absolute, out var uri) &&
-            uri.Host.Contains("tanuki", StringComparison.OrdinalIgnoreCase) &&
-            candidate.NutritionFacts.Calories > 0 && candidate.NutritionFacts.Protein > 0);
+        Assert.Contains(candidates,
+            candidate => Uri.TryCreate(candidate.SourceReference, UriKind.Absolute, out var uri) &&
+                         uri.Host.Contains("tanuki", StringComparison.OrdinalIgnoreCase) &&
+                         candidate.NutritionFacts.Calories > 0 && candidate.NutritionFacts.Protein > 0);
     }
 }

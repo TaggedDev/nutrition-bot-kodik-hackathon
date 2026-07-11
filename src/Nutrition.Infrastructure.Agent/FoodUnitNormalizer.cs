@@ -4,21 +4,8 @@ internal static class FoodUnitNormalizer
 {
     private static readonly string[] BrandHints =
     {
-        "creative kitchen",
-        "prime cafe",
-        "onepricecoffee",
-        "one price coffee",
-        "самокат",
-        "тануки",
-        "cofix",
-        "кофикс",
-        "kfc",
-        "кфс",
-        "макдональдс",
-        "мак",
-        "вкусвилл",
-        "петелинка",
-        "макфа"
+        "creative kitchen", "prime cafe", "onepricecoffee", "one price coffee", "самокат", "тануки", "cofix",
+        "кофикс", "kfc", "кфс", "макдональдс", "мак", "вкусвилл", "петелинка", "макфа"
     };
 
     public static FoodUnit Normalize(FoodUnit foodUnit)
@@ -66,8 +53,7 @@ internal static class FoodUnitNormalizer
         }
 
         return (productName[..index] + productName[(index + brand.Length)..])
-            .Replace("  ", " ", StringComparison.Ordinal)
-            .Trim(' ', ',', '.', '-', '—');
+            .Replace("  ", " ", StringComparison.Ordinal).Trim(' ', ',', '.', '-', '—');
     }
 
     private static bool IsPreparedBrand(string brand)
@@ -83,8 +69,7 @@ internal static class FoodUnitNormalizer
            brand.Equals("мак", StringComparison.OrdinalIgnoreCase);
 
     private static bool LooksLikePreparedFood(string productName, string? brand)
-        => IsPreparedBrand(brand ?? string.Empty) ||
-           productName.Contains("сет", StringComparison.OrdinalIgnoreCase) ||
+        => IsPreparedBrand(brand ?? string.Empty) || productName.Contains("сет", StringComparison.OrdinalIgnoreCase) ||
            productName.Contains("ролл", StringComparison.OrdinalIgnoreCase) ||
            productName.Contains("суши", StringComparison.OrdinalIgnoreCase) ||
            productName.Contains("суп", StringComparison.OrdinalIgnoreCase);
