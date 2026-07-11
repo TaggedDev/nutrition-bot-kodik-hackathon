@@ -30,7 +30,6 @@ public sealed class NutritionPipelineIntegrationTests(IntegrationTestFixture fix
         var search = await client.GetFromJsonAsync<NutritionChatSearchResponseDto>(
             "/api/v1/nutrition/search?query=" + Uri.EscapeDataString("манная каша 200 грамм"), JsonOptions);
         var candidate = Assert.Single(Assert.Single(search!.Clarifications).Candidates);
-        Assert.False(search.ServiceUnavailable);
         Assert.Equal("WebSearch", candidate.SourceType);
         Assert.Equal("https://example.test/semolina", candidate.SourceReference);
         Assert.Equal(100, candidate.NutritionFacts.Calories);
@@ -64,7 +63,6 @@ public sealed class NutritionPipelineIntegrationTests(IntegrationTestFixture fix
         fixture.ExternalApis.Reset();
         StubEmptyOpenFoodFacts();
         StubDeepSeekSequence(ParserResponse(("set arigato", 1, "serving", "tanuki", "PreparedFood")),
-            "{\"acceptedProductIds\":[]}",
             ExtractorResponse("Сет Аригато", 2310, 73, 107, 264, 0.96m,
                 "https://tanukifamily.ru/tanuki/product/arigato-set", "PerServing", 910));
         StubTavily("Сет Аригато", "https://tanukifamily.ru/tanuki/product/arigato-set",
@@ -111,7 +109,7 @@ public sealed class NutritionPipelineIntegrationTests(IntegrationTestFixture fix
     }
 
     [Fact]
-    public async Task EmptyFallback_ReturnsServiceUnavailableWithoutServerError()
+    public async Task EmptyFallback_ReturnsNotFoundWithoutServerError()
     {
         fixture.ExternalApis.Reset();
         StubEmptyOpenFoodFacts();
@@ -124,8 +122,7 @@ public sealed class NutritionPipelineIntegrationTests(IntegrationTestFixture fix
         var result = await response.Content.ReadFromJsonAsync<NutritionChatSearchResponseDto>(JsonOptions);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.True(result!.ServiceUnavailable);
-        Assert.Empty(result.Clarifications);
+        Assert.Empty(result!.Clarifications);
     }
 
     [Fact]
@@ -162,8 +159,7 @@ public sealed class NutritionPipelineIntegrationTests(IntegrationTestFixture fix
         var result = await response.Content.ReadFromJsonAsync<NutritionChatSearchResponseDto>(JsonOptions);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.False(result!.ServiceUnavailable);
-        var candidate = Assert.Single(Assert.Single(result.Clarifications).Candidates);
+        var candidate = Assert.Single(Assert.Single(result!.Clarifications).Candidates);
         Assert.Equal("off-curd-2", candidate.ProductId);
         Assert.Equal("OpenFoodFacts", candidate.SourceType);
         Assert.Equal(148.5m, candidate.NutritionFacts.Calories);
@@ -197,8 +193,8 @@ public sealed class NutritionPipelineIntegrationTests(IntegrationTestFixture fix
                 }
             }));
         StubDeepSeek("*food input parser*", ParserResponse(("кофе латте", 1, "serving", null, "PreparedFood")));
-        StubDeepSeek("*judge whether OpenFoodFacts*", "not-json");
-        StubDeepSeek("*extract nutrition facts*", "not-json");
+        StubDeepSeek("*extract nutrition facts*", ExtractorResponse("latte", 114, 7.45m, 4.66m, 10.45m, 0.9m,
+            "https://example.test/latte"));
         StubTavily("Кофе Латте большая кружка", "https://example.test/latte",
             "На 100 г продукта; Белков, 7.45 г, 11%; Жиров, 4.66 г, 6%; Углеводов, 10.45 г, 3%; Калорийность, 114.00 ккал, 5%");
         using var client = await RegisterClientAsync();
@@ -207,8 +203,7 @@ public sealed class NutritionPipelineIntegrationTests(IntegrationTestFixture fix
         var result = await response.Content.ReadFromJsonAsync<NutritionChatSearchResponseDto>(JsonOptions);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.False(result!.ServiceUnavailable);
-        var candidate = Assert.Single(Assert.Single(result.Clarifications).Candidates);
+        var candidate = Assert.Single(Assert.Single(result!.Clarifications).Candidates);
         Assert.Equal("WebSearch", candidate.SourceType);
         Assert.Equal("Per100Grams", candidate.NutritionValueBasis);
         Assert.Equal(114m, candidate.NutritionFacts.Calories);

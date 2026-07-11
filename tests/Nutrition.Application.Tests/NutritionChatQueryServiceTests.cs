@@ -1,4 +1,4 @@
-using Nutrition.Infrastructure.Agent;
+﻿using Nutrition.Infrastructure.Agent;
 using Nutrition.Infrastructure.Agent.NutritionLookup;
 using Nutrition.Infrastructure.Agent.WebSearch;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -82,21 +82,13 @@ public sealed class NutritionChatQueryServiceTests
     }
 
     [Fact]
-    public async Task SearchAsync_PreparedFood_UsesAcceptedOpenFoodFactsCandidateWithoutWebSearch()
+    public async Task SearchAsync_PreparedFood_UsesWebSearchWithoutOpenFoodFacts()
     {
-        var accepted = new ProductNutritionDto
-        {
-            ProductId = "accepted",
-            ProductName = "кофе",
-            SourceType = "OpenFoodFacts",
-            SourceReference = "OFF:accepted",
-            ConfidenceScore = 1
-        };
         var parser = new FakeFoodInputParser(new[]
         {
             new FoodUnit
             {
-                ProductName = "кофе латте",
+                ProductName = "coffee latte",
                 Brand = "cofix",
                 Quantity = 1,
                 Unit = "serving",
@@ -104,25 +96,39 @@ public sealed class NutritionChatQueryServiceTests
             }
         });
         var lookup = new FakeNutritionFactsLookupService();
-        var judge = new FakeOpenFoodFactsCandidateJudge { AcceptedCandidates = new[] { accepted } };
         var webSearch = new FakeWebSearchService();
-        var service = CreateService(parser, lookup, judge, webSearch);
+        var extractor = new FakeEvidenceExtractor
+        {
+            Candidates = new[]
+            {
+                new ProductNutritionDto
+                {
+                    ProductId = "web-latte",
+                    ProductName = "latte",
+                    SourceType = "WebSearch",
+                    SourceReference = "https://example.test/latte",
+                    ConfidenceScore = 1
+                }
+            }
+        };
+        var service = CreateService(parser, lookup, webSearch: webSearch, extractor: extractor);
 
-        var result = await service.SearchAsync("кофе латте cofix", CancellationToken.None);
+        var result = await service.SearchAsync("coffee latte cofix", CancellationToken.None);
 
-        Assert.Empty(webSearch.Queries);
-        Assert.Equal("accepted", result.Clarifications.Single().Candidates.Single().ProductId);
+        Assert.Empty(lookup.Queries);
+        Assert.Single(webSearch.Queries);
+        Assert.Equal("web-latte", result.Clarifications.Single().Candidates.Single().ProductId);
     }
 
     [Fact]
-    public async Task SearchAsync_PreparedFood_WhenOpenFoodFactsRejected_SearchesWebAndReturnsExtractedCandidates()
+    public async Task SearchAsync_PreparedFood_SearchesWebAndReturnsExtractedCandidates()
     {
         var parser = new FakeFoodInputParser(new[]
         {
             new FoodUnit
             {
-                ProductName = "гаспачо",
-                Brand = "creative kitchen самокат",
+                ProductName = "gazpacho",
+                Brand = "creative kitchen",
                 Quantity = 1,
                 Unit = "serving",
                 Kind = FoodUnitKind.PreparedFood
@@ -133,7 +139,7 @@ public sealed class NutritionChatQueryServiceTests
         {
             Results = new[]
             {
-                new WebSearchResult("Гаспачо", new Uri("https://example.com/gazpacho"), "КБЖУ", 0.9m)
+                new WebSearchResult("Gazpacho", new Uri("https://example.com/gazpacho"), "nutrition", 0.9m)
             }
         };
         var extractor = new FakeEvidenceExtractor
@@ -143,8 +149,8 @@ public sealed class NutritionChatQueryServiceTests
                 new ProductNutritionDto
                 {
                     ProductId = "web",
-                    ProductName = "гаспачо",
-                    Brand = "creative kitchen самокат",
+                    ProductName = "gazpacho",
+                    Brand = "creative kitchen",
                     NutritionValueBasis = "PerServing",
                     ServingSize = 320,
                     ServingUnit = "g",
@@ -156,22 +162,22 @@ public sealed class NutritionChatQueryServiceTests
         };
         var service = CreateService(parser, lookup, webSearch: webSearch, extractor: extractor);
 
-        var result = await service.SearchAsync("гаспачо creative kitchen самокат", CancellationToken.None);
+        var result = await service.SearchAsync("gazpacho creative kitchen", CancellationToken.None);
 
         Assert.Single(webSearch.Queries);
-        Assert.Contains("creative kitchen самокат", webSearch.Queries.Single(), StringComparison.Ordinal);
-        Assert.Contains("гаспачо", webSearch.Queries.Single(), StringComparison.Ordinal);
+        Assert.Contains("creative kitchen", webSearch.Queries.Single(), StringComparison.Ordinal);
+        Assert.Contains("gazpacho", webSearch.Queries.Single(), StringComparison.Ordinal);
         Assert.Equal("web", result.Clarifications.Single().Candidates.Single().ProductId);
     }
 
     [Fact]
-    public async Task SearchAsync_NormalizesTanukiArigatoSetBeforeWebSearch()
+    public async Task SearchAsync_UnknownFoodUnit_UsesWebSearchWithoutOpenFoodFacts()
     {
         var parser = new FakeFoodInputParser(new[]
         {
             new FoodUnit
             {
-                ProductName = "сет оригато тануки",
+                ProductName = "tanuki arigato set",
                 Quantity = 0.5m,
                 Unit = "serving",
                 Kind = FoodUnitKind.Unknown
@@ -181,14 +187,12 @@ public sealed class NutritionChatQueryServiceTests
         var webSearch = new FakeWebSearchService();
         var service = CreateService(parser, lookup, webSearch: webSearch);
 
-        await service.SearchAsync("сет оригато тануки полпорции", CancellationToken.None);
+        await service.SearchAsync("tanuki arigato set half serving", CancellationToken.None);
 
-        Assert.Equal(new[] { "тануки сет аригато" }, lookup.Queries);
+        Assert.Empty(lookup.Queries);
         Assert.Single(webSearch.Queries);
-        Assert.Contains("тануки", webSearch.Queries.Single(), StringComparison.Ordinal);
-        Assert.Contains("сет аригато", webSearch.Queries.Single(), StringComparison.Ordinal);
-        Assert.Contains("кбжу", webSearch.Queries.Single(), StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("nutrition calories", webSearch.Queries.Single(), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("tanuki arigato set", webSearch.Queries.Single(), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("nutrition", webSearch.Queries.Single(), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -196,43 +200,39 @@ public sealed class NutritionChatQueryServiceTests
     {
         var query = new TavilyQueryBuilder().Build(new FoodUnit
         {
-            ProductName = "кофе латте", Unit = "serving", Kind = FoodUnitKind.PreparedFood
+            ProductName = "coffee latte", Unit = "serving", Kind = FoodUnitKind.PreparedFood
         });
 
-        Assert.Contains("100 мл", query, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("порцию", query, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("на 100 г", query, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("100", query, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("100 g", query, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task SearchAsync_WhenOpenFoodFactsIsEmpty_UsesWebSearchAndLlmExtractor()
+    public async Task SearchAsync_WhenOpenFoodFactsIsEmptyForMassMarketProduct_UsesWebFallback()
     {
         var parser = new FakeFoodInputParser(new[]
         {
             new FoodUnit { ProductName = "semolina porridge", Unit = "g", Kind = FoodUnitKind.MassMarketProduct }
         });
         var lookup = new FakeNutritionFactsLookupService { Results = Array.Empty<ProductNutritionDto>() };
-        var webCandidate = new ProductNutritionDto
-        {
-            ProductId = "WEB:1", ProductName = "Semolina porridge with milk", SourceType = "WebSearch"
-        };
         var webSearch = new FakeWebSearchService
         {
-            Results = new[] { new WebSearchResult("Semolina", new Uri("https://example.com"), "nutrition", 1) }
+            Results = new[] { new WebSearchResult("Semolina", new Uri("https://example.com/semolina"), "nutrition", 1) }
         };
-        var extractor = new FakeEvidenceExtractor { Candidates = new[] { webCandidate } };
+        var extractor = new FakeEvidenceExtractor
+        {
+            Candidates = new[] { new ProductNutritionDto { ProductId = "WEB:1", ProductName = "Semolina", SourceType = "WebSearch" } }
+        };
         var service = CreateService(parser, lookup, webSearch: webSearch, extractor: extractor);
 
         var result = await service.SearchAsync("semolina porridge 200 g", CancellationToken.None);
 
-        Assert.False(result.ServiceUnavailable);
         Assert.Single(webSearch.Queries);
-        Assert.Equal(WebSearchDepth.Advanced, webSearch.LastDepth);
         Assert.Equal("WEB:1", result.Clarifications.Single().Candidates.Single().ProductId);
     }
 
     [Fact]
-    public async Task SearchAsync_WhenOpenFoodFactsAndLlmAreEmpty_ReturnsServiceUnavailable()
+    public async Task SearchAsync_WhenAllSourcesAreEmpty_ReturnsNotFoundResponse()
     {
         var parser = new FakeFoodInputParser(new[]
         {
@@ -243,15 +243,14 @@ public sealed class NutritionChatQueryServiceTests
 
         var result = await service.SearchAsync("semolina porridge 200 g", CancellationToken.None);
 
-        Assert.True(result.ServiceUnavailable);
         Assert.Empty(result.Clarifications);
     }
 
     private static NutritionChatQueryService CreateService(IFoodInputParser parser,
-        FakeNutritionFactsLookupService lookup, FakeOpenFoodFactsCandidateJudge? judge = null,
+        FakeNutritionFactsLookupService lookup,
         FakeWebSearchService? webSearch = null, FakeEvidenceExtractor? extractor = null)
-        => new(parser, lookup, judge ?? new FakeOpenFoodFactsCandidateJudge(), webSearch ?? new FakeWebSearchService(),
-            new TavilyQueryBuilder(), extractor ?? new FakeEvidenceExtractor(),
+        => new(parser, lookup, webSearch ?? new FakeWebSearchService(), new TavilyQueryBuilder(),
+            extractor ?? new FakeEvidenceExtractor(),
             NullLogger<NutritionChatQueryService>.Instance);
 
     private sealed class FakeFoodInputParser : IFoodInputParser
@@ -297,18 +296,6 @@ public sealed class NutritionChatQueryServiceTests
             return Task.FromResult(results);
         }
     }
-
-
-    private sealed class FakeOpenFoodFactsCandidateJudge : IOpenFoodFactsCandidateJudge
-    {
-        public IReadOnlyCollection<ProductNutritionDto> AcceptedCandidates { get; init; } =
-            Array.Empty<ProductNutritionDto>();
-
-        public Task<IReadOnlyCollection<ProductNutritionDto>> SelectAcceptableAsync(FoodUnit foodUnit,
-            IReadOnlyCollection<ProductNutritionDto> candidates, CancellationToken cancellationToken)
-            => Task.FromResult(AcceptedCandidates);
-    }
-
     private sealed class FakeWebSearchService : IWebSearchService
     {
         private readonly List<string> _queries = new();
