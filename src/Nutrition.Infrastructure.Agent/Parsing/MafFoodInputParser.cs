@@ -5,7 +5,7 @@ using Microsoft.Extensions.AI;
 
 namespace Nutrition.Infrastructure.Agent.Parsing;
 
-public sealed class MafFoodInputParser : IFoodInputParser
+public sealed class MafFoodInputParser(IChatClient chatClient) : IFoodInputParser
 {
     private const string Instructions = """
                                         You are a food input parser for a nutrition application.
@@ -45,23 +45,18 @@ public sealed class MafFoodInputParser : IFoodInputParser
                                         }
                                         """;
 
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
         PropertyNameCaseInsensitive = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
     static MafFoodInputParser()
     {
-        JsonOptions.Converters.Add(new JsonStringEnumConverter());
+        _jsonOptions.Converters.Add(new JsonStringEnumConverter());
     }
 
-    private readonly ChatClientAgent _agent;
-
-    public MafFoodInputParser(IChatClient chatClient)
-    {
-        _agent = new ChatClientAgent(chatClient, Instructions, name: "nutrition-food-input-parser",
-            description: "Parses free-form meal text into Open Food Facts search units.");
-    }
+    private readonly ChatClientAgent _agent = new(chatClient, Instructions, name: "nutrition-food-input-parser",
+        description: "Parses free-form meal text into Open Food Facts search units.");
 
     public async Task<IReadOnlyCollection<FoodUnit>> ParseAsync(string userInput, CancellationToken cancellationToken)
     {
@@ -74,13 +69,13 @@ public sealed class MafFoodInputParser : IFoodInputParser
         {
             Temperature = 0,
             MaxOutputTokens = 600,
-            ResponseFormat = ChatResponseFormat.ForJsonSchema<FoodUnitParseResponse>(JsonOptions,
+            ResponseFormat = ChatResponseFormat.ForJsonSchema<FoodUnitParseResponse>(_jsonOptions,
                 schemaName: "food_unit_parse_response",
                 schemaDescription: "Food units parsed from a free-form user meal input.")
         });
 
         var response = await _agent.RunAsync<FoodUnitParseResponse>(userInput.Trim(), session: null,
-            serializerOptions: JsonOptions, options: runOptions, cancellationToken: cancellationToken);
+            serializerOptions: _jsonOptions, options: runOptions, cancellationToken: cancellationToken);
 
         return Validate(response.Result);
     }
@@ -101,25 +96,5 @@ public sealed class MafFoodInputParser : IFoodInputParser
             Preparation = string.IsNullOrWhiteSpace(item.Preparation) ? null : item.Preparation.Trim(),
             Kind = item.Kind
         }).ToArray();
-    }
-
-    public sealed class FoodUnitParseResponse
-    {
-        public IReadOnlyCollection<ParsedFoodUnit> Items { get; init; } = Array.Empty<ParsedFoodUnit>();
-    }
-
-    public sealed class ParsedFoodUnit
-    {
-        public string ProductName { get; init; } = string.Empty;
-
-        public decimal Quantity { get; init; } = 1;
-
-        public string Unit { get; init; } = "serving";
-
-        public string? Brand { get; init; }
-
-        public string? Preparation { get; init; }
-
-        public FoodUnitKind Kind { get; init; } = FoodUnitKind.Unknown;
     }
 }
