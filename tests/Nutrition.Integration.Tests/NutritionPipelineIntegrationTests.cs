@@ -12,6 +12,7 @@ using WireMock.Matchers;
 namespace Nutrition.Integration.Tests;
 
 [Collection(IntegrationTestCollection.Name)]
+[Trait("Category", "Integration")]
 public sealed class NutritionPipelineIntegrationTests(IntegrationTestFixture fixture)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

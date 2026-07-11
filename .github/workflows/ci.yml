@@ -8,7 +8,7 @@ on:
   pull_request:
 
 jobs:
-  build-and-test:
+  dotnet-and-frontend:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,12 +29,12 @@ jobs:
       - name: Build
         run: dotnet build Nutrition.Web.sln --configuration Release --no-restore
 
-      - name: Test
+      - name: Run unit and web tests
         run: >-
           dotnet test Nutrition.Web.sln
           --configuration Release
           --no-build
-          --filter "Category!=LiveSmoke"
+          --filter "Category!=Integration&Category!=LiveSmoke"
           --collect "XPlat Code Coverage"
           --logger trx
           --results-directory artifacts/test-results
@@ -81,3 +81,41 @@ jobs:
             src/nutrition-frontend/playwright-report
             src/nutrition-frontend/test-results
           if-no-files-found: ignore
+
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore Nutrition.Web.sln
+
+      - name: Build
+        run: dotnet build Nutrition.Web.sln --configuration Release --no-restore
+
+      - name: Verify Docker is available
+        run: docker info
+
+      - name: Run integration tests
+        run: >-
+          dotnet test tests/Nutrition.Integration.Tests/Nutrition.Integration.Tests.csproj
+          --configuration Release
+          --no-build
+          --filter "Category=Integration"
+          --logger trx
+          --results-directory artifacts/integration-test-results
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: artifacts/integration-test-results
+          if-no-files-found: error
