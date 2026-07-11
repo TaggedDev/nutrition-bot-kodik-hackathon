@@ -31,7 +31,6 @@ public sealed class NutritionChatQueryService(IFoodInputParser foodInputParser,
         if (foodUnits.Count == 0) return new NutritionChatSearchResponseDto { Query = userInput.Trim() };
 
         var clarifications = new List<NutritionClarificationDto>();
-        bool serviceUnavailable = false;
 
         foreach (var foodUnit in foodUnits)
         {
@@ -52,8 +51,7 @@ public sealed class NutritionChatQueryService(IFoodInputParser foodInputParser,
         {
             Query = userInput.Trim(),
             Items = Array.Empty<ProductNutritionDto>(),
-            Clarifications = serviceUnavailable ? Array.Empty<NutritionClarificationDto>() : clarifications,
-            ServiceUnavailable = serviceUnavailable
+            Clarifications = clarifications,
         };
     }
 
