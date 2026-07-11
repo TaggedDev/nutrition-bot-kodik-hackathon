@@ -35,7 +35,7 @@ public sealed class MafFoodInputParser(IChatClient chatClient) : IFoodInputParse
                                             - "Unknown": по умолчанию, если описание слишком неоднозначно;
 
                                         ПРИМЕРЫ
-                                        
+
                                         Ввод: куриная грудка петелинка 120 грамм и макароны makfa 80 г
                                         Вывод:
                                         {
@@ -130,7 +130,7 @@ public sealed class MafFoodInputParser(IChatClient chatClient) : IFoodInputParse
     }
 
     private readonly ChatClientAgent _agent = new(chatClient, Instructions, name: "nutrition-food-input-parser",
-        description: "Parses free-form meal text into Open Food Facts search units.");
+        description: "Формирует json модель для open food facts");
 
     public async Task<IReadOnlyCollection<FoodUnit>> ParseAsync(string userInput, CancellationToken cancellationToken)
     {
@@ -142,7 +142,7 @@ public sealed class MafFoodInputParser(IChatClient chatClient) : IFoodInputParse
             MaxOutputTokens = 600,
             ResponseFormat = ChatResponseFormat.ForJsonSchema<FoodUnitParseResponse>(_jsonOptions,
                 schemaName: "food_unit_parse_response",
-                schemaDescription: "Food units parsed from a free-form user meal input.")
+                schemaDescription: "Объекты еды для openfoodfacts из свободной модели ввода")
         });
 
         var response = await _agent.RunAsync<FoodUnitParseResponse>(userInput.Trim(), session: null,
