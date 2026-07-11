@@ -61,9 +61,7 @@ public sealed class MafFoodInputParser(IChatClient chatClient) : IFoodInputParse
     public async Task<IReadOnlyCollection<FoodUnit>> ParseAsync(string userInput, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(userInput))
-        {
             return Array.Empty<FoodUnit>();
-        }
 
         var runOptions = new ChatClientAgentRunOptions(new ChatOptions
         {

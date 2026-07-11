@@ -35,9 +35,7 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
     public async Task<NutritionChatSearchResponseDto> SearchAsync(string userInput, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(userInput))
-        {
             return new NutritionChatSearchResponseDto { Query = userInput };
-        }
 
         var foodUnits = await _foodInputParser.ParseAsync(userInput, cancellationToken);
         var normalizedUnits = foodUnits.Where(unit => !string.IsNullOrWhiteSpace(unit.ProductName))
@@ -45,9 +43,7 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
             .ToArray();
 
         if (normalizedUnits.Length == 0)
-        {
             return new NutritionChatSearchResponseDto { Query = userInput.Trim() };
-        }
 
         var clarifications = new List<NutritionClarificationDto>();
         var serviceUnavailable = false;

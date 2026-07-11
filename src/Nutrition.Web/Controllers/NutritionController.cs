@@ -16,9 +16,7 @@ public sealed class NutritionController : ControllerBase
         [FromServices] INutritionChatQueryService chatQueryService, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
-        {
             return BadRequest("Query must not be empty.");
-        }
 
         var response = await chatQueryService.SearchAsync(query, cancellationToken);
         return Ok(response);
