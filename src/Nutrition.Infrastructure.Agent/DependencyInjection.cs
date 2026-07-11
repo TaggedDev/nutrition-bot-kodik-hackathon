@@ -56,7 +56,6 @@ public static class DependencyInjection
 
         services.AddScoped<IFoodInputParser, MafFoodInputParser>();
         services.AddScoped<IFoodMatcher, OpenFoodFactsFoodMatcher>();
-        services.AddScoped<IOpenFoodFactsCandidateJudge, MafOpenFoodFactsCandidateJudge>();
         services.AddScoped<INutritionEvidenceExtractor, MafNutritionEvidenceExtractor>();
         services.AddSingleton<ITavilyQueryBuilder, TavilyQueryBuilder>();
         services.AddHttpClient<IWebSearchService, TavilyWebSearchService>((serviceProvider, client) =>
