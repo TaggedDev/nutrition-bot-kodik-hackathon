@@ -217,11 +217,20 @@ public sealed class NutritionChatQueryServiceTests
         var lookup = new FakeNutritionFactsLookupService { Results = Array.Empty<ProductNutritionDto>() };
         var webSearch = new FakeWebSearchService
         {
-            Results = new[] { new WebSearchResult("Semolina", new Uri("https://example.com/semolina"), "nutrition", 1) }
+            Results = new[]
+            {
+                new WebSearchResult("Semolina", new Uri("https://example.com/semolina"), "nutrition", 1)
+            }
         };
         var extractor = new FakeEvidenceExtractor
         {
-            Candidates = new[] { new ProductNutritionDto { ProductId = "WEB:1", ProductName = "Semolina", SourceType = "WebSearch" } }
+            Candidates = new[]
+            {
+                new ProductNutritionDto
+                {
+                    ProductId = "WEB:1", ProductName = "Semolina", SourceType = "WebSearch"
+                }
+            }
         };
         var service = CreateService(parser, lookup, webSearch: webSearch, extractor: extractor);
 
@@ -247,11 +256,10 @@ public sealed class NutritionChatQueryServiceTests
     }
 
     private static NutritionChatQueryService CreateService(IFoodInputParser parser,
-        FakeNutritionFactsLookupService lookup,
-        FakeWebSearchService? webSearch = null, FakeEvidenceExtractor? extractor = null)
+        FakeNutritionFactsLookupService lookup, FakeWebSearchService? webSearch = null,
+        FakeEvidenceExtractor? extractor = null)
         => new(parser, lookup, webSearch ?? new FakeWebSearchService(), new TavilyQueryBuilder(),
-            extractor ?? new FakeEvidenceExtractor(),
-            NullLogger<NutritionChatQueryService>.Instance);
+            extractor ?? new FakeEvidenceExtractor(), NullLogger<NutritionChatQueryService>.Instance);
 
     private sealed class FakeFoodInputParser : IFoodInputParser
     {
@@ -296,6 +304,7 @@ public sealed class NutritionChatQueryServiceTests
             return Task.FromResult(results);
         }
     }
+
     private sealed class FakeWebSearchService : IWebSearchService
     {
         private readonly List<string> _queries = new();

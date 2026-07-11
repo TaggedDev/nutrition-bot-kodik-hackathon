@@ -10,8 +10,8 @@ using Nutrition.Shared.Dtos;
 
 namespace Nutrition.Infrastructure.Agent.NutritionLookup;
 
-public sealed class MafNutritionEvidenceExtractor(IChatClient chatClient, ILogger<MafNutritionEvidenceExtractor>? logger = null)
-    : INutritionEvidenceExtractor
+public sealed class MafNutritionEvidenceExtractor(IChatClient chatClient,
+    ILogger<MafNutritionEvidenceExtractor>? logger = null) : INutritionEvidenceExtractor
 {
     private const int MaxAttempts = 3;
 
@@ -66,7 +66,8 @@ public sealed class MafNutritionEvidenceExtractor(IChatClient chatClient, ILogge
             try
             {
                 AgentResponse<ExtractionResponse> response = await _agent.RunAsync<ExtractionResponse>(prompt,
-                    session: null, serializerOptions: JsonOptions, options: options, cancellationToken: cancellationToken);
+                    session: null, serializerOptions: JsonOptions, options: options,
+                    cancellationToken: cancellationToken);
                 LogRawResponse(foodUnit, sources, response.Result);
 
                 if (response.Result?.Candidates?.Count > 0)
@@ -124,8 +125,7 @@ public sealed class MafNutritionEvidenceExtractor(IChatClient chatClient, ILogge
     }
 
     private static IReadOnlyCollection<ProductNutritionDto> ValidateAndMap(ExtractionResponse? response,
-        FoodUnit foodUnit, IReadOnlyCollection<WebSearchResult> sources,
-        ILogger<MafNutritionEvidenceExtractor>? logger)
+        FoodUnit foodUnit, IReadOnlyCollection<WebSearchResult> sources, ILogger<MafNutritionEvidenceExtractor>? logger)
     {
         if (response?.Candidates is null || response.Candidates.Count == 0)
         {
@@ -136,40 +136,35 @@ public sealed class MafNutritionEvidenceExtractor(IChatClient chatClient, ILogge
         }
 
         var fallbackSourceUrl = sources.FirstOrDefault()?.Url.ToString() ?? string.Empty;
-        var result = response.Candidates
-            .Where(HasCalories)
-            .Select(candidate =>
-            {
-                var sourceUrl = string.IsNullOrWhiteSpace(candidate.SourceUrl)
-                    ? fallbackSourceUrl
-                    : candidate.SourceUrl.Trim();
-                var productName = string.IsNullOrWhiteSpace(candidate.ProductName)
-                    ? foodUnit.ProductName.Trim()
-                    : candidate.ProductName.Trim();
+        var result = response.Candidates.Where(HasCalories).Select(candidate =>
+        {
+            var sourceUrl = string.IsNullOrWhiteSpace(candidate.SourceUrl) ? fallbackSourceUrl
+                : candidate.SourceUrl.Trim();
+            var productName = string.IsNullOrWhiteSpace(candidate.ProductName) ? foodUnit.ProductName.Trim()
+                : candidate.ProductName.Trim();
 
-                return new ProductNutritionDto
-                {
-                    ProductId = $"WEB:{Hash($"{sourceUrl}|{productName}|{candidate.Brand}")}",
-                    ProductName = productName,
-                    Brand = string.IsNullOrWhiteSpace(candidate.Brand) ? foodUnit.Brand : candidate.Brand.Trim(),
-                    NutritionFacts = new NutritionFactsDto
+            return new ProductNutritionDto
+            {
+                ProductId = $"WEB:{Hash($"{sourceUrl}|{productName}|{candidate.Brand}")}",
+                ProductName = productName,
+                Brand = string.IsNullOrWhiteSpace(candidate.Brand) ? foodUnit.Brand : candidate.Brand.Trim(),
+                NutritionFacts =
+                    new NutritionFactsDto
                     {
                         Calories = candidate.Calories!.Value,
                         Protein = candidate.Protein ?? 0m,
                         Fat = candidate.Fat ?? 0m,
                         Carbs = candidate.Carbs ?? 0m
                     },
-                    NutritionValueBasis = NormalizeValueBasis(candidate.ValueBasis).ToString(),
-                    ServingSize = candidate.ServingSize,
-                    ServingUnit = string.IsNullOrWhiteSpace(candidate.ServingUnit) ? null : candidate.ServingUnit.Trim(),
-                    SourceType = "WebSearch",
-                    SourceReference = sourceUrl,
-                    ConfidenceScore = candidate.Confidence ?? 1m
-                };
-            })
-            .OrderByDescending(candidate => candidate.ConfidenceScore)
-            .Take(3)
-            .ToArray();
+                NutritionValueBasis = NormalizeValueBasis(candidate.ValueBasis).ToString(),
+                ServingSize = candidate.ServingSize,
+                ServingUnit =
+                    string.IsNullOrWhiteSpace(candidate.ServingUnit) ? null : candidate.ServingUnit.Trim(),
+                SourceType = "WebSearch",
+                SourceReference = sourceUrl,
+                ConfidenceScore = candidate.Confidence ?? 1m
+            };
+        }).OrderByDescending(candidate => candidate.ConfidenceScore).Take(3).ToArray();
 
         logger?.LogInformation(
             "Nutrition evidence extractor accepted {AcceptedCount} of {CandidateCount} candidates for '{ProductName}'",

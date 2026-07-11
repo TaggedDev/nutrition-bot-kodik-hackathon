@@ -52,8 +52,7 @@ public sealed class MafFoodInputParser(IChatClient chatClient) : IFoodInputParse
 
     private static IReadOnlyCollection<FoodUnit> Validate(FoodUnitParseResponse? response)
     {
-        if (response?.Items is null)
-            return Array.Empty<FoodUnit>();
+        if (response?.Items is null) return Array.Empty<FoodUnit>();
 
         return response.Items.Where(item => !string.IsNullOrWhiteSpace(item.ProductName)).Select(item => new FoodUnit
         {

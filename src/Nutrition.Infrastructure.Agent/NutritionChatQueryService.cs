@@ -7,9 +7,9 @@ using Nutrition.Shared.Dtos;
 namespace Nutrition.Infrastructure.Agent;
 
 public sealed class NutritionChatQueryService(IFoodInputParser foodInputParser,
-    INutritionFactsLookupService lookupService, IWebSearchService webSearchService, ITavilyQueryBuilder tavilyQueryBuilder,
-    INutritionEvidenceExtractor evidenceExtractor, ILogger<NutritionChatQueryService> logger)
-    : INutritionChatQueryService
+    INutritionFactsLookupService lookupService, IWebSearchService webSearchService,
+    ITavilyQueryBuilder tavilyQueryBuilder, INutritionEvidenceExtractor evidenceExtractor,
+    ILogger<NutritionChatQueryService> logger) : INutritionChatQueryService
 {
     private const int ResultsPerFoodUnit = 3;
 

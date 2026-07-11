@@ -193,8 +193,8 @@ public sealed class NutritionPipelineIntegrationTests(IntegrationTestFixture fix
                 }
             }));
         StubDeepSeek("*food input parser*", ParserResponse(("кофе латте", 1, "serving", null, "PreparedFood")));
-        StubDeepSeek("*extract nutrition facts*", ExtractorResponse("latte", 114, 7.45m, 4.66m, 10.45m, 0.9m,
-            "https://example.test/latte"));
+        StubDeepSeek("*extract nutrition facts*",
+            ExtractorResponse("latte", 114, 7.45m, 4.66m, 10.45m, 0.9m, "https://example.test/latte"));
         StubTavily("Кофе Латте большая кружка", "https://example.test/latte",
             "На 100 г продукта; Белков, 7.45 г, 11%; Жиров, 4.66 г, 6%; Углеводов, 10.45 г, 3%; Калорийность, 114.00 ккал, 5%");
         using var client = await RegisterClientAsync();

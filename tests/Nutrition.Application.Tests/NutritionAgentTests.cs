@@ -102,7 +102,10 @@ public sealed class NutritionAgentTests
             Unit = "serving",
             Kind = FoodUnitKind.PreparedFood
         };
-        var sources = new[] { new WebSearchResult("Р“Р°СЃРїР°С‡Рѕ", new Uri("https://example.com/gazpacho"), "РљР‘Р–РЈ", 0.9m) };
+        var sources = new[]
+        {
+            new WebSearchResult("Р“Р°СЃРїР°С‡Рѕ", new Uri("https://example.com/gazpacho"), "РљР‘Р–РЈ", 0.9m)
+        };
 
         var result = await extractor.ExtractAsync(foodUnit, sources, CancellationToken.None);
 
@@ -151,7 +154,10 @@ public sealed class NutritionAgentTests
             Unit = "serving",
             Kind = FoodUnitKind.PreparedFood
         };
-        var sources = new[] { new WebSearchResult("Р“Р°СЃРїР°С‡Рѕ", new Uri("https://example.com/gazpacho"), "РљР‘Р–РЈ", 0.9m) };
+        var sources = new[]
+        {
+            new WebSearchResult("Р“Р°СЃРїР°С‡Рѕ", new Uri("https://example.com/gazpacho"), "РљР‘Р–РЈ", 0.9m)
+        };
 
         var result = await extractor.ExtractAsync(foodUnit, sources, CancellationToken.None);
 
@@ -168,10 +174,7 @@ public sealed class NutritionAgentTests
         var validJson = ExtractorResponse("beef", 145.4m, 0m, 0m, 0m, "https://example.com/beef");
         var chatClient = new FakeChatClient("not-json", "not-json", validJson);
         var extractor = new MafNutritionEvidenceExtractor(chatClient);
-        var sources = new[]
-        {
-            new WebSearchResult("Beef", new Uri("https://example.com/beef"), "145.4 kcal", 0.9m)
-        };
+        var sources = new[] { new WebSearchResult("Beef", new Uri("https://example.com/beef"), "145.4 kcal", 0.9m) };
 
         var result = await extractor.ExtractAsync(new FoodUnit { ProductName = "beef", Unit = "g" }, sources,
             CancellationToken.None);
@@ -183,7 +186,8 @@ public sealed class NutritionAgentTests
     [Fact]
     public async Task MafNutritionEvidenceExtractor_MapsStructuredPerServingCandidate()
     {
-        var responseJson = ExtractorResponse("arigato set", 2310, 73, 107, 264, "https://www.fatsecret.ru/search?q=tanuki-arigato-set", "PerServing", 910);
+        var responseJson = ExtractorResponse("arigato set", 2310, 73, 107, 264,
+            "https://www.fatsecret.ru/search?q=tanuki-arigato-set", "PerServing", 910);
         var extractor = new MafNutritionEvidenceExtractor(new FakeChatClient(responseJson));
         var foodUnit = new FoodUnit
         {
@@ -195,7 +199,8 @@ public sealed class NutritionAgentTests
         };
         var sources = new[]
         {
-            new WebSearchResult("РљР°Р»РѕСЂРёРё Рё РџРёС‰РµРІР°СЏ РРЅС„РѕСЂРјР°С†РёСЏ РўР°РЅСѓРєРё РђСЂРёРіР°С‚Рѕ РЎРµС‚ - Fatsecret.ru",
+            new WebSearchResult(
+                "РљР°Р»РѕСЂРёРё Рё РџРёС‰РµРІР°СЏ РРЅС„РѕСЂРјР°С†РёСЏ РўР°РЅСѓРєРё РђСЂРёРіР°С‚Рѕ РЎРµС‚ - Fatsecret.ru",
                 new Uri("https://www.fatsecret.ru/search?q=tanuki-arigato-set"),
                 "РІ 1 РїРѕСЂС†РёСЏ (910Рі) - РљР°Р»РѕСЂРёРё: 2310РєРєР°Р» | Р–РёСЂ: 107,00Рі | РЈРіР»РµРІ: 264,00Рі | Р‘РµР»Рє: 73,00Рі. РџРѕС…РѕР¶РёРµ В· Р РѕР»Р» РђСЂРёРіР°С‚Рѕ (РўР°РЅСѓРєРё).",
                 0.87m)
@@ -217,7 +222,8 @@ public sealed class NutritionAgentTests
     [Fact]
     public async Task MafNutritionEvidenceExtractor_MapsCompactPerServingCandidate()
     {
-        var responseJson = ExtractorResponse("arigato set", 2310, 73, 107, 264, "https://www.fatsecret.ru/calories-nutrition/tanuki/arigato-set/1-serving", "PerServing", 910);
+        var responseJson = ExtractorResponse("arigato set", 2310, 73, 107, 264,
+            "https://www.fatsecret.ru/calories-nutrition/tanuki/arigato-set/1-serving", "PerServing", 910);
         var extractor = new MafNutritionEvidenceExtractor(new FakeChatClient(responseJson));
         var foodUnit = new FoodUnit
         {
@@ -229,7 +235,8 @@ public sealed class NutritionAgentTests
         };
         var sources = new[]
         {
-            new WebSearchResult("РўР°РЅСѓРєРё РђСЂРёРіР°С‚Рѕ РЎРµС‚ РљР°Р»РѕСЂРёРё Рё РџРёС‰РµРІР°СЏ Р¦РµРЅРЅРѕСЃС‚СЊ",
+            new WebSearchResult(
+                "РўР°РЅСѓРєРё РђСЂРёРіР°С‚Рѕ РЎРµС‚ РљР°Р»РѕСЂРёРё Рё РџРёС‰РµРІР°СЏ Р¦РµРЅРЅРѕСЃС‚СЊ",
                 new Uri("https://www.fatsecret.ru/calories-nutrition/tanuki/arigato-set/1-serving"),
                 "РўР°РЅСѓРєРё РђСЂРёРіР°С‚Рѕ РЎРµС‚. РўР°РЅСѓРєРё. РђСЂРёРіР°С‚Рѕ РЎРµС‚. РљР°Р». 2310. Р–РёСЂ. 107 Рі. РЈРіР»РµРІ. 264 Рі. Р‘РµР»Рє. 73 Рі. 1 РїРѕСЂС†РёСЏ (910 Рі) СЃРѕРґРµСЂР¶РёС‚ 2310 РєР°Р»РѕСЂРёР№. РСЃС‚РѕС‡РЅРёРє В· fatsecret Platform",
                 0.87m)
@@ -251,7 +258,8 @@ public sealed class NutritionAgentTests
     [Fact]
     public async Task MafNutritionEvidenceExtractor_MapsCommonRussianPer100GramsCandidate()
     {
-        var responseJson = ExtractorResponse("semolina porridge", 98, 3.0m, 3.2m, 15.3m, "https://example.com/semolina");
+        var responseJson =
+            ExtractorResponse("semolina porridge", 98, 3.0m, 3.2m, 15.3m, "https://example.com/semolina");
         var extractor = new MafNutritionEvidenceExtractor(new FakeChatClient(responseJson));
         var foodUnit = new FoodUnit { ProductName = "РјР°РЅРЅР°СЏ РєР°С€Р°", Unit = "g" };
         var sources = new[]
@@ -279,7 +287,8 @@ public sealed class NutritionAgentTests
         var sources = new[]
         {
             new WebSearchResult("РўРІРѕСЂРѕРі 9% Р‘Р–РЈ РЅР° 100 РіСЂР°РјРј", new Uri("https://example.com/curd-9"),
-                "РљР°Р»РѕСЂРёР№РЅРѕСЃС‚СЊ, 159 РєРљР°Р»; Р‘РµР»РєРё, 16.7 Рі; Р–РёСЂС‹, 9 Рі; РЈРіР»РµРІРѕРґС‹, 2 Рі", 0.9m)
+                "РљР°Р»РѕСЂРёР№РЅРѕСЃС‚СЊ, 159 РєРљР°Р»; Р‘РµР»РєРё, 16.7 Рі; Р–РёСЂС‹, 9 Рі; РЈРіР»РµРІРѕРґС‹, 2 Рі",
+                0.9m)
         };
 
         var candidate = Assert.Single(await extractor.ExtractAsync(foodUnit, sources, CancellationToken.None));
@@ -300,11 +309,13 @@ public sealed class NutritionAgentTests
         var sources = new[]
         {
             new WebSearchResult("РўРІРѕСЂРѕРі 5%", new Uri("https://example.com/curd-5"),
-                "РљР°Р»РѕСЂРёР№РЅРѕСЃС‚СЊ: 121 РєРєР°Р»/100 Рі Р‘РµР»РєРё: 16,7 Рі Р–РёСЂС‹: 5 Рі РЈРіР»РµРІРѕРґС‹: 2,8 Рі", 0.9m)
+                "РљР°Р»РѕСЂРёР№РЅРѕСЃС‚СЊ: 121 РєРєР°Р»/100 Рі Р‘РµР»РєРё: 16,7 Рі Р–РёСЂС‹: 5 Рі РЈРіР»РµРІРѕРґС‹: 2,8 Рі",
+                0.9m)
         };
 
-        var candidate = Assert.Single(await extractor.ExtractAsync(new FoodUnit { ProductName = "С‚РІРѕСЂРѕРі", Unit = "g" },
-            sources, CancellationToken.None));
+        var candidate =
+            Assert.Single(await extractor.ExtractAsync(new FoodUnit { ProductName = "С‚РІРѕСЂРѕРі", Unit = "g" },
+                sources, CancellationToken.None));
 
         Assert.Equal("Per100Grams", candidate.NutritionValueBasis);
         Assert.Equal(121, candidate.NutritionFacts.Calories);
@@ -326,8 +337,8 @@ public sealed class NutritionAgentTests
         };
 
         var candidate = Assert.Single(await extractor.ExtractAsync(
-            new FoodUnit { ProductName = "РєРѕС„Рµ Р»Р°С‚С‚Рµ", Unit = "serving", Kind = FoodUnitKind.PreparedFood }, sources,
-            CancellationToken.None));
+            new FoodUnit { ProductName = "РєРѕС„Рµ Р»Р°С‚С‚Рµ", Unit = "serving", Kind = FoodUnitKind.PreparedFood },
+            sources, CancellationToken.None));
 
         Assert.Equal("Per100Grams", candidate.NutritionValueBasis);
         Assert.Equal(114, candidate.NutritionFacts.Calories);
@@ -339,7 +350,8 @@ public sealed class NutritionAgentTests
     [Fact]
     public async Task MafNutritionEvidenceExtractor_MapsOfficialTanukiCandidate()
     {
-        var responseJson = ExtractorResponse("arigato set", 2310, 73, 107, 264, "https://tanukifamily.ru/tanuki/product/arigato-set", "PerServing", 910);
+        var responseJson = ExtractorResponse("arigato set", 2310, 73, 107, 264,
+            "https://tanukifamily.ru/tanuki/product/arigato-set", "PerServing", 910);
         var extractor = new MafNutritionEvidenceExtractor(new FakeChatClient(responseJson));
         var foodUnit = new FoodUnit
         {
@@ -351,7 +363,8 @@ public sealed class NutritionAgentTests
         };
         var sources = new[]
         {
-            new WebSearchResult("РђСЂРёРіР°С‚Рѕ СЃРµС‚ Р·Р°РєР°Р·Р°С‚СЊ СЃ РґРѕСЃС‚Р°РІРєРѕР№ РґРѕРјРѕР№ Рё РІ РѕС„РёСЃ РёР· ...",
+            new WebSearchResult(
+                "РђСЂРёРіР°С‚Рѕ СЃРµС‚ Р·Р°РєР°Р·Р°С‚СЊ СЃ РґРѕСЃС‚Р°РІРєРѕР№ РґРѕРјРѕР№ Рё РІ РѕС„РёСЃ РёР· ...",
                 new Uri("https://tanukifamily.ru/tanuki/product/arigato-set"),
                 "Рё РёРјР±РёСЂСЊ (2 С€С‚.). 30 СЂРѕР»Р»РѕРІ РґР»СЏ РІРµС‡РµСЂР° РїРѕРґ СЃРµСЂРёР°Р». РџРёС‰РµРІР°СЏ С†РµРЅРЅРѕСЃС‚СЊ РЅР° 910 Рі. Р±РµР»РєРё. 73 Рі. Р¶РёСЂС‹. 107 Рі. РЈРіР»РµРІРѕРґС‹. 264 Рі. Р­РЅРµСЂРі. С†РµРЅРЅ. 2310 РєРєР°Р». Р’С…РѕРґРёС‚ РІ Р·Р°РєР°Р·.Read more",
                 0.88m)
@@ -384,8 +397,7 @@ public sealed class NutritionAgentTests
         });
         var lookup = new FakeNutritionFactsLookupService();
         var service = new NutritionChatQueryService(parser, lookup, new FakeWebSearchService(),
-            new TavilyQueryBuilder(), new FakeEvidenceExtractor(),
-            NullLogger<NutritionChatQueryService>.Instance);
+            new TavilyQueryBuilder(), new FakeEvidenceExtractor(), NullLogger<NutritionChatQueryService>.Instance);
 
         var result = await service.SearchAsync("pasta with chicken", CancellationToken.None);
 
@@ -396,29 +408,29 @@ public sealed class NutritionAgentTests
         Assert.All(result.Clarifications, clarification => Assert.Equal(3, clarification.Candidates.Count));
     }
 
-    private static string ExtractorResponse(string name, decimal calories, decimal protein, decimal fat,
-        decimal carbs, string url, string basis = "Per100Grams", decimal? servingSize = 100,
-        string servingUnit = "g")
-        => JsonSerializer.Serialize(new
-        {
-            candidates = new[]
+    private static string ExtractorResponse(string name, decimal calories, decimal protein, decimal fat, decimal carbs,
+        string url, string basis = "Per100Grams", decimal? servingSize = 100, string servingUnit = "g")
+        => JsonSerializer.Serialize(
+            new
             {
-                new
+                candidates = new[]
                 {
-                    productName = name,
-                    brand = (string?)null,
-                    servingSize,
-                    servingUnit,
-                    valueBasis = basis,
-                    calories,
-                    protein,
-                    fat,
-                    carbs,
-                    sourceUrl = url,
-                    confidence = 0.9m
+                    new
+                    {
+                        productName = name,
+                        brand = (string?)null,
+                        servingSize,
+                        servingUnit,
+                        valueBasis = basis,
+                        calories,
+                        protein,
+                        fat,
+                        carbs,
+                        sourceUrl = url,
+                        confidence = 0.9m
+                    }
                 }
-            }
-        }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
     private sealed class FakeChatClient : IChatClient
     {
