@@ -44,7 +44,7 @@ public sealed class TavilyWebSearchService : IWebSearchService
         {
             Query = request.Query.Trim(),
             Topic = "general",
-            SearchDepth = "basic",
+            SearchDepth = request.Depth == WebSearchDepth.Advanced ? "advanced" : "basic",
             MaxResults = request.MaxResults,
             IncludeAnswer = false,
             IncludeRawContent = false,

@@ -13,7 +13,8 @@ public sealed record WebSearchRequest(
 
 public enum WebSearchDepth
 {
-    Basic = 0
+    Basic = 0,
+    Advanced = 1
 }
 
 public sealed record WebSearchResponse(

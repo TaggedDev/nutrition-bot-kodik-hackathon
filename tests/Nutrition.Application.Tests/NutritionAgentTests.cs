@@ -236,6 +236,108 @@ public sealed class NutritionAgentTests
     }
 
     [Fact]
+    public async Task MafOpenFoodFactsCandidateJudge_ReturnsEmpty_WhenModelReturnsMalformedJson()
+    {
+        var judge = new MafOpenFoodFactsCandidateJudge(new FakeChatClient("not-json"));
+        var candidates = new[]
+        {
+            new ProductNutritionDto { ProductId = "1", ProductName = "Latte", SourceType = "OpenFoodFacts" }
+        };
+
+        var result = await judge.SelectAcceptableAsync(
+            new FoodUnit { ProductName = "кофе латте", Unit = "serving", Kind = FoodUnitKind.PreparedFood },
+            candidates, CancellationToken.None);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task MafNutritionEvidenceExtractor_ParsesCommonRussianPer100GramsSnippet()
+    {
+        const string responseJson = """{ "candidates": [] }""";
+        var extractor = new MafNutritionEvidenceExtractor(new FakeChatClient(responseJson));
+        var foodUnit = new FoodUnit { ProductName = "манная каша", Unit = "g" };
+        var sources = new[]
+        {
+            new WebSearchResult("Манная каша КБЖУ", new Uri("https://example.com/semolina"),
+                "Манная каша на молоке, содержание БЖУ на 100 г - 3.0 г белка, 3.2 г жиров, 15.3 г углеводов, 98 ккал.", 0.9m)
+        };
+
+        var candidate = Assert.Single(await extractor.ExtractAsync(foodUnit, sources, CancellationToken.None));
+
+        Assert.Equal("Per100Grams", candidate.NutritionValueBasis);
+        Assert.Equal(98, candidate.NutritionFacts.Calories);
+        Assert.Equal(3.0m, candidate.NutritionFacts.Protein);
+        Assert.Equal(3.2m, candidate.NutritionFacts.Fat);
+        Assert.Equal(15.3m, candidate.NutritionFacts.Carbs);
+    }
+
+    [Fact]
+    public async Task MafNutritionEvidenceExtractor_InfersPer100GramsFromTitleForLabeledMacros()
+    {
+        const string responseJson = """{ "candidates": [] }""";
+        var extractor = new MafNutritionEvidenceExtractor(new FakeChatClient(responseJson));
+        var foodUnit = new FoodUnit { ProductName = "творог", Unit = "g" };
+        var sources = new[]
+        {
+            new WebSearchResult("Творог 9% БЖУ на 100 грамм", new Uri("https://example.com/curd-9"),
+                "Калорийность, 159 кКал; Белки, 16.7 г; Жиры, 9 г; Углеводы, 2 г", 0.9m)
+        };
+
+        var candidate = Assert.Single(await extractor.ExtractAsync(foodUnit, sources, CancellationToken.None));
+
+        Assert.Equal("Per100Grams", candidate.NutritionValueBasis);
+        Assert.Equal(100, candidate.ServingSize);
+        Assert.Equal(159, candidate.NutritionFacts.Calories);
+        Assert.Equal(16.7m, candidate.NutritionFacts.Protein);
+        Assert.Equal(9, candidate.NutritionFacts.Fat);
+        Assert.Equal(2, candidate.NutritionFacts.Carbs);
+    }
+
+    [Fact]
+    public async Task MafNutritionEvidenceExtractor_ParsesCaloriesPer100GramsBeforeMacros()
+    {
+        const string responseJson = """{ "candidates": [] }""";
+        var extractor = new MafNutritionEvidenceExtractor(new FakeChatClient(responseJson));
+        var sources = new[]
+        {
+            new WebSearchResult("Творог 5%", new Uri("https://example.com/curd-5"),
+                "Калорийность: 121 ккал/100 г Белки: 16,7 г Жиры: 5 г Углеводы: 2,8 г", 0.9m)
+        };
+
+        var candidate = Assert.Single(await extractor.ExtractAsync(
+            new FoodUnit { ProductName = "творог", Unit = "g" }, sources, CancellationToken.None));
+
+        Assert.Equal("Per100Grams", candidate.NutritionValueBasis);
+        Assert.Equal(121, candidate.NutritionFacts.Calories);
+        Assert.Equal(16.7m, candidate.NutritionFacts.Protein);
+        Assert.Equal(5, candidate.NutritionFacts.Fat);
+        Assert.Equal(2.8m, candidate.NutritionFacts.Carbs);
+    }
+
+    [Fact]
+    public async Task MafNutritionEvidenceExtractor_ParsesPer100GramsTableWithPercentColumns()
+    {
+        const string responseJson = """{ "candidates": [] }""";
+        var extractor = new MafNutritionEvidenceExtractor(new FakeChatClient(responseJson));
+        var sources = new[]
+        {
+            new WebSearchResult("Кофе Латте большой 400 мл", new Uri("https://example.com/latte"),
+                "На 100 г продукта; Белков, 7.45 г, 11%; Жиров, 4.66 г, 6%; Углеводов, 10.45 г, 3%; Калорийность, 114.00 ккал, 5%", 0.9m)
+        };
+
+        var candidate = Assert.Single(await extractor.ExtractAsync(
+            new FoodUnit { ProductName = "кофе латте", Unit = "serving", Kind = FoodUnitKind.PreparedFood },
+            sources, CancellationToken.None));
+
+        Assert.Equal("Per100Grams", candidate.NutritionValueBasis);
+        Assert.Equal(114, candidate.NutritionFacts.Calories);
+        Assert.Equal(7.45m, candidate.NutritionFacts.Protein);
+        Assert.Equal(4.66m, candidate.NutritionFacts.Fat);
+        Assert.Equal(10.45m, candidate.NutritionFacts.Carbs);
+    }
+
+    [Fact]
     public async Task MafNutritionEvidenceExtractor_FallsBackToOfficialTanukiSnippet_WhenBrandIsInUrl()
     {
         const string responseJson = """{ "candidates": [] }""";
@@ -377,6 +479,7 @@ public sealed class NutritionAgentTests
             CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyCollection<ProductNutritionDto>>(Array.Empty<ProductNutritionDto>());
     }
+
 
     private sealed class FakeWebSearchService : IWebSearchService
     {

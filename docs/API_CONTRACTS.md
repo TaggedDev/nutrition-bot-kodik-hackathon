@@ -2,6 +2,10 @@
 
 Документ фиксирует контракты, которые реально отражены в коде на текущий момент.
 
+## Актуализация 2026-07-11
+
+Поиск возвращает `NutritionChatSearchResponseDto` с `clarifications` — до трёх кандидатов на каждую распознанную пищевую единицу — и флагом `serviceUnavailable`. Авторизованные endpoints `POST /api/v1/profile/entry` и `GET /api/v1/profile/day` сохраняют данные в PostgreSQL и возвращают их по локальному дню и `MealType`. Аутентификация выполняется cookie `nutrition.auth` через `/api/v1/auth/register` и `/api/v1/auth/login`.
+
 ## 1) Публичный HTTP контракт (`Nutrition.Web`)
 
 ### `GET /api/v1/Nutrition/search?query={text}`

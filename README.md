@@ -55,6 +55,24 @@ Nutrition/
 └── Nutrition.Web.sln         # .NET Solution
 ```
 
+## Интеграционные и браузерные тесты
+
+Backend integration tests запускают изолированный PostgreSQL Testcontainer и подменяют OFF, Tavily и DeepSeek на HTTP-уровне:
+
+```powershell
+dotnet test tests/Nutrition.Integration.Tests/Nutrition.Integration.Tests.csproj --filter "Category!=LiveSmoke"
+```
+
+Browser E2E поднимают `compose.e2e.yml`, используют настоящие auth/profile API и PostgreSQL, стабилизируя только ответ nutrition search:
+
+```powershell
+cd src/nutrition-frontend
+npx playwright install chromium
+npm run test:e2e
+```
+
+Opt-in live smoke требует `RUN_LIVE_SMOKE=1`, `DEEPSEEK_API_KEY` и `TAVILY_API_KEY` и запускается с фильтром `Category=LiveSmoke`.
+
 ## Автор
 
 **Денис Миков** — участник хакатона Kodik IDE

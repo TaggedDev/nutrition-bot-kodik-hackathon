@@ -1113,6 +1113,18 @@ input:focus-visible {
   background: transparent;
 }
 
+.search-result-groups,
+.search-result-section {
+  display: grid;
+  gap: 12px;
+}
+
+.search-result-section > h2 {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 14px;
+}
+
 .chat-input-bar {
   position: static;
   display: grid;

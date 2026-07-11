@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nutrition.Infrastructure.Id
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nutrition.Infrastructure.Agent", "src\Nutrition.Infrastructure.Agent\Nutrition.Infrastructure.Agent.csproj", "{DA3E02CD-6FD3-497F-AAC0-98C35FC75A2E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nutrition.Integration.Tests", "tests\Nutrition.Integration.Tests\Nutrition.Integration.Tests.csproj", "{16443E5D-3542-43C8-9B37-4F17D62CE52A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -65,6 +67,10 @@ Global
 		{DA3E02CD-6FD3-497F-AAC0-98C35FC75A2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA3E02CD-6FD3-497F-AAC0-98C35FC75A2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA3E02CD-6FD3-497F-AAC0-98C35FC75A2E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16443E5D-3542-43C8-9B37-4F17D62CE52A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16443E5D-3542-43C8-9B37-4F17D62CE52A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16443E5D-3542-43C8-9B37-4F17D62CE52A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16443E5D-3542-43C8-9B37-4F17D62CE52A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6B6FC7E7-CD1C-46AB-9835-B3AB112986DC} = {F5782D88-16F1-4CE9-B448-E0CE63B88791}
@@ -76,5 +82,6 @@ Global
 		{9C8C01C8-8F03-4B43-A8A7-1F9C5F3D27A1} = {A63913AD-7553-4450-A031-558811806560}
 		{4E0C6AFB-16B2-4112-9BD6-570705C3E307} = {F5782D88-16F1-4CE9-B448-E0CE63B88791}
 		{DA3E02CD-6FD3-497F-AAC0-98C35FC75A2E} = {F5782D88-16F1-4CE9-B448-E0CE63B88791}
+		{16443E5D-3542-43C8-9B37-4F17D62CE52A} = {A63913AD-7553-4450-A031-558811806560}
 	EndGlobalSection
 EndGlobal

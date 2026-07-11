@@ -1,5 +1,11 @@
 ﻿# Агентская архитектура
 
+## Актуальное состояние (2026-07-11)
+
+Рабочий pipeline поиска: `MafFoodInputParser → OpenFoodFacts → Tavily Web Search → MafNutritionEvidenceExtractor`. Web Search запускается, когда OFF не вернул кандидатов или кандидат подготовленного блюда отклонён. Если исчерпаны все источники, API возвращает `serviceUnavailable`.
+
+Приложение использует cookie-auth, PostgreSQL через `NutritionIdentityDbContext` и HTTP endpoints `/api/v1/profile/entry` и `/api/v1/profile/day` для сохранения и чтения записей по дню и типу приёма пищи. Описания in-memory repository ниже относятся к ранней версии проекта.
+
 ## Текущее состояние (на уровне кода)
 
 Сейчас в репозитории реализован не полный агентный пайплайн из PRD, а базовый Nutrition-поток:

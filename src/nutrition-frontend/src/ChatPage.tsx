@@ -27,10 +27,12 @@ type PortionState = {
   grams: number
 }
 
+type ProductResultGroup = { label: string; products: ProductNutrition[] }
+
 type ChatLine =
   | { id: string; role: 'user'; text: string; time: string }
   | { id: string; role: 'assistant'; kind: 'text'; text: string }
-  | { id: string; role: 'assistant'; kind: 'results'; text: string; products: ProductNutrition[] }
+  | { id: string; role: 'assistant'; kind: 'results'; text: string; groups: ProductResultGroup[] }
 
 const emptySummary: NutritionSummary = { calories: 0, protein: 0, fat: 0, carbs: 0 }
 const mealOrder: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snack']
@@ -119,7 +121,8 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
       }
 
       const payload = (await response.json()) as NutritionChatSearchResponse
-      const products = extractProducts(payload).slice(0, 3)
+      const groups = extractProductGroups(payload)
+      const products = groups.flatMap((group) => group.products)
       setPortionMap((current) => {
         const next = { ...current }
         for (const product of products) {
@@ -138,13 +141,15 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
               role: 'assistant',
               kind: 'results',
               text: 'Нашел подходящие варианты. Выберите продукт и граммовку:',
-              products,
+              groups,
             }
           : {
               id: crypto.randomUUID(),
               role: 'assistant',
               kind: 'text',
-              text: 'Ничего не нашел. Попробуйте уточнить название, бренд или вес продукта.',
+              text: payload.serviceUnavailable
+                ? 'Сервис сейчас не работает, повторите попытку позже.'
+                : 'Ничего не нашел. Попробуйте уточнить название, бренд или вес продукта.',
             },
       ])
     } catch (err) {
@@ -440,22 +445,29 @@ function MessageRow({
       <div className="assistant-content">
         <p>{line.text}</p>
         {line.kind === 'results' && (
-          <div className="search-results-group">
-            {line.products.map((product, index) => {
-              const key = productKey(product)
-              return (
-                <FoodSearchResultCard
-                  key={key}
-                  product={product}
-                  index={index}
-                  state={portionMap[key] ?? defaultPortionState(product)}
-                  added={addedByProduct.has(key)}
-                  onPortionChange={onPortionChange}
-                  onGramsChange={onGramsChange}
-                  onAdd={onAdd}
-                />
-              )
-            })}
+          <div className="search-result-groups">
+            {line.groups.map((group) => (
+              <section className="search-result-section" data-testid="product-result-group" key={group.label}>
+                <h2>{group.label}</h2>
+                <div className="search-results-group">
+                  {group.products.map((product, index) => {
+                    const key = productKey(product)
+                    return (
+                      <FoodSearchResultCard
+                        key={key}
+                        product={product}
+                        index={index}
+                        state={portionMap[key] ?? defaultPortionState(product)}
+                        added={addedByProduct.has(key)}
+                        onPortionChange={onPortionChange}
+                        onGramsChange={onGramsChange}
+                        onAdd={onAdd}
+                      />
+                    )
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         )}
       </div>
@@ -1013,16 +1025,22 @@ function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
-function extractProducts(payload: NutritionChatSearchResponse): ProductNutrition[] {
+function extractProductGroups(payload: NutritionChatSearchResponse): ProductResultGroup[] {
+  const groups = (payload.clarifications ?? [])
+    .map((clarification) => ({
+      label: clarification.parsedProductName,
+      products: deduplicateProducts(clarification.candidates ?? []).slice(0, 3),
+    }))
+    .filter((group) => group.products.length > 0)
+
+  if (groups.length > 0) return groups
+  const items = deduplicateProducts(payload.items ?? []).slice(0, 3)
+  return items.length > 0 ? [{ label: payload.query, products: items }] : []
+}
+
+function deduplicateProducts(products: ProductNutrition[]): ProductNutrition[] {
   const byKey = new Map<string, ProductNutrition>()
-  for (const item of payload.items ?? []) {
-    byKey.set(productKey(item), item)
-  }
-  for (const clarification of payload.clarifications ?? []) {
-    for (const candidate of clarification.candidates ?? []) {
-      byKey.set(productKey(candidate), candidate)
-    }
-  }
+  for (const product of products) byKey.set(productKey(product), product)
   return [...byKey.values()]
 }
 

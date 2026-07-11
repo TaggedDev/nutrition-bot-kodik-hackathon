@@ -10,6 +10,8 @@ public sealed class NutritionChatSearchResponseDto
         Array.Empty<NutritionClarificationDto>();
 
     public bool RequiresClarification => Clarifications.Count > 0;
+
+    public bool ServiceUnavailable { get; init; }
 }
 
 public sealed class NutritionClarificationDto

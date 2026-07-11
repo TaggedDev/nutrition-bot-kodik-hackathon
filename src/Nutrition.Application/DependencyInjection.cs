@@ -31,7 +31,7 @@ public static class DependencyInjection
                 client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
                 client.Timeout = TimeSpan.FromSeconds(options.HttpTimeoutSeconds);
                 client.DefaultRequestHeaders.UserAgent.ParseAdd(
-                    "NutritionPetProject/0.1 (contact: replace-with-real-email)");
+                    "NutritionApp/1.0 (https://github.com; nutrition application)");
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             });

@@ -44,9 +44,14 @@ public sealed class TavilyQueryBuilder : ITavilyQueryBuilder
 
         parts.Add(foodUnit.ProductName.Trim());
         var productQuery = string.Join(' ', parts);
+        if (IsBeverage(productQuery))
+        {
+            return $"{productQuery} кбжу пищевая ценность на 100 мл или порцию точные значения ккал белки жиры углеводы объем";
+        }
+
         if (foodUnit.Kind == FoodUnitKind.PreparedFood || ContainsCyrillic(productQuery))
         {
-            return $"{productQuery} кбжу калории калорийность белки жиры углеводы вес порции";
+            return $"{productQuery} кбжу пищевая ценность на 100 г точные значения ккал белки жиры углеводы";
         }
 
         return $"{productQuery} nutrition calories protein fat carbs carbohydrates serving weight";
@@ -54,6 +59,13 @@ public sealed class TavilyQueryBuilder : ITavilyQueryBuilder
 
     private static bool ContainsCyrillic(string value)
         => value.Any(ch => ch is >= '\u0400' and <= '\u04FF');
+
+    private static bool IsBeverage(string value)
+    {
+        var normalized = value.ToLowerInvariant();
+        return new[] { "кофе", "латте", "капучино", "американо", "эспрессо", "чай", "напиток", "сок", "смузи" }
+            .Any(normalized.Contains);
+    }
 }
 
 public sealed class MafOpenFoodFactsCandidateJudge : IOpenFoodFactsCandidateJudge
@@ -105,12 +117,19 @@ public sealed class MafOpenFoodFactsCandidateJudge : IOpenFoodFactsCandidateJudg
                 schemaDescription: "Accepted OpenFoodFacts candidate ids for the requested food.")
         });
 
-        var response = await _agent.RunAsync<JudgeResponse>(prompt, session: null, serializerOptions: JsonOptions,
-            options: options, cancellationToken: cancellationToken);
-
-        var acceptedIds = response.Result?.AcceptedProductIds?
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> acceptedIds;
+        try
+        {
+            var response = await _agent.RunAsync<JudgeResponse>(prompt, session: null, serializerOptions: JsonOptions,
+                options: options, cancellationToken: cancellationToken);
+            acceptedIds = response.Result?.AcceptedProductIds?
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+        catch (JsonException)
+        {
+            acceptedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
 
         if (acceptedIds.Count == 0)
         {
@@ -203,10 +222,17 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
                 schemaDescription: "Structured nutrition candidates extracted from web snippets.")
         });
 
-        var response = await _agent.RunAsync<ExtractionResponse>(prompt, session: null, serializerOptions: JsonOptions,
-            options: options, cancellationToken: cancellationToken);
-
-        var llmCandidates = ValidateAndMap(response.Result, foodUnit, sourceList);
+        IReadOnlyCollection<ProductNutritionDto> llmCandidates;
+        try
+        {
+            var response = await _agent.RunAsync<ExtractionResponse>(prompt, session: null,
+                serializerOptions: JsonOptions, options: options, cancellationToken: cancellationToken);
+            llmCandidates = ValidateAndMap(response.Result, foodUnit, sourceList);
+        }
+        catch (JsonException)
+        {
+            llmCandidates = Array.Empty<ProductNutritionDto>();
+        }
         if (llmCandidates.Count > 0)
         {
             return llmCandidates;
@@ -322,6 +348,22 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
             @"(?:1\s*serving|per\s*serving)[^\.|:]*?(?:\((?<size>[\d\s.,]+)\s*g\))?.*?Calories:\s*(?<calories>[\d\s.,]+).*?(?:Total\s*)?Fat:\s*(?<fat>[\d\s.,]+)\s*g.*?(?:Carbohydrates|Carbs):\s*(?<carbs>[\d\s.,]+)\s*g.*?Protein:\s*(?<protein>[\d\s.,]+)\s*g",
             RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
+        private static readonly Regex RussianPer100GramsMacrosFirstRegex = new(
+            @"(?:\u043d\u0430\s*)?(?<size>100)\s*\u0433[^\d]{0,20}(?<protein>[\d\s.,]+)\s*\u0433?\s*\u0431\u0435\u043b\u043a\w*[^\d]{0,12}(?<fat>[\d\s.,]+)\s*\u0433?\s*\u0436\u0438\u0440\w*[^\d]{0,12}(?<carbs>[\d\s.,]+)\s*\u0433?\s*\u0443\u0433\u043b\u0435\u0432\u043e\u0434\w*[^\d]{0,12}(?<calories>[\d\s.,]+)\s*\u043a\u043a\u0430\u043b",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+
+        private static readonly Regex RussianPer100GramsTableRegex = new(
+            @"(?:\u043d\u0430\s*)?(?<size>100)\s*\u0433.*?\u0431\u0435\u043b\u043a\w*\D{0,12}(?<protein>[\d]+(?:[.,][\d]+)?)\s*\u0433.*?\u0436\u0438\u0440\w*\D{0,12}(?<fat>[\d]+(?:[.,][\d]+)?)\s*\u0433.*?\u0443\u0433\u043b\u0435\u0432\u043e\u0434\w*\D{0,12}(?<carbs>[\d]+(?:[.,][\d]+)?)\s*\u0433.*?\u043a\u0430\u043b\u043e\u0440\u0438\w*\D{0,12}(?<calories>[\d]+(?:[.,][\d]+)?)\s*\u043a?\u043a\u0430\u043b",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+
+        private static readonly Regex RussianCaloriesFirstRegex = new(
+            @"\u043a\u0430\u043b\u043e\u0440\u0438\w*[^\d]{0,12}(?<calories>[\d\s.,]+)[^\d]{0,20}\u0431\u0435\u043b\u043a\w*[^\d]{0,8}(?<protein>[\d\s.,]+)[^\d]{0,20}\u0436\u0438\u0440\w*[^\d]{0,8}(?<fat>[\d\s.,]+)[^\d]{0,20}\u0443\u0433\u043b\u0435\u0432\u043e\u0434\w*[^\d]{0,8}(?<carbs>[\d\s.,]+)",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+
+        private static readonly Regex RussianLabeledPer100GramsRegex = new(
+            @"\u043a\u0430\u043b\u043e\u0440\u0438\u0439\u043d\u043e\u0441\u0442\w*\s*[:;,.-]?\s*(?<calories>[\d]+(?:[.,][\d]+)?)\s*\u043a?\u043a\u0430\u043b\s*/\s*(?<size>100)\s*\u0433.*?\u0431\u0435\u043b\u043a\w*\s*[:;,.-]?\s*(?<protein>[\d]+(?:[.,][\d]+)?)\s*\u0433.*?\u0436\u0438\u0440\w*\s*[:;,.-]?\s*(?<fat>[\d]+(?:[.,][\d]+)?)\s*\u0433.*?\u0443\u0433\u043b\u0435\u0432\u043e\u0434\w*\s*[:;,.-]?\s*(?<carbs>[\d]+(?:[.,][\d]+)?)\s*\u0433",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+
         private static readonly Regex RussianCompactServingRegex = new(
             @"Кал\.\s*(?<calories>[\d\s.,]+)\.?\s*Жир\.\s*(?<fat>[\d\s.,]+)\s*г\.?\s*Углев\.\s*(?<carbs>[\d\s.,]+)\s*г\.?\s*Белк\.\s*(?<protein>[\d\s.,]+)\s*г\.?.*?1\s*порц(?:ия|ии|ию)\s*\((?<size>[\d\s.,]+)\s*г\)",
             RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
@@ -343,7 +385,7 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
                     continue;
                 }
 
-                var content = source.Result.Content ?? string.Empty;
+                var content = $"{source.Result.Title}. {source.Result.Content}";
                 var match = RussianServingRegex.Match(content);
                 if (!match.Success)
                 {
@@ -356,6 +398,22 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
                 if (!match.Success)
                 {
                     match = RussianNutritionValueRegex.Match(content);
+                }
+                if (!match.Success)
+                {
+                    match = RussianPer100GramsMacrosFirstRegex.Match(content);
+                }
+                if (!match.Success)
+                {
+                    match = RussianPer100GramsTableRegex.Match(content);
+                }
+                if (!match.Success)
+                {
+                    match = RussianCaloriesFirstRegex.Match(content);
+                }
+                if (!match.Success)
+                {
+                    match = RussianLabeledPer100GramsRegex.Match(content);
                 }
 
                 if (!match.Success ||
@@ -370,6 +428,11 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
                 var servingSize = TryReadDecimal(match, "size", out var parsedServingSize)
                     ? parsedServingSize
                     : (decimal?)null;
+                var isPer100Grams = servingSize == 100 || ContainsPer100Grams(content);
+                if (isPer100Grams)
+                {
+                    servingSize = 100;
+                }
 
                 result.Add(new ProductNutritionDto
                 {
@@ -383,7 +446,9 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
                         Fat = fat,
                         Carbs = carbs
                     },
-                    NutritionValueBasis = NutritionValueBasis.PerServing.ToString(),
+                    NutritionValueBasis = isPer100Grams
+                        ? NutritionValueBasis.Per100Grams.ToString()
+                        : NutritionValueBasis.PerServing.ToString(),
                     ServingSize = servingSize,
                     ServingUnit = servingSize.HasValue ? "g" : null,
                     SourceType = "WebSearch",
@@ -424,6 +489,10 @@ public sealed class MafNutritionEvidenceExtractor : INutritionEvidenceExtractor
 
         private static bool ContainsAllTokens(string haystack, string value)
             => Tokenize(value).All(token => haystack.Contains(token, StringComparison.OrdinalIgnoreCase));
+
+        private static bool ContainsPer100Grams(string value)
+            => Regex.IsMatch(value, @"(?:\u043d\u0430\s*)?100\s*(?:\u0433|\u0433\u0440\u0430\u043c\u043c)",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         private static IEnumerable<string> Tokenize(string value)
             => Normalize(value)

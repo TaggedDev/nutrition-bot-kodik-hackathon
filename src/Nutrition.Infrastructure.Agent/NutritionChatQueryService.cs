@@ -55,10 +55,16 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
         }
 
         var clarifications = new List<NutritionClarificationDto>();
+        var serviceUnavailable = false;
 
         foreach (var foodUnit in normalizedUnits)
         {
             var matches = await FindCandidatesAsync(foodUnit, cancellationToken);
+            if (matches.Count == 0)
+            {
+                serviceUnavailable = true;
+                break;
+            }
 
             clarifications.Add(new NutritionClarificationDto
             {
@@ -74,7 +80,8 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
         {
             Query = userInput.Trim(),
             Items = Array.Empty<ProductNutritionDto>(),
-            Clarifications = clarifications
+            Clarifications = serviceUnavailable ? Array.Empty<NutritionClarificationDto>() : clarifications,
+            ServiceUnavailable = serviceUnavailable
         };
     }
 
@@ -91,7 +98,7 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
             foodUnit.Brand,
             foodUnit.Kind);
 
-        if (foodUnit.Kind == FoodUnitKind.MassMarketProduct)
+        if (foodUnit.Kind == FoodUnitKind.MassMarketProduct && openFoodFactsCandidates.Count > 0)
         {
             return openFoodFactsCandidates.Take(ResultsPerFoodUnit).ToArray();
         }
@@ -109,7 +116,7 @@ public sealed class NutritionChatQueryService : INutritionChatQueryService
 
         var tavilyQuery = _tavilyQueryBuilder.Build(foodUnit);
         var webSearch = await _webSearchService.SearchAsync(
-            new WebSearchRequest(tavilyQuery, MaxResults: 5),
+            new WebSearchRequest(tavilyQuery, MaxResults: 5, Depth: WebSearchDepth.Advanced),
             cancellationToken);
         _logger.LogInformation("Nutrition lookup Tavily returned {Count} sources for query: {Query}",
             webSearch.Results.Count,

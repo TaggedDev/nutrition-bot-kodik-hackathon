@@ -179,6 +179,64 @@ public sealed class NutritionChatQueryServiceTests
         Assert.DoesNotContain("nutrition calories", webSearch.Queries.Single(), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void TavilyQueryBuilder_UsesMillilitersAndServingForBeverages()
+    {
+        var query = new TavilyQueryBuilder().Build(new FoodUnit
+        {
+            ProductName = "кофе латте",
+            Unit = "serving",
+            Kind = FoodUnitKind.PreparedFood
+        });
+
+        Assert.Contains("100 мл", query, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("порцию", query, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("на 100 г", query, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenOpenFoodFactsIsEmpty_UsesWebSearchAndLlmExtractor()
+    {
+        var parser = new FakeFoodInputParser(new[]
+        {
+            new FoodUnit { ProductName = "semolina porridge", Unit = "g", Kind = FoodUnitKind.MassMarketProduct }
+        });
+        var lookup = new FakeNutritionFactsLookupService { Results = Array.Empty<ProductNutritionDto>() };
+        var webCandidate = new ProductNutritionDto
+        {
+            ProductId = "WEB:1", ProductName = "Semolina porridge with milk", SourceType = "WebSearch"
+        };
+        var webSearch = new FakeWebSearchService
+        {
+            Results = new[] { new WebSearchResult("Semolina", new Uri("https://example.com"), "nutrition", 1) }
+        };
+        var extractor = new FakeEvidenceExtractor { Candidates = new[] { webCandidate } };
+        var service = CreateService(parser, lookup, webSearch: webSearch, extractor: extractor);
+
+        var result = await service.SearchAsync("semolina porridge 200 g", CancellationToken.None);
+
+        Assert.False(result.ServiceUnavailable);
+        Assert.Single(webSearch.Queries);
+        Assert.Equal(WebSearchDepth.Advanced, webSearch.LastDepth);
+        Assert.Equal("WEB:1", result.Clarifications.Single().Candidates.Single().ProductId);
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenOpenFoodFactsAndLlmAreEmpty_ReturnsServiceUnavailable()
+    {
+        var parser = new FakeFoodInputParser(new[]
+        {
+            new FoodUnit { ProductName = "semolina porridge", Unit = "g", Kind = FoodUnitKind.MassMarketProduct }
+        });
+        var lookup = new FakeNutritionFactsLookupService { Results = Array.Empty<ProductNutritionDto>() };
+        var service = CreateService(parser, lookup);
+
+        var result = await service.SearchAsync("semolina porridge 200 g", CancellationToken.None);
+
+        Assert.True(result.ServiceUnavailable);
+        Assert.Empty(result.Clarifications);
+    }
+
     private static NutritionChatQueryService CreateService(
         IFoodInputParser parser,
         FakeNutritionFactsLookupService lookup,
@@ -216,12 +274,14 @@ public sealed class NutritionChatQueryServiceTests
 
         public IReadOnlyCollection<string> Queries => _queries;
 
+        public IReadOnlyCollection<ProductNutritionDto>? Results { get; init; }
+
         public Task<IReadOnlyCollection<ProductNutritionDto>> SearchAsync(string query,
             CancellationToken cancellationToken)
         {
             _queries.Add(query);
 
-            IReadOnlyCollection<ProductNutritionDto> results = Enumerable.Range(1, 5).Select(index
+            IReadOnlyCollection<ProductNutritionDto> results = Results ?? Enumerable.Range(1, 5).Select(index
                 => new ProductNutritionDto
                 {
                     ProductId = $"{query}-{index}",
@@ -235,6 +295,7 @@ public sealed class NutritionChatQueryServiceTests
             return Task.FromResult(results);
         }
     }
+
 
     private sealed class FakeOpenFoodFactsCandidateJudge : IOpenFoodFactsCandidateJudge
     {
@@ -254,11 +315,14 @@ public sealed class NutritionChatQueryServiceTests
 
         public IReadOnlyCollection<string> Queries => _queries;
 
+        public WebSearchDepth? LastDepth { get; private set; }
+
         public IReadOnlyCollection<WebSearchResult> Results { get; init; } = Array.Empty<WebSearchResult>();
 
         public Task<WebSearchResponse> SearchAsync(WebSearchRequest request, CancellationToken cancellationToken)
         {
             _queries.Add(request.Query);
+            LastDepth = request.Depth;
             return Task.FromResult(new WebSearchResponse(Results, null, null));
         }
     }
