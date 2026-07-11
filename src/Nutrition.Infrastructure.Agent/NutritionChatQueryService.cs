@@ -7,8 +7,7 @@ using Nutrition.Shared.Dtos;
 namespace Nutrition.Infrastructure.Agent;
 
 public sealed class NutritionChatQueryService(IFoodInputParser foodInputParser,
-    INutritionFactsLookupService lookupService, IOpenFoodFactsCandidateJudge candidateJudge,
-    IWebSearchService webSearchService, ITavilyQueryBuilder tavilyQueryBuilder,
+    INutritionFactsLookupService lookupService, IWebSearchService webSearchService, ITavilyQueryBuilder tavilyQueryBuilder,
     INutritionEvidenceExtractor evidenceExtractor, ILogger<NutritionChatQueryService> logger)
     : INutritionChatQueryService
 {
@@ -16,7 +15,6 @@ public sealed class NutritionChatQueryService(IFoodInputParser foodInputParser,
 
     private readonly IFoodInputParser _foodInputParser = foodInputParser;
     private readonly INutritionFactsLookupService _lookupService = lookupService;
-    private readonly IOpenFoodFactsCandidateJudge _candidateJudge = candidateJudge;
     private readonly IWebSearchService _webSearchService = webSearchService;
     private readonly ITavilyQueryBuilder _tavilyQueryBuilder = tavilyQueryBuilder;
     private readonly INutritionEvidenceExtractor _evidenceExtractor = evidenceExtractor;
@@ -32,7 +30,8 @@ public sealed class NutritionChatQueryService(IFoodInputParser foodInputParser,
 
         var clarifications = new List<NutritionClarificationDto>();
 
-        foreach (var foodUnit in foodUnits)
+        foreach (var foodUnit in foodUnits.Where(unit => !string.IsNullOrWhiteSpace(unit.ProductName))
+                     .DistinctBy(unit => unit.ProductName.Trim(), StringComparer.OrdinalIgnoreCase))
         {
             var matches = await FindNutritionCandidatesAsync(foodUnit, cancellationToken);
             if (matches.Count == 0) continue;
@@ -49,38 +48,27 @@ public sealed class NutritionChatQueryService(IFoodInputParser foodInputParser,
 
         return new NutritionChatSearchResponseDto
         {
-            Query = userInput.Trim(),
-            Items = Array.Empty<ProductNutritionDto>(),
-            Clarifications = clarifications,
+            Query = userInput.Trim(), Items = Array.Empty<ProductNutritionDto>(), Clarifications = clarifications,
         };
     }
 
     private async Task<IReadOnlyCollection<ProductNutritionDto>> FindNutritionCandidatesAsync(FoodUnit foodUnit,
         CancellationToken cancellationToken)
     {
-        switch (foodUnit.Kind)
+        if (foodUnit.Kind == FoodUnitKind.MassMarketProduct)
         {
-            case FoodUnitKind.MassMarketProduct:
-                {
-                    IReadOnlyCollection<ProductNutritionDto> openFoodFactsCandidates =
-                        await OpenFoodFactsCandidates(foodUnit, cancellationToken);
-                    if (openFoodFactsCandidates.Count != 0)
-                        return openFoodFactsCandidates.Take(ResultsPerFoodUnit).ToArray();
+            var openFoodFactsCandidates = await OpenFoodFactsCandidates(foodUnit, cancellationToken);
+            if (openFoodFactsCandidates.Count > 0)
+            {
+                return openFoodFactsCandidates;
+            }
 
-                    IReadOnlyCollection<ProductNutritionDto> extracted =
-                        await GetWebSearchCandidates(foodUnit, cancellationToken);
-                    return extracted;
-                }
-            case FoodUnitKind.PreparedFood:
-                {
-                    IReadOnlyCollection<ProductNutritionDto> extracted =
-                        await GetWebSearchCandidates(foodUnit, cancellationToken);
-                    return extracted;
-                }
-            case FoodUnitKind.Unknown:
-            default:
-                return new List<ProductNutritionDto>();
+            _logger.LogInformation(
+                "Nutrition lookup OFF returned no candidates for '{ProductName}'; falling back to web search",
+                foodUnit.ProductName);
         }
+
+        return await GetWebSearchCandidates(foodUnit, cancellationToken);
     }
 
     private async Task<IReadOnlyCollection<ProductNutritionDto>> OpenFoodFactsCandidates(FoodUnit foodUnit,
@@ -91,7 +79,7 @@ public sealed class NutritionChatQueryService(IFoodInputParser foodInputParser,
         _logger.LogInformation(
             "Nutrition lookup OFF returned {Count} candidates for product '{ProductName}', brand '{Brand}', kind {Kind}",
             openFoodFactsCandidates.Count, foodUnit.ProductName, foodUnit.Brand, foodUnit.Kind);
-        return await _candidateJudge.SelectAcceptableAsync(foodUnit, openFoodFactsCandidates, cancellationToken);
+        return openFoodFactsCandidates.Take(ResultsPerFoodUnit).ToArray();
     }
 
     private async Task<IReadOnlyCollection<ProductNutritionDto>> GetWebSearchCandidates(FoodUnit foodUnit,

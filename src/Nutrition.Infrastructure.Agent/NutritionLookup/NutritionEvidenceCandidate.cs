@@ -21,4 +21,6 @@ public sealed class NutritionEvidenceCandidate
     public decimal? Carbs { get; init; }
 
     public string SourceUrl { get; init; } = string.Empty;
+
+    public decimal? Confidence { get; init; }
 }

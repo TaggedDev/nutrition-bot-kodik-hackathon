@@ -10,4 +10,5 @@ public sealed class NutritionChatSearchResponseDto
         Array.Empty<NutritionClarificationDto>();
 
     public bool RequiresClarification => Clarifications.Count > 0;
+
 }
