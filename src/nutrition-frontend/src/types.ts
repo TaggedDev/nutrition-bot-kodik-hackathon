@@ -33,7 +33,6 @@ export type NutritionChatSearchResponse = {
   items: ProductNutrition[]
   clarifications: Omit<NutritionClarification, 'status' | 'selectedProduct'>[]
   requiresClarification: boolean
-  serviceUnavailable: boolean
 }
 
 export type Attachment = {

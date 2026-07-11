@@ -147,9 +147,7 @@ export function ChatPage({ currentUser, onOpenProfile, onUnauthorized }: Props) 
               id: crypto.randomUUID(),
               role: 'assistant',
               kind: 'text',
-              text: payload.serviceUnavailable
-                ? 'Сервис сейчас не работает, повторите попытку позже.'
-                : 'Ничего не нашел. Попробуйте уточнить название, бренд или вес продукта.',
+              text: 'Ничего не найдено. Попробуйте уточнить название, бренд или вес продукта.',
             },
       ])
     } catch (err) {
